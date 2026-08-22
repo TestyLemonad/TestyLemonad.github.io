@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор форматов PDF</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+            background-attachment: fixed;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b45309;
+        }
+
+        /* Enhanced Glassmorphism Design Tokens */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.60);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .glass-panel-interactive {
+            background: rgba(15, 23, 42, 0.60);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+            transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .glass-panel-interactive:hover {
+            background: rgba(15, 23, 42, 0.72);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 215, 0, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        .glass-input:focus {
+            background: rgba(15, 23, 42, 0.75);
+            border-color: #FFD700;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Custom Accents and Gradients */
+        .gradient-text {
+            background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-btn {
+            background: linear-gradient(135deg, #FF8C00 0%, #d97706 100%);
+            transition: all 0.3s ease;
+        }
+        .gradient-btn:hover {
+            background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+            box-shadow: 0 4px 20px rgba(255, 140, 0, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* Dropzone animation */
+        .dropzone-active {
+            border-color: #FFD700 !important;
+            background-color: rgba(255, 140, 0, 0.25) !important;
+        }
+
+        /* Custom Toggle Checkbox */
+        .custom-checkbox:checked {
+            background-color: #FF8C00;
+            border-color: #FF8C00;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; color: black; }
+            .print-card { border: 1px solid #ccc; background: white !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative">
+
+    <!-- Interactive Mouse Glow Follower -->
+    <div id="mouse-glow" class="pointer-events-none fixed w-96 h-96 rounded-full bg-amber-300/20 blur-3xl transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 ease-out z-30 opacity-75 no-print"></div>
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-40 no-print rounded-b-2xl mx-2 sm:mx-4 mt-2">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#FF8C00] to-[#FFD700] p-0.5 flex items-center justify-center shadow-lg shadow-orange-950/40">
+                    <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-file-pdf text-2xl text-[#FFD700]"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        <span>Анализатор форматов</span>
+                    </h1>
+                    <p class="text-xs text-slate-200">Точный подсчёт стандартных и нестандартных листов</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="btn-demo-file" onclick="loadDemoPdf()" class="px-3.5 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-white/20 text-slate-100 text-xs sm:text-sm font-medium flex items-center gap-2 transition shadow-md hover:border-[#FFD700]">
+                    <i class="fa-solid fa-wand-magic-sparkles text-[#FFD700]"></i>
+                    <span class="hidden sm:inline">Загрузить демо PDF</span>
+                    <span class="sm:hidden">Демо</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8 z-10">
+
+        <!-- Controls Row: File Upload + Tolerance Settings -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 no-print">
+            
+            <!-- File Drop Area -->
+            <div class="lg:col-span-7 glass-panel-interactive rounded-2xl p-6 shadow-2xl flex flex-col justify-between tilt-card">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-[#FF8C00]"></i>
+                            <span>Загрузка PDF документа</span>
+                        </h2>
+                        <span id="file-status-badge" class="hidden text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                            Файл загружен
+                        </span>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="drop-zone" class="border-2 border-dashed border-white/30 hover:border-[#FFD700] rounded-xl p-8 text-center bg-slate-950/40 hover:bg-slate-900/60 cursor-pointer transition-all duration-300 relative group">
+                        <input type="file" id="file-input" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="flex flex-col items-center justify-center space-y-3">
+                            <div class="w-16 h-16 rounded-full bg-slate-800/80 border border-white/20 group-hover:border-[#FFD700] group-hover:scale-110 flex items-center justify-center text-slate-300 group-hover:text-[#FFD700] transition-all duration-300 shadow-lg">
+                                <i class="fa-solid fa-file-arrow-up text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-100">Перетащите сюда PDF файл или <span class="text-[#FFD700] underline font-semibold">выберите с диска</span></p>
+                                <p class="text-xs text-slate-300 mt-1">Поддерживается глубокий анализ всех страниц документа</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active File Info -->
+                <div id="file-info-bar" class="hidden mt-4 p-3 glass-panel rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <i class="fa-solid fa-file-pdf text-xl text-[#FF8C00] shrink-0"></i>
+                        <div class="truncate">
+                            <p id="file-name" class="text-sm font-medium text-white truncate">document.pdf</p>
+                            <p id="file-meta" class="text-xs text-slate-300">0 MB • 0 страниц</p>
+                        </div>
+                    </div>
+                    <button id="btn-remove-file" onclick="resetFile()" class="p-2 text-slate-300 hover:text-red-400 transition" title="Удалить файл">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tolerance & Format Options Settings -->
+            <div class="lg:col-span-5 glass-panel-interactive rounded-2xl p-6 shadow-2xl flex flex-col justify-between tilt-card">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-[#FFD700]"></i>
+                            <span>Параметры допуска и распознавания</span>
+                        </h2>
+                    </div>
+
+                    <!-- Tolerances Inputs -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Width Tolerance -->
+                            <div>
+                                <label for="tol-width" class="block text-xs font-medium text-slate-200 mb-1">
+                                    Допуск по ширине (мм)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="tol-width" value="3" min="0" max="50" step="0.5" 
+                                           class="w-full glass-input rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition">
+                                    <span class="absolute right-3 top-2.5 text-xs text-slate-300">мм</span>
+                                </div>
+                            </div>
+
+                            <!-- Length Tolerance -->
+                            <div>
+                                <label for="tol-height" class="block text-xs font-medium text-slate-200 mb-1">
+                                    Допуск по длине (мм)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="tol-height" value="3" min="0" max="50" step="0.5" 
+                                           class="w-full glass-input rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition">
+                                    <span class="absolute right-3 top-2.5 text-xs text-slate-300">мм</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Presets -->
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="text-xs text-slate-200">Быстрый выбор:</span>
+                            <button onclick="setTolerance(0)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-xs text-slate-200 border border-white/20 hover:border-[#FFD700] transition">0 мм</button>
+                            <button onclick="setTolerance(3)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-xs text-slate-200 border border-white/20 hover:border-[#FFD700] transition">3 мм</button>
+                            <button onclick="setTolerance(5)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-xs text-slate-200 border border-white/20 hover:border-[#FFD700] transition">5 мм</button>
+                            <button onclick="setTolerance(10)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-xs text-slate-200 border border-white/20 hover:border-[#FFD700] transition">10 мм</button>
+                        </div>
+
+                        <!-- Standard Catalog Toggles -->
+                        <div class="pt-3 border-t border-white/10 space-y-2">
+                            <p class="text-xs font-medium text-slate-300">Каталоги форматов для проверки:</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <label class="flex items-center gap-2 text-slate-200 cursor-pointer hover:text-white transition">
+                                    <input type="checkbox" id="chk-iso-a" checked class="rounded bg-slate-800 border-slate-700 text-[#FF8C00] focus:ring-0 custom-checkbox">
+                                    <span>ISO A (А0–А6)</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-slate-200 cursor-pointer hover:text-white transition">
+                                    <input type="checkbox" id="chk-gost" checked class="rounded bg-slate-800 border-slate-700 text-[#FF8C00] focus:ring-0 custom-checkbox">
+                                    <span>ГОСТ (А4х3, А3х4...)</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-slate-200 cursor-pointer hover:text-white transition">
+                                    <input type="checkbox" id="chk-iso-b" class="rounded bg-slate-800 border-slate-700 text-[#FF8C00] focus:ring-0 custom-checkbox">
+                                    <span>ISO B (B0–B5)</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-slate-200 cursor-pointer hover:text-white transition">
+                                    <input type="checkbox" id="chk-us" class="rounded bg-slate-800 border-slate-700 text-[#FF8C00] focus:ring-0 custom-checkbox">
+                                    <span>US Formats (Letter...)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Изменение допуска пересчитывает отчёт на лету</span>
+                    <button onclick="reprocessPdfWithCurrentSettings()" class="px-3 py-1.5 rounded-lg bg-orange-500/30 hover:bg-orange-500/40 text-[#FFD700] border border-orange-400/40 text-xs font-semibold transition hover:scale-105">
+                        Обновить отчёт
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Loading State -->
+        <div id="loading-state" class="hidden glass-panel rounded-2xl p-8 text-center space-y-4">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800/80 text-[#FF8C00] animate-spin border border-white/20">
+                <i class="fa-solid fa-spinner text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-white">Сканирование страниц PDF...</h3>
+                <p id="loading-progress-text" class="text-xs text-slate-300 mt-1">Обработано 0 из 0 страниц</p>
+            </div>
+            <div class="w-full max-w-md mx-auto bg-slate-950/60 h-2.5 rounded-full overflow-hidden border border-white/10">
+                <div id="loading-progress-bar" class="bg-gradient-to-r from-[#FF8C00] to-[#FFD700] h-full w-0 transition-all duration-200"></div>
+            </div>
+        </div>
+
+        <!-- Results Dashboard (Hidden until processed) -->
+        <div id="results-dashboard" class="hidden space-y-8">
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Total Pages -->
+                <div class="glass-panel-interactive rounded-xl p-5 shadow-lg print-card flex items-center justify-between tilt-card">
+                    <div>
+                        <p class="text-xs font-medium text-slate-300">Всего листов</p>
+                        <p id="kpi-total-pages" class="text-2xl font-extrabold text-white mt-1">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-slate-800/80 border border-white/20 flex items-center justify-center text-[#FFD700]">
+                        <i class="fa-solid fa-copy text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Standard Formats Count -->
+                <div class="glass-panel-interactive rounded-xl p-5 shadow-lg print-card flex items-center justify-between tilt-card">
+                    <div>
+                        <p class="text-xs font-medium text-slate-300">Стандартных листов</p>
+                        <p id="kpi-standard-pages" class="text-2xl font-extrabold text-emerald-400 mt-1">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300">
+                        <i class="fa-solid fa-check text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Custom Formats Count -->
+                <div class="glass-panel-interactive rounded-xl p-5 shadow-lg print-card flex items-center justify-between tilt-card">
+                    <div>
+                        <p class="text-xs font-medium text-slate-300">Нестандартных листов</p>
+                        <p id="kpi-custom-pages" class="text-2xl font-extrabold text-amber-300 mt-1">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                        <i class="fa-solid fa-ruler-combined text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Total Surface Area (m2) -->
+                <div class="glass-panel-interactive rounded-xl p-5 shadow-lg print-card flex items-center justify-between tilt-card">
+                    <div>
+                        <p class="text-xs font-medium text-slate-300">Общая площадь (м²)</p>
+                        <p id="kpi-total-area" class="text-2xl font-extrabold text-[#FFD700] mt-1">0.00</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-[#FFD700]">
+                        <i class="fa-solid fa-vector-square text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar / Export Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 glass-panel p-4 rounded-xl shadow-lg no-print">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-white">Отчёт сформирован</span>
+                    <span id="active-tolerance-tag" class="text-xs px-2 py-0.5 rounded bg-slate-800/80 text-slate-200 border border-white/20">
+                        Допуск: 3 мм
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="copySummaryToClipboard()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-100 border border-white/20 text-xs font-medium flex items-center gap-1.5 transition hover:border-[#FFD700]">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Копировать отчёт</span>
+                    </button>
+                    <button onclick="exportToCsv()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-100 border border-white/20 text-xs font-medium flex items-center gap-1.5 transition hover:border-[#FFD700]">
+                        <i class="fa-solid fa-file-csv text-emerald-400"></i>
+                        <span>Экспорт CSV</span>
+                    </button>
+                    <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-gradient-btn text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-md">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Печать / PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Summary Group: Standard Formats Table & Visual Bar -->
+            <div class="glass-panel rounded-2xl p-6 shadow-xl print-card space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-[#FF8C00]"></i>
+                            <span>Сводка по форматам листов</span>
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1">Количество и ориентация распознанных стандартов</p>
+                    </div>
+                </div>
+
+                <!-- Formats Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-200">
+                        <thead class="text-xs uppercase bg-slate-900/60 text-slate-300 border-b border-white/10">
+                            <tr>
+                                <th class="py-3 px-4 rounded-l-lg">Формат</th>
+                                <th class="py-3 px-4">Количество</th>
+                                <th class="py-3 px-4">Детализация ориентации</th>
+                                <th class="py-3 px-4">Площадь 1 листа</th>
+                                <th class="py-3 px-4">Суммарная площадь</th>
+                                <th class="py-3 px-4 rounded-r-lg text-right">Доля в документе</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table-body" class="divide-y divide-white/10">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Non-Standard Formats Dedicated Section -->
+            <div id="non-standard-section" class="glass-panel rounded-2xl p-6 print-card space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Группа нестандартных форматов</h2>
+                            <p class="text-xs text-slate-300">Список листов, размеры которых выходят за пределы заданного допуска</p>
+                        </div>
+                    </div>
+                    <span id="non-standard-badge-count" class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold">
+                        0 листов
+                    </span>
+                </div>
+
+                <!-- Non Standard Cards Grid / Table -->
+                <div id="non-standard-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Detailed Page-by-Page Registry -->
+            <div class="glass-panel rounded-2xl p-6 print-card space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-[#FFD700]"></i>
+                            <span>Полный реестр всех страниц</span>
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-0.5">Постраничный список с фактическими замерами</p>
+                    </div>
+
+                    <!-- Search / Filter -->
+                    <div class="flex items-center gap-2 no-print">
+                        <input type="text" id="page-search-input" placeholder="Поиск по № или формату..." onkeyup="filterPageRegistry()"
+                               class="glass-input rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-left text-xs text-slate-200">
+                        <thead class="text-xs uppercase bg-slate-900/80 text-slate-300 sticky top-0 backdrop-blur-md">
+                            <tr>
+                                <th class="py-2.5 px-3">№</th>
+                                <th class="py-2.5 px-3">Ширина × Длина (мм)</th>
+                                <th class="py-2.5 px-3">Ориентация</th>
+                                <th class="py-2.5 px-3">Определённый формат</th>
+                                <th class="py-2.5 px-3">Отклонение от стандарта</th>
+                                <th class="py-2.5 px-3 text-right">Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registry-table-body" class="divide-y divide-white/10">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Notification Toast Box -->
+        <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+            <div id="toast-content" class="px-4 py-3 rounded-xl glass-panel text-white text-xs shadow-2xl flex items-center gap-3">
+                <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                <span id="toast-message">Сообщение</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel py-6 text-center text-xs text-slate-100 no-print rounded-t-2xl mx-2 sm:mx-4 mb-2 border-t border-white/20">
+        <p class="font-medium tracking-wide">Made by TestyLemonad</p>
+    </footer>
+
+    <script>
+        const STANDARD_FORMATS = [
+            // ISO A Series (mm)
+            { id: 'A0', name: 'A0', width: 841, height: 1189, category: 'iso_a' },
+            { id: 'A1', name: 'A1', width: 594, height: 841, category: 'iso_a' },
+            { id: 'A2', name: 'A2', width: 420, height: 594, category: 'iso_a' },
+            { id: 'A3', name: 'A3', width: 297, height: 420, category: 'iso_a' },
+            { id: 'A4', name: 'A4', width: 210, height: 297, category: 'iso_a' },
+            { id: 'A5', name: 'A5', width: 148, height: 210, category: 'iso_a' },
+            { id: 'A6', name: 'A6', width: 105, height: 148, category: 'iso_a' },
+
+            // GOST Extended Formats (Кратные форматы ГОСТ 2.301-68)
+            { id: 'A4x3', name: 'А4х3', width: 297, height: 630, category: 'gost' },
+            { id: 'A4x4', name: 'А4х4', width: 297, height: 841, category: 'gost' },
+            { id: 'A4x5', name: 'А4х5', width: 297, height: 1051, category: 'gost' },
+            { id: 'A4x6', name: 'А4х6', width: 297, height: 1261, category: 'gost' },
+            { id: 'A4x7', name: 'А4х7', width: 297, height: 1471, category: 'gost' },
+            { id: 'A4x8', name: 'А4х8', width: 297, height: 1682, category: 'gost' },
+            { id: 'A4x9', name: 'А4х9', width: 297, height: 1892, category: 'gost' },
+            { id: 'A3x3', name: 'А3х3', width: 420, height: 891, category: 'gost' },
+            { id: 'A3x4', name: 'А3х4', width: 420, height: 1189, category: 'gost' },
+            { id: 'A3x5', name: 'А3х5', width: 420, height: 1486, category: 'gost' },
+            { id: 'A3x6', name: 'А3х6', width: 420, height: 1783, category: 'gost' },
+            { id: 'A3x7', name: 'А3х7', width: 420, height: 2080, category: 'gost' },
+            { id: 'A2x3', name: 'А2х3', width: 594, height: 1261, category: 'gost' },
+            { id: 'A2x4', name: 'А2х4', width: 594, height: 1682, category: 'gost' },
+            { id: 'A2x5', name: 'А2х5', width: 594, height: 2102, category: 'gost' },
+            { id: 'A1x3', name: 'А1х3', width: 841, height: 1783, category: 'gost' },
+            { id: 'A1x4', name: 'А1х4', width: 841, height: 2378, category: 'gost' },
+            { id: 'A0x2', name: 'А0х2', width: 1189, height: 1682, category: 'gost' },
+            { id: 'A0x3', name: 'А0х3', width: 1189, height: 2523, category: 'gost' },
+
+            // ISO B Series
+            { id: 'B0', name: 'B0', width: 1000, height: 1414, category: 'iso_b' },
+            { id: 'B1', name: 'B1', width: 707, height: 1000, category: 'iso_b' },
+            { id: 'B2', name: 'B2', width: 500, height: 707, category: 'iso_b' },
+            { id: 'B3', name: 'B3', width: 353, height: 500, category: 'iso_b' },
+            { id: 'B4', name: 'B4', width: 250, height: 353, category: 'iso_b' },
+            { id: 'B5', name: 'B5', width: 176, height: 250, category: 'iso_b' },
+
+            // US Formats
+            { id: 'Letter', name: 'US Letter', width: 215.9, height: 279.4, category: 'us' },
+            { id: 'Legal', name: 'US Legal', width: 215.9, height: 355.6, category: 'us' },
+            { id: 'Tabloid', name: 'US Tabloid', width: 279.4, height: 431.8, category: 'us' }
+        ];
+
+        // State Variables
+        let rawPagesData = []; // [{ pageNum, widthMm, heightMm, orientation }]
+        let processedResults = []; // enriched with matching results
+        let currentFileObj = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDropzone();
+            setupInputWatchers();
+            setupMouseEffects();
+        });
+
+        function setupDropzone() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            if (!dropZone || !fileInput) return;
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('dropzone-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('dropzone-active');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    handleFileSelected(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleFileSelected(e.target.files[0]);
+                }
+            });
+        }
+
+        // Mouse glow follower and 3D card tilt effects
+        function setupMouseEffects() {
+            const glow = document.getElementById('mouse-glow');
+            const tiltCards = document.querySelectorAll('.tilt-card');
+
+            window.addEventListener('mousemove', (e) => {
+                if (glow) {
+                    glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+                }
+
+                tiltCards.forEach(card => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        const tiltX = (y - centerY) / 25;
+                        const tiltY = (centerX - x) / 25;
+                        card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-2px)`;
+                    } else {
+                        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)`;
+                    }
+                });
+            });
+        }
+
+        function setupInputWatchers() {
+            ['tol-width', 'tol-height', 'chk-iso-a', 'chk-gost', 'chk-iso-b', 'chk-us'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', () => {
+                        if (rawPagesData.length > 0) {
+                            reprocessPdfWithCurrentSettings();
+                        }
+                    });
+                }
+            });
+        }
+
+        function setTolerance(val) {
+            document.getElementById('tol-width').value = val;
+            document.getElementById('tol-height').value = val;
+            if (rawPagesData.length > 0) {
+                reprocessPdfWithCurrentSettings();
+            }
+        }
+
+        function loadDemoPdf() {
+            showToast('Создание демонстрационного PDF-документа...', 'info');
+            const demoBuffer = createDemoPdfBuffer();
+            currentFileObj = { name: 'Demo_Engineering_Document.pdf', size: demoBuffer.byteLength };
+            parsePdfArrayBuffer(demoBuffer, 'Demo_Engineering_Document.pdf');
+        }
+
+        // Generates an array buffer of a valid 7-page PDF with various sizes
+        function createDemoPdfBuffer() {
+            const pages = [
+                { w: 595.28, h: 841.89 },  // A4 (210 x 297 mm) Portrait
+                { w: 603.78, h: 841.89 },  // A4 + 3mm width (213 x 297 mm)
+                { w: 841.89, h: 1190.55 }, // A3 (297 x 420 mm) Landscape
+                { w: 841.89, h: 1190.55 }, // A3 (297 x 420 mm) Landscape
+                { w: 992.13, h: 1417.32 }, // Custom 350 x 500 mm
+                { w: 425.20, h: 425.20 },  // Custom 150 x 150 mm Square
+                { w: 595.28, h: 841.89 }   // A4 (210 x 297 mm) Portrait
+            ];
+
+            let pdf = `%PDF-1.4\n`;
+            let offsets = [];
+
+            offsets.push(pdf.length);
+            pdf += `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+
+            const pageRefsKids = pages.map((_, i) => `${i + 3} 0 R`).join(' ');
+            offsets.push(pdf.length);
+            pdf += `2 0 obj\n<< /Type /Pages /Kids [ ${pageRefsKids} ] /Count ${pages.length} >>\nendobj\n`;
+
+            pages.forEach((p, idx) => {
+                offsets.push(pdf.length);
+                pdf += `${idx + 3} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${p.w.toFixed(2)} ${p.h.toFixed(2)}] /Resources << >> >>\nendobj\n`;
+            });
+
+            const xrefOffset = pdf.length;
+            pdf += `xref\n0 ${pages.length + 3}\n0000000000 65535 f \n`;
+            offsets.forEach(off => {
+                pdf += `${off.toString().padStart(10, '0')} 00000 n \n`;
+            });
+
+            pdf += `trailer\n<< /Size ${pages.length + 3} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+            return new TextEncoder().encode(pdf).buffer;
+        }
+
+        function handleFileSelected(file) {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                showToast('Пожалуйста, выберите файл в формате PDF!', 'error');
+                return;
+            }
+
+            currentFileObj = file;
+            const reader = new FileReader();
+
+            showLoading(true);
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                parsePdfArrayBuffer(arrayBuffer, file.name);
+            };
+            reader.onerror = function() {
+                showLoading(false);
+                showToast('Ошибка при чтении файла', 'error');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function parsePdfArrayBuffer(arrayBuffer, fileName) {
+            showLoading(true);
+            rawPagesData = [];
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+
+                updateFileInfoUI(fileName, currentFileObj ? currentFileObj.size : 0, numPages);
+
+                const ptToMm = 25.4 / 72.0; // 1 point = 1/72 inch = 25.4/72 mm
+
+                for (let i = 1; i <= numPages; i++) {
+                    updateLoadingProgress(i, numPages);
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.0 });
+
+                    // Viewport width and height in points
+                    const wPt = viewport.width;
+                    const hPt = viewport.height;
+
+                    // Convert to mm
+                    const wMm = parseFloat((wPt * ptToMm).toFixed(1));
+                    const hMm = parseFloat((hPt * ptToMm).toFixed(1));
+
+                    const orientation = wMm >= hMm ? 'Landscape' : 'Portrait';
+
+                    rawPagesData.push({
+                        pageNum: i,
+                        widthMm: wMm,
+                        heightMm: hMm,
+                        orientation: orientation
+                    });
+                }
+
+                showLoading(false);
+                reprocessPdfWithCurrentSettings();
+                showToast(`Успешно обработано страниц: ${numPages}`, 'success');
+
+            } catch (err) {
+                console.error(err);
+                showLoading(false);
+                showToast('Ошибка при разборе PDF файла', 'error');
+            }
+        }
+
+        function reprocessPdfWithCurrentSettings() {
+            if (rawPagesData.length === 0) return;
+
+            const tolWidth = parseFloat(document.getElementById('tol-width').value) || 0;
+            const tolHeight = parseFloat(document.getElementById('tol-height').value) || 0;
+
+            // Filter enabled standard formats based on checkboxes
+            const enabledCategories = [];
+            if (document.getElementById('chk-iso-a').checked) enabledCategories.push('iso_a');
+            if (document.getElementById('chk-gost').checked) enabledCategories.push('gost');
+            if (document.getElementById('chk-iso-b').checked) enabledCategories.push('iso_b');
+            if (document.getElementById('chk-us').checked) enabledCategories.push('us');
+
+            const activeFormats = STANDARD_FORMATS.filter(f => enabledCategories.includes(f.category));
+
+            processedResults = rawPagesData.map(page => {
+                const pageMin = Math.min(page.widthMm, page.heightMm);
+                const pageMax = Math.max(page.widthMm, page.heightMm);
+
+                let bestMatch = null;
+                let minDeltaSum = Infinity;
+
+                // Match page against active standard formats
+                activeFormats.forEach(fmt => {
+                    const fmtMin = Math.min(fmt.width, fmt.height);
+                    const fmtMax = Math.max(fmt.width, fmt.height);
+
+                    const dWidth = Math.abs(pageMin - fmtMin);
+                    const dHeight = Math.abs(pageMax - fmtMax);
+
+                    // Check if within specified tolerance
+                    if (dWidth <= tolWidth && dHeight <= tolHeight) {
+                        const totalDelta = dWidth + dHeight;
+                        if (totalDelta < minDeltaSum) {
+                            minDeltaSum = totalDelta;
+                            bestMatch = {
+                                format: fmt,
+                                isStandard: true,
+                                dWidth: dWidth,
+                                dHeight: dHeight
+                            };
+                        }
+                    }
+                });
+
+                // If no exact tolerance match found, find closest format for non-standard reference
+                let closestFmt = null;
+                let minClosestDist = Infinity;
+                let closestDWidth = 0;
+                let closestDHeight = 0;
+
+                STANDARD_FORMATS.forEach(fmt => {
+                    const fmtMin = Math.min(fmt.width, fmt.height);
+                    const fmtMax = Math.max(fmt.width, fmt.height);
+                    const dW = Math.abs(pageMin - fmtMin);
+                    const dH = Math.abs(pageMax - fmtMax);
+                    const dist = Math.sqrt(dW * dW + dH * dH);
+                    if (dist < minClosestDist) {
+                        minClosestDist = dist;
+                        closestFmt = fmt;
+                        closestDWidth = pageMin - fmtMin; // positive if larger than standard
+                        closestDHeight = pageMax - fmtMax;
+                    }
+                });
+
+                if (bestMatch) {
+                    return {
+                        ...page,
+                        isStandard: true,
+                        formatName: bestMatch.format.name,
+                        formatObj: bestMatch.format,
+                        dWidth: bestMatch.dWidth,
+                        dHeight: bestMatch.dHeight,
+                        closestFmt: closestFmt,
+                        closestDWidth: closestDWidth,
+                        closestDHeight: closestDHeight
+                    };
+                } else {
+                    return {
+                        ...page,
+                        isStandard: false,
+                        formatName: 'Нестандартный',
+                        formatObj: null,
+                        dWidth: 0,
+                        dHeight: 0,
+                        closestFmt: closestFmt,
+                        closestDWidth: closestDWidth,
+                        closestDHeight: closestDHeight
+                    };
+                }
+            });
+
+            renderReportUI(tolWidth, tolHeight);
+        }
+
+        function renderReportUI(tolW, tolH) {
+            document.getElementById('results-dashboard').classList.remove('hidden');
+            document.getElementById('active-tolerance-tag').innerText = `Допуск: ${tolW} мм (ширина) / ${tolH} мм (длина)`;
+
+            // Calculate KPIs
+            const totalPages = processedResults.length;
+            const standardPages = processedResults.filter(r => r.isStandard);
+            const customPages = processedResults.filter(r => !r.isStandard);
+
+            // Total area in m2
+            const totalAreaM2 = processedResults.reduce((acc, p) => {
+                return acc + (p.widthMm * p.heightMm) / 1000000.0;
+            }, 0);
+
+            document.getElementById('kpi-total-pages').innerText = totalPages;
+            document.getElementById('kpi-standard-pages').innerText = standardPages.length;
+            document.getElementById('kpi-custom-pages').innerText = customPages.length;
+            document.getElementById('kpi-total-area').innerText = totalAreaM2.toFixed(2);
+
+            // Group standard formats
+            const formatSummary = {};
+
+            processedResults.forEach(r => {
+                const name = r.formatName;
+                if (!formatSummary[name]) {
+                    formatSummary[name] = {
+                        name: name,
+                        isStandard: r.isStandard,
+                        count: 0,
+                        portraitCount: 0,
+                        landscapeCount: 0,
+                        singleAreaM2: (r.widthMm * r.heightMm) / 1000000.0,
+                        totalAreaM2: 0,
+                        pages: []
+                    };
+                }
+                formatSummary[name].count++;
+                if (r.orientation === 'Landscape') {
+                    formatSummary[name].landscapeCount++;
+                } else {
+                    formatSummary[name].portraitCount++;
+                }
+                const pArea = (r.widthMm * r.heightMm) / 1000000.0;
+                formatSummary[name].totalAreaM2 += pArea;
+                formatSummary[name].pages.push(r.pageNum);
+            });
+
+            // Populate Summary Table
+            const summaryTableBody = document.getElementById('summary-table-body');
+            summaryTableBody.innerHTML = '';
+
+            Object.values(formatSummary).forEach(item => {
+                const percentage = ((item.count / totalPages) * 100).toFixed(1);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+
+                const isCustom = !item.isStandard;
+                const badgeColor = isCustom 
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
+                    : 'bg-orange-500/20 text-[#FFD700] border-orange-500/30';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-white flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full border text-xs font-bold ${badgeColor}">
+                            ${item.name}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-white">${item.count} листов</td>
+                    <td class="py-3 px-4 text-xs text-slate-400">
+                        <span class="text-slate-200">${item.portraitCount}</span> книжн. / 
+                        <span class="text-slate-200">${item.landscapeCount}</span> альб.
+                    </td>
+                    <td class="py-3 px-4 text-xs font-mono">${item.singleAreaM2.toFixed(3)} м²</td>
+                    <td class="py-3 px-4 text-xs font-mono font-semibold text-emerald-400">${item.totalAreaM2.toFixed(2)} м²</td>
+                    <td class="py-3 px-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-mono text-slate-300">${percentage}%</span>
+                            <div class="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-[#FF8C00] to-[#FFD700] h-full" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                summaryTableBody.appendChild(tr);
+            });
+
+            // Populate Non-Standard Group Section
+            const nonStandardSection = document.getElementById('non-standard-section');
+            const nonStandardContainer = document.getElementById('non-standard-container');
+            document.getElementById('non-standard-badge-count').innerText = `${customPages.length} листов`;
+
+            if (customPages.length === 0) {
+                nonStandardContainer.innerHTML = `
+                    <div class="p-6 text-center bg-slate-900/40 rounded-xl border border-white/10 text-slate-300 text-xs">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-xl mb-2 block"></i>
+                        Все страницы документа соответствуют выбранным стандартам и допускам!
+                    </div>
+                `;
+            } else {
+                let cardsHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                `;
+
+                customPages.forEach(p => {
+                    const devW = p.closestDWidth >= 0 ? `+${p.closestDWidth.toFixed(1)}` : p.closestDWidth.toFixed(1);
+                    const devH = p.closestDHeight >= 0 ? `+${p.closestDHeight.toFixed(1)}` : p.closestDHeight.toFixed(1);
+
+                    cardsHtml += `
+                        <div class="glass-panel-interactive rounded-xl p-4 border border-amber-500/40 hover:border-amber-400 transition space-y-3 tilt-card">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                                <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-file text-amber-300"></i>
+                                    Страница №${p.pageNum}
+                                </span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-slate-950/60 text-slate-300 font-mono border border-white/10">
+                                    ${p.orientation === 'Landscape' ? 'Альбомная' : 'Книжная'}
+                                </span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <p class="text-xs text-slate-300">Фактический размер:</p>
+                                <p class="text-base font-extrabold font-mono text-white">
+                                    ${p.widthMm} × ${p.heightMm} <span class="text-xs font-normal text-slate-300">мм</span>
+                                </p>
+                            </div>
+
+                            <div class="p-2.5 bg-slate-950/60 rounded-lg border border-white/10 text-xs space-y-1">
+                                <p class="text-slate-300">Ближайший формат: <span class="font-bold text-white">${p.closestFmt ? p.closestFmt.name : '—'}</span></p>
+                                <p class="text-[11px] font-mono text-amber-300">
+                                    Отклонение: ${devW} мм (ширина), ${devH} мм (длина)
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                cardsHtml += `</div>`;
+                nonStandardContainer.innerHTML = cardsHtml;
+            }
+
+            // Populate Page Registry Table
+            renderRegistryTable(processedResults);
+        }
+
+        function renderRegistryTable(pages) {
+            const registryBody = document.getElementById('registry-table-body');
+            registryBody.innerHTML = '';
+
+            pages.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+
+                const statusBadge = p.isStandard
+                    ? `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">Стандарт</span>`
+                    : `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-semibold">Нестандартный</span>`;
+
+                const devText = p.isStandard
+                    ? `<span class="text-slate-500 font-mono">В пределах допуска</span>`
+                    : `<span class="text-amber-300 font-mono">Δ ${p.closestDWidth > 0 ? '+' : ''}${p.closestDWidth.toFixed(1)} / ${p.closestDHeight > 0 ? '+' : ''}${p.closestDHeight.toFixed(1)} мм</span>`;
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-semibold text-white">#${p.pageNum}</td>
+                    <td class="py-2.5 px-3 font-mono text-slate-200">${p.widthMm} × ${p.heightMm}</td>
+                    <td class="py-2.5 px-3 text-slate-400">${p.orientation === 'Landscape' ? 'Альбомная' : 'Книжная'}</td>
+                    <td class="py-2.5 px-3 font-semibold text-white">${p.formatName}</td>
+                    <td class="py-2.5 px-3 text-[11px]">${devText}</td>
+                    <td class="py-2.5 px-3 text-right">${statusBadge}</td>
+                `;
+                registryBody.appendChild(tr);
+            });
+        }
+
+        function filterPageRegistry() {
+            const query = document.getElementById('page-search-input').value.toLowerCase().trim();
+            if (!query) {
+                renderRegistryTable(processedResults);
+                return;
+            }
+
+            const filtered = processedResults.filter(p => {
+                return p.pageNum.toString().includes(query) ||
+                       p.formatName.toLowerCase().includes(query) ||
+                       `${p.widthMm}x${p.heightMm}`.includes(query);
+            });
+            renderRegistryTable(filtered);
+        }
+
+        function copySummaryToClipboard() {
+            if (processedResults.length === 0) return;
+
+            const totalPages = processedResults.length;
+            const standardPages = processedResults.filter(r => r.isStandard);
+            const customPages = processedResults.filter(r => !r.isStandard);
+            const tolW = document.getElementById('tol-width').value;
+            const tolH = document.getElementById('tol-height').value;
+
+            // Grouping summary
+            const summaryMap = {};
+            processedResults.forEach(r => {
+                summaryMap[r.formatName] = (summaryMap[r.formatName] || 0) + 1;
+            });
+
+            let text = `=== ОТЧЁТ ПО ФОРМАТАМ PDF ===\n`;
+            text += `Файл: ${currentFileObj ? currentFileObj.name : 'Документ'}\n`;
+            text += `Допуск: по ширине ${tolW} мм, по длине ${tolH} мм\n`;
+            text += `Всего страниц: ${totalPages}\n`;
+            text += `Стандартных листов: ${standardPages.length}\n`;
+            text += `Нестандартных листов: ${customPages.length}\n\n`;
+
+            text += `--- СВОДКА ПО ФОРМАТАМ ---\n`;
+            Object.entries(summaryMap).forEach(([fmt, count]) => {
+                text += `• ${fmt}: ${count} шт.\n`;
+            });
+
+            if (customPages.length > 0) {
+                text += `\n--- НЕСТАНДАРТНЫЕ ЛИСТЫ ---\n`;
+                customPages.forEach(p => {
+                    text += `• Стр. ${p.pageNum}: ${p.widthMm} × ${p.heightMm} мм (Ближайший: ${p.closestFmt ? p.closestFmt.name : '—'})\n`;
+                });
+            }
+
+            // Copy safely
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+
+            showToast('Отчёт скопирован в буфер обмена!', 'success');
+        }
+
+        function exportToCsv() {
+            if (processedResults.length === 0) return;
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for UTF-8 Excel
+            csvContent += "Номер страницы;Ширина (мм);Длина (мм);Ориентация;Формат;Статус;Ближайший формат\n";
+
+            processedResults.forEach(p => {
+                const status = p.isStandard ? 'Стандартный' : 'Нестандартный';
+                csvContent += `${p.pageNum};${p.widthMm};${p.heightMm};${p.orientation};${p.formatName};${status};${p.closestFmt ? p.closestFmt.name : ''}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `PDF_Format_Report_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('Файл CSV успешно скачан!', 'success');
+        }
+
+        // Helper UI functions
+        function showLoading(isLoading) {
+            const loader = document.getElementById('loading-state');
+            if (isLoading) {
+                loader.classList.remove('hidden');
+                document.getElementById('results-dashboard').classList.add('hidden');
+            } else {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function updateLoadingProgress(current, total) {
+            document.getElementById('loading-progress-text').innerText = `Обработано ${current} из ${total} страниц`;
+            const pct = Math.round((current / total) * 100);
+            document.getElementById('loading-progress-bar').style.width = `${pct}%`;
+        }
+
+        function updateFileInfoUI(name, size, pageCount) {
+            document.getElementById('file-info-bar').classList.remove('hidden');
+            document.getElementById('file-status-badge').classList.remove('hidden');
+            document.getElementById('file-name').innerText = name;
+            
+            const sizeMb = size ? (size / (1024 * 1024)).toFixed(2) : '0';
+            document.getElementById('file-meta').innerText = `${sizeMb} MB • ${pageCount} страниц`;
+        }
+
+        function resetFile() {
+            rawPagesData = [];
+            processedResults = [];
+            currentFileObj = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-info-bar').classList.add('hidden');
+            document.getElementById('file-status-badge').classList.add('hidden');
+            document.getElementById('results-dashboard').classList.add('hidden');
+            showToast('Файл сброшен', 'info');
+        }
+
+        function showToast(message, type = 'success') {
+            const toastBox = document.getElementById('toast-box');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400 text-base';
+            } else if (type === 'info') {
+                toastIcon.className = 'fa-solid fa-circle-info text-sky-400 text-base';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-base';
+            }
+
+            toastBox.classList.remove('translate-y-20', 'opacity-0');
+            toastBox.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toastBox.classList.remove('translate-y-0', 'opacity-100');
+                toastBox.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
