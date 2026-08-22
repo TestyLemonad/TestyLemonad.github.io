@@ -8,7 +8,7 @@
     <style>
         /* Шрифт для интерфейса */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        
+
         :root {
             --bg-main: #121214;
             --bg-card: #1c1c1f;
@@ -92,14 +92,16 @@
             <div>
                 <h1 class="text-3xl font-bold tracking-tight">УльтраШифратор <span class="text-indigo-500"></span></h1>
             </div>
-            <div class="flex bg-[#1c1c1f] p-1 rounded-xl border border-[#323238]">
-                <button onclick="setDirection('encode')" id="tabEnc" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-all">Зашифровать</button>
-                <button onclick="setDirection('decode')" id="tabDec" class="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all">Расшифровать</button>
+            <div class="flex bg-[#1c1c1f] p-1 rounded-xl border border-[#323238] w-full sm:w-auto flex-col sm:flex-row gap-1 sm:gap-0">
+                <button onclick="setDirection('encode')" id="tabEnc" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-all text-center">Зашифровать</button>
+                <button onclick="setDirection('decode')" id="tabDec" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all text-center">Расшифровать</button>
+                <button onclick="setDirection('convert')" id="tabConv" class="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all text-center">Системы счисления</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6">
-            
+        <!-- Режимы шифрования/декодирования (Матрёшка) -->
+        <div id="cipherModeView" class="grid grid-cols-1 gap-6">
+
             <!-- Поле ввода -->
             <div class="bg-[#1c1c1f] border border-[#323238] rounded-2xl p-5 shadow-sm">
                 <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Входные данные</label>
@@ -110,27 +112,90 @@
             <div class="bg-[#1c1c1f] border border-[#323238] rounded-2xl p-5 shadow-sm">
                 <div class="flex justify-between items-center mb-5">
                     <label class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Цепочка алгоритмов (Матрёшка)</label>
-                    <button onclick="addStep()" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition">+ Добавить слой</button>
+                    <button onclick="addStep()" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition" id="addStepBtn">+ Добавить слой</button>
                 </div>
-                
+
                 <div id="stepsList" class="space-y-3">
                     <!-- Сюда скрипт вставит шаги -->
                 </div>
             </div>
 
             <!-- Результат -->
-            <div class="bg-[#1c1c1f] border border-indigo-500/20 rounded-2xl p-5 shadow-sm">
+            <div id="resultCard" class="bg-[#1c1c1f] border border-indigo-500/20 rounded-2xl p-5 shadow-sm">
                 <div class="flex justify-between items-center mb-3">
-                    <label class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Результат</label>
-                    <button onclick="copyToClipboard()" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
+                    <label id="resultLabel" class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Результат</label>
+                    <button onclick="copyToClipboard('outputText', 'copyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         Копировать
                     </button>
                 </div>
-                <textarea id="outputText" readonly class="custom-input w-full h-32 p-4 text-sm mono text-indigo-200 cursor-default" placeholder="Тут появится результат..."></textarea>
+                <textarea id="outputText" readonly class="custom-input w-full h-32 p-4 text-sm mono text-indigo-200 cursor-default transition-colors" placeholder="Тут появится результат..."></textarea>
                 <div id="copyToast" class="hidden text-right text-[10px] text-emerald-400 mt-2 font-medium uppercase tracking-tighter">Скопировано!</div>
+            </div>
+
+        </div>
+
+        <!-- Режим конвертации систем счисления -->
+        <div id="convertModeView" class="hidden grid grid-cols-1 gap-6">
+
+            <!-- Входное поле -->
+            <div class="bg-[#1c1c1f] border border-[#323238] rounded-2xl p-5 shadow-sm">
+                <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Входные данные</label>
+                <textarea id="convInput" class="custom-input w-full h-32 p-4 text-sm mono resize-none" placeholder="Введи значение сюда..."></textarea>
+            </div>
+
+            <!-- Блок выбора систем счисления -->
+            <div class="bg-[#1c1c1f] border border-[#323238] rounded-2xl p-5 shadow-sm">
+                <div class="flex justify-between items-center mb-5">
+                    <label class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Конвертация систем</label>
+                    <button onclick="swapSystems()" class="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                        Поменять
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex items-center justify-between gap-3">
+                        <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Из:</span>
+                        <select id="convFrom" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
+                            <option value="dec">Десятичная (DEC)</option>
+                            <option value="bin">Двоичная (BIN)</option>
+                            <option value="hex">16-ричная (HEX)</option>
+                            <option value="text">Текст</option>
+                            <option value="unicode">Unicode (Коды U+XXXX)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex items-center justify-between gap-3">
+                        <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">В:</span>
+                        <select id="convTo" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
+                            <option value="bin">Двоичная (BIN)</option>
+                            <option value="dec">Десятичная (DEC)</option>
+                            <option value="hex" selected>16-ричная (HEX)</option>
+                            <option value="text">Текст</option>
+                            <option value="unicode">Unicode (Коды U+XXXX)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Результат -->
+            <div class="bg-[#1c1c1f] border border-amber-500/20 rounded-2xl p-5 shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-xs font-bold text-amber-400 uppercase tracking-widest">Результат</label>
+                    <button onclick="copyToClipboard('convOutput', 'convCopyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Копировать
+                    </button>
+                </div>
+                <textarea id="convOutput" readonly class="custom-input w-full h-32 p-4 text-sm mono text-amber-200 cursor-default" placeholder="Тут появится результат..."></textarea>
+                <div id="convCopyToast" class="hidden text-right text-[10px] text-emerald-400 mt-2 font-medium uppercase tracking-tighter">Скопировано!</div>
             </div>
 
         </div>
@@ -160,21 +225,55 @@
         function init() {
             render();
             document.getElementById('inputText').addEventListener('input', run);
+            document.getElementById('convInput').addEventListener('input', runConvert);
         }
 
         function setDirection(d) {
             mode = d;
             const btnEnc = document.getElementById('tabEnc');
             const btnDec = document.getElementById('tabDec');
-            
+            const btnConv = document.getElementById('tabConv');
+
+            const cipherView = document.getElementById('cipherModeView');
+            const convertView = document.getElementById('convertModeView');
+
+            const resultCard = document.getElementById('resultCard');
+            const resultLabel = document.getElementById('resultLabel');
+            const outputText = document.getElementById('outputText');
+            const addStepBtn = document.getElementById('addStepBtn');
+
+            btnEnc.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all text-center";
+            btnDec.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all text-center";
+            btnConv.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all text-center";
+
             if (d === 'encode') {
-                btnEnc.className = "px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-all";
-                btnDec.className = "px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all";
-            } else {
-                btnDec.className = "px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white transition-all";
-                btnEnc.className = "px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-all";
+                btnEnc.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-all text-center";
+                cipherView.classList.remove('hidden');
+                convertView.classList.add('hidden');
+
+                // Стиль под Indigo
+                resultCard.className = "bg-[#1c1c1f] border border-indigo-500/20 rounded-2xl p-5 shadow-sm";
+                resultLabel.className = "text-xs font-bold text-indigo-400 uppercase tracking-widest";
+                outputText.className = "custom-input w-full h-32 p-4 text-sm mono text-indigo-200 cursor-default transition-colors";
+                addStepBtn.className = "text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition";
+                run();
+            } else if (d === 'decode') {
+                btnDec.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white transition-all text-center";
+                cipherView.classList.remove('hidden');
+                convertView.classList.add('hidden');
+
+                // Перекрашиваем результат в Emerald
+                resultCard.className = "bg-[#1c1c1f] border border-emerald-500/20 rounded-2xl p-5 shadow-sm";
+                resultLabel.className = "text-xs font-bold text-emerald-400 uppercase tracking-widest";
+                outputText.className = "custom-input w-full h-32 p-4 text-sm mono text-emerald-200 cursor-default transition-colors";
+                addStepBtn.className = "text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition";
+                run();
+            } else if (d === 'convert') {
+                btnConv.className = "w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-amber-600 text-white transition-all text-center";
+                cipherView.classList.add('hidden');
+                convertView.classList.remove('hidden');
+                runConvert();
             }
-            run();
         }
 
         function addStep() {
@@ -209,7 +308,7 @@
                 const algo = ALGORITHMS[step.type];
                 const row = document.createElement('div');
                 row.className = "step-row bg-[#232327] p-3 rounded-xl border border-[#323238]";
-                
+
                 let paramHtml = '';
                 if (algo.hasParam) {
                     paramHtml = `
@@ -226,7 +325,7 @@
                         <select onchange="updateStep(${step.id}, 'type', this.value)" 
                             class="bg-transparent text-sm font-medium text-zinc-300 focus:outline-none cursor-pointer">
                             ${Object.entries(ALGORITHMS).map(([k, v]) => 
-                                `<option value="${k}" ${step.type === k ? 'selected' : ''} class="bg-[#1c1c1f]">${v.name}</option>`
+                                `<option value="${k}" ${step.type === k ? 'selected' : ''} class="bg-[#1c1c1f] text-white">${v.name}</option>`
                             ).join('')}
                         </select>
                         ${paramHtml}
@@ -260,12 +359,20 @@
         async function execute(text, type, param, dir) {
             const isEnc = dir === 'encode';
             try {
-                // Если мы в режиме декодирования и встретили хеш — просто игнорируем его
                 if (!isEnc && ALGORITHMS[type].oneWay) return text;
 
                 switch(type) {
                     case 'base64':
-                        return isEnc ? btoa(unescape(encodeURIComponent(text))) : decodeURIComponent(escape(atob(text)));
+                        if (isEnc) {
+                            const bytes = new TextEncoder().encode(text);
+                            let bin = '';
+                            bytes.forEach(b => bin += String.fromCharCode(b));
+                            return btoa(bin);
+                        } else {
+                            const bin = atob(text.trim());
+                            const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+                            return new TextDecoder().decode(bytes);
+                        }
                     case 'caesar':
                         const s = parseInt(param) || 0;
                         return caesar(text, isEnc ? s : -s);
@@ -276,9 +383,23 @@
                     case 'rot13':
                         return caesar(text, 13);
                     case 'hex':
-                        return isEnc ? text.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ') : text.split(' ').map(h=>String.fromCharCode(parseInt(h,16))).join('');
+                        if (isEnc) {
+                            const bytes = new TextEncoder().encode(text);
+                            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                        } else {
+                            const hexes = text.trim().split(/\s+/).filter(Boolean);
+                            const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
+                            return new TextDecoder().decode(bytes);
+                        }
                     case 'binary':
-                        return isEnc ? text.split('').map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ') : text.split(' ').map(b=>String.fromCharCode(parseInt(b,2))).join('');
+                        if (isEnc) {
+                            const bytes = new TextEncoder().encode(text);
+                            return Array.from(bytes).map(b => b.toString(2).padStart(8, '0')).join(' ');
+                        } else {
+                            const bins = text.trim().split(/\s+/).filter(Boolean);
+                            const bytes = new Uint8Array(bins.map(b => parseInt(b, 2)));
+                            return new TextDecoder().decode(bytes);
+                        }
                     case 'reverse':
                         return text.split('').reverse().join('');
                     case 'sha256':
@@ -296,16 +417,26 @@
         }
 
         function caesar(str, shift) {
-            if (shift < 0) shift = (shift % 33) + 33; 
-            return str.replace(/[а-яА-ЯёЁ]/g, (c) => {
-                const code = c.charCodeAt(0);
-                const start = (code <= 1071) ? 1040 : 1072;
-                return String.fromCharCode(((code - start + shift) % 32) + start);
-            }).replace(/[a-zA-Z]/g, (c) => {
-                const code = c.charCodeAt(0);
-                const start = (code <= 90) ? 65 : 97;
-                return String.fromCharCode(((code - start + shift) % 26) + start);
-            });
+            const ruLower = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+            const ruUpper = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+            const enLower = "abcdefghijklmnopqrstuvwxyz";
+            const enUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            const shiftChar = (c, alphabet) => {
+                const idx = alphabet.indexOf(c);
+                if (idx === -1) return c;
+                let newIdx = (idx + shift) % alphabet.length;
+                if (newIdx < 0) newIdx += alphabet.length;
+                return alphabet[newIdx];
+            };
+
+            return str.split('').map(c => {
+                if (ruLower.includes(c)) return shiftChar(c, ruLower);
+                if (ruUpper.includes(c)) return shiftChar(c, ruUpper);
+                if (enLower.includes(c)) return shiftChar(c, enLower);
+                if (enUpper.includes(c)) return shiftChar(c, enUpper);
+                return c;
+            }).join('');
         }
 
         function atbash(str) {
@@ -320,13 +451,107 @@
             }).join('');
         }
 
-        function copyToClipboard() {
-            const t = document.getElementById('outputText');
-            t.select();
-            document.execCommand('copy');
-            const toast = document.getElementById('copyToast');
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 2000);
+        /* --- Логика конвертации систем счисления --- */
+        function swapSystems() {
+            const fromEl = document.getElementById('convFrom');
+            const toEl = document.getElementById('convTo');
+            const temp = fromEl.value;
+            fromEl.value = toEl.value;
+            toEl.value = temp;
+            runConvert();
+        }
+
+        function runConvert() {
+            const rawVal = document.getElementById('convInput').value.trim();
+            const from = document.getElementById('convFrom').value;
+            const to = document.getElementById('convTo').value;
+            const outputEl = document.getElementById('convOutput');
+
+            if (!rawVal) {
+                outputEl.value = '';
+                return;
+            }
+
+            try {
+                let bytes = [];
+
+                if (from === 'dec') {
+                    const tokens = rawVal.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => {
+                        const n = parseInt(t, 10);
+                        if (isNaN(n)) throw new Error('Некорректное десятичное число');
+                        return n;
+                    });
+                } else if (from === 'bin') {
+                    const tokens = rawVal.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => {
+                        if (!/^[01]+$/.test(t)) throw new Error('Некорректный двоичный код');
+                        return parseInt(t, 2);
+                    });
+                } else if (from === 'hex') {
+                    const cleanHex = rawVal.replace(/0x/g, '');
+                    const tokens = cleanHex.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => {
+                        if (!/^[0-9a-fA-F]+$/.test(t)) throw new Error('Некорректное 16-ричное число');
+                        return parseInt(t, 16);
+                    });
+                } else if (from === 'text') {
+                    const encoded = new TextEncoder().encode(rawVal);
+                    bytes = Array.from(encoded);
+                } else if (from === 'unicode') {
+                    const normalized = rawVal.replace(/U\+/gi, '').replace(/\\u/gi, '');
+                    const tokens = normalized.split(/\s+/).filter(Boolean);
+                    const codePoints = tokens.map(t => {
+                        const val = parseInt(t, 16);
+                        if (isNaN(val)) throw new Error('Некорректный код Unicode');
+                        return val;
+                    });
+                    const text = String.fromCodePoint(...codePoints);
+                    bytes = Array.from(new TextEncoder().encode(text));
+                }
+
+                let result = '';
+                if (to === 'dec') {
+                    result = bytes.join(' ');
+                } else if (to === 'bin') {
+                    result = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
+                } else if (to === 'hex') {
+                    result = bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+                } else if (to === 'text') {
+                    result = new TextDecoder().decode(new Uint8Array(bytes));
+                } else if (to === 'unicode') {
+                    const decodedText = new TextDecoder().decode(new Uint8Array(bytes));
+                    const codePoints = Array.from(decodedText).map(c => c.codePointAt(0));
+                    result = codePoints.map(cp => 'U+' + cp.toString(16).toUpperCase().padStart(4, '0')).join(' ');
+                }
+
+                outputEl.value = result;
+            } catch (err) {
+                outputEl.value = '!! Ошибка формата данных !!';
+            }
+        }
+
+        function copyToClipboard(targetId, toastId) {
+            const t = document.getElementById(targetId);
+            if (!t.value) return;
+
+            const showToast = () => {
+                const toast = document.getElementById(toastId);
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(t.value).then(showToast).catch(() => {
+                    t.select();
+                    document.execCommand('copy');
+                    showToast();
+                });
+            } else {
+                t.select();
+                document.execCommand('copy');
+                showToast();
+            }
         }
 
         window.onload = init;
