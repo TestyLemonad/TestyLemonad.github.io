@@ -165,6 +165,7 @@
                             <option value="dec">Десятичная (DEC)</option>
                             <option value="bin">Двоичная (BIN)</option>
                             <option value="hex">16-ричная (HEX)</option>
+                            <option value="roman">Римская (ROMAN)</option>
                             <option value="text">Текст</option>
                             <option value="unicode">Unicode (Коды U+XXXX)</option>
                         </select>
@@ -176,6 +177,7 @@
                             <option value="bin">Двоичная (BIN)</option>
                             <option value="dec">Десятичная (DEC)</option>
                             <option value="hex" selected>16-ричная (HEX)</option>
+                            <option value="roman">Римская (ROMAN)</option>
                             <option value="text">Текст</option>
                             <option value="unicode">Unicode (Коды U+XXXX)</option>
                         </select>
@@ -189,7 +191,7 @@
                     <label class="text-xs font-bold text-amber-400 uppercase tracking-widest">Результат</label>
                     <button onclick="copyToClipboard('convOutput', 'convCopyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         Копировать
                     </button>
@@ -451,6 +453,70 @@
             }).join('');
         }
 
+        function romanToDec(str) {
+            str = str.normalize('NFD').toUpperCase().trim();
+            if (!str) throw new Error('Пустая строка');
+
+            const baseMap = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+            const overlineRegex = /^[\u0305\u0304\u00af\u02c9]/;
+
+            const values = [];
+            let i = 0;
+            while (i < str.length) {
+                const char = str[i];
+                if (!baseMap[char]) {
+                    if (/\s/.test(char)) {
+                        i++;
+                        continue;
+                    }
+                    throw new Error('Некорректное римское число');
+                }
+                let val = baseMap[char];
+                i++;
+                while (i < str.length && overlineRegex.test(str[i])) {
+                    val *= 1000;
+                    i++;
+                }
+                values.push(val);
+            }
+
+            if (values.length === 0) throw new Error('Некорректное римское число');
+
+            let total = 0;
+            for (let j = 0; j < values.length; j++) {
+                const current = values[j];
+                const next = values[j + 1];
+                if (next && current < next) {
+                    total -= current;
+                } else {
+                    total += current;
+                }
+            }
+
+            if (total <= 0) throw new Error('Некорректное римское число');
+            return total;
+        }
+
+        function decToRoman(num) {
+            if (typeof num !== 'number' || isNaN(num) || num <= 0 || num > 3999999) throw new Error('Число вне диапазона');
+            const val = [
+                1000000, 900000, 500000, 400000, 100000, 90000, 50000, 40000, 10000, 9000, 5000, 4000,
+                1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1
+            ];
+            const syb = [
+                "M\u0305", "C\u0305M\u0305", "D\u0305", "C\u0305D\u0305", "C\u0305", "X\u0305C\u0305", "L\u0305", "X\u0305L\u0305", "X\u0305", "I\u0305X\u0305", "V\u0305", "I\u0305V\u0305",
+                "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"
+            ];
+            let roman = "";
+            for (let i = 0; i < val.length; i++) {
+                while (num >= val[i]) {
+                    roman += syb[i];
+                    num -= val[i];
+                }
+            }
+            return roman;
+        }
+
         /* --- Логика конвертации систем счисления --- */
         function swapSystems() {
             const fromEl = document.getElementById('convFrom');
@@ -495,6 +561,9 @@
                         if (!/^[0-9a-fA-F]+$/.test(t)) throw new Error('Некорректное 16-ричное число');
                         return parseInt(t, 16);
                     });
+                } else if (from === 'roman') {
+                    const tokens = rawVal.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => romanToDec(t));
                 } else if (from === 'text') {
                     const encoded = new TextEncoder().encode(rawVal);
                     bytes = Array.from(encoded);
@@ -517,6 +586,8 @@
                     result = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
                 } else if (to === 'hex') {
                     result = bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+                } else if (to === 'roman') {
+                    result = bytes.map(b => decToRoman(b)).join(' ');
                 } else if (to === 'text') {
                     result = new TextDecoder().decode(new Uint8Array(bytes));
                 } else if (to === 'unicode') {
