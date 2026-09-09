@@ -83,8 +83,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 4px;
-            height: 4px;
+            width: 0px;
+            height: 0px;
             background: var(--lemon-yellow);
             border-radius: 50%;
             pointer-events: none;
@@ -384,15 +384,11 @@
             dot.style.top = cursorY + 'px';
         });
 
-        function animateCursor() {
-            let currentX = parseFloat(cursor.style.left) || 0;
-            let currentY = parseFloat(cursor.style.top) || 0;
-            currentX += (cursorX - currentX) * 0.15;
-            currentY += (cursorY - currentY) * 0.15;
-            cursor.style.left = currentX + 'px';
-            cursor.style.top = currentY + 'px';
-            requestAnimationFrame(animateCursor);
-        }
+      function animateCursor() {
+        cursor.style.left = cursorX + "px";
+        cursor.style.top = cursorY + "px";
+        requestAnimationFrame(animateCursor);
+      }
         animateCursor();
 
         triggers.forEach(el => {
