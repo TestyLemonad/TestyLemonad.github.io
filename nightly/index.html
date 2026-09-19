@@ -44,6 +44,8 @@
             --deep-orange: #ff8c00;
             --dark-bg: #050200;
             --card-bg: rgba(20, 10, 5, 0.4);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -55,8 +57,7 @@
             }
         }
 
-        /* ВАЖНО: overflow-x: hidden только на body — как в исходнике.
-           Если продублировать на html, position: sticky у nav ломается. */
+        /* ВАЖНО: overflow-x: hidden только на body — иначе sticky-nav ломается. */
         body {
             font-family: 'Inter', sans-serif;
             background: var(--dark-bg);
@@ -74,84 +75,58 @@
             * { cursor: none !important; }
         }
 
-        /* ============ ФОН: CSS-блобы ============ */
-        .bg-scene {
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
             position: fixed;
             inset: 0;
             z-index: 0;
-            overflow: hidden;
-            background: #050200;
             pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            /* лёгкое свечение в центре, чтобы сетка не была «плоской» */
+            background-color: #050200;
         }
-
-        .bg-blob {
+        /* Растворение сетки к краям + мягкий центр */
+        .bg-grid::after {
+            content: "";
             position: absolute;
-            border-radius: 50%;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
             pointer-events: none;
-            will-change: transform;
+        }
+        /* Маска плавного исчезновения линий у краёв */
+        .bg-grid {
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
             transform: translate3d(0, 0, 0);
-            backface-visibility: hidden;
+            will-change: transform;
         }
-
-        .bg-blob--1 {
-            width: 72vmax;
-            height: 72vmax;
-            top: -30%;
-            left: -25%;
-            background: radial-gradient(circle at center,
-                rgba(255, 200, 0, 0.30) 0%,
-                rgba(255, 140, 0, 0.12) 35%,
-                transparent 65%);
-            animation: blob-a 28s ease-in-out infinite alternate;
-        }
-        .bg-blob--2 {
-            width: 58vmax;
-            height: 58vmax;
-            top: 15%;
-            right: -22%;
-            background: radial-gradient(circle at center,
-                rgba(255, 140, 0, 0.22) 0%,
-                rgba(255, 90, 0, 0.08) 40%,
-                transparent 70%);
-            animation: blob-b 34s ease-in-out infinite alternate;
-        }
-        .bg-blob--3 {
-            width: 62vmax;
-            height: 62vmax;
-            bottom: -25%;
-            left: 8%;
-            background: radial-gradient(circle at center,
-                rgba(255, 170, 0, 0.18) 0%,
-                rgba(200, 60, 0, 0.08) 45%,
-                transparent 70%);
-            animation: blob-c 40s ease-in-out infinite alternate;
-        }
-        .bg-blob--4 {
-            width: 42vmax;
-            height: 42vmax;
-            top: 38%;
-            left: 38%;
-            background: radial-gradient(circle at center,
-                rgba(255, 230, 100, 0.16) 0%,
-                transparent 65%);
-            animation: blob-d 24s ease-in-out infinite alternate;
-        }
-
-        @keyframes blob-a {
-            0%   { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(8vw, 6vh, 0) scale(1.15); }
-        }
-        @keyframes blob-b {
-            0%   { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(-10vw, -4vh, 0) scale(1.2); }
-        }
-        @keyframes blob-c {
-            0%   { transform: translate3d(0, 0, 0) scale(1.1); }
-            100% { transform: translate3d(6vw, -8vh, 0) scale(0.95); }
-        }
-        @keyframes blob-d {
-            0%   { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(-8vw, 10vh, 0) scale(1.25); }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
         }
 
         /* ============ Ripple ============ */
@@ -199,17 +174,17 @@
         .vignette {
             position: fixed;
             inset: 0;
-            z-index: 1;
+            z-index: 2;
             pointer-events: none;
-            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.9) 100%);
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
         }
 
         .noise::before {
             content: "";
             position: fixed;
             inset: 0;
-            opacity: 0.03;
-            z-index: 2;
+            opacity: 0.025;
+            z-index: 3;
             pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
@@ -307,10 +282,6 @@
     </style>
 </head>
 <body class="noise">
-    <!-- Баннер: синхронно, первым элементом в body — как в исходном варианте.
-         defer здесь сломает вставку баннера (используется document.write). -->
-    <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off"></script>
-
     <noscript>
         <div style="position:fixed;inset:0;background:#050200;color:#fff7ed;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;z-index:9999;">
             <div>
@@ -328,13 +299,9 @@
         <div class="cursor-inner"></div>
     </div>
 
-    <!-- CSS-фон -->
-    <div class="bg-scene" aria-hidden="true">
-        <div class="bg-blob bg-blob--1"></div>
-        <div class="bg-blob bg-blob--2"></div>
-        <div class="bg-blob bg-blob--3"></div>
-        <div class="bg-blob bg-blob--4"></div>
-    </div>
+    <!-- ФОН: сетка + пиксели -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
     <div class="vignette" aria-hidden="true"></div>
 
     <div class="scroll-progress" id="scroll-bar"></div>
@@ -440,7 +407,7 @@
                     <div class="project-item is-hidden border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="collab" data-type="placeholder">
                         <div class="flex flex-col items-center justify-center">
                             <div class="w-16 h-16 bg-orange-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" class="h-8 w-8 text-orange-400">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
@@ -466,6 +433,45 @@
     <script type="module">
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
+
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+
+                if (reduceMotion) {
+                    p.style.animation = 'none';
+                }
+
+                frag.appendChild(p);
+            }
+            container.appendChild(frag);
+        })();
 
         // ===== Ripple =====
         if (!reduceMotion) {
