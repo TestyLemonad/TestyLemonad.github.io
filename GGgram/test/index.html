@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root { 
-            /* Dark Theme (Default) */
             --bg: #0f1621; --panel: #17212b; --text: #f5f5f5; --accent: #5288c1; 
             --accent-hover: #6599d1; --error: #ff5f5f; --msg-in: #182533; --msg-out: #2b5278; 
             --input-bg: #242f3d; --border: #232e3c; --context-bg: #1c242f;
@@ -18,7 +17,6 @@
         }
 
         body.light-theme {
-            /* Light Theme */
             --bg: #f0f2f5; --panel: #ffffff; --text: #000000; --accent: #0088cc;
             --accent-hover: #0077b5; --msg-in: #ffffff; --msg-out: #effdde;
             --input-bg: #f4f4f5; --border: #dfe1e5; --context-bg: #ffffff;
@@ -71,7 +69,6 @@
         .eye-btn { position: absolute; right: 14px; background: none; border: none; padding: 0; color: var(--accent); opacity: 0.7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.2s; }
         .eye-btn:hover { opacity: 1; transform: scale(1.08); }
 
-        /* --- Auth tabs with sliding indicator --- */
         .auth-tabs {
             position: relative;
             display: flex;
@@ -98,7 +95,6 @@
         .tab { position: relative; z-index: 1; flex: 1; padding: 10px; cursor: pointer; border-radius: 11px; font-size: 13px; font-weight: 600; text-align: center; transition: color 0.25s ease; color: var(--text); }
         .tab.active { color: #fff; }
 
-        /* --- Auth form panel swap --- */
         .auth-panel {
             position: relative;
             overflow: hidden;
@@ -151,7 +147,6 @@
             to   { opacity: 1; transform: scale(1); }
         }
 
-        /* Whitespace preservation for messages - Reduced gaps */
         .message div, .message p { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; margin-top: 0; margin-bottom: 2px; }
         .message p:last-child { margin-bottom: 0; }
 
@@ -202,7 +197,6 @@
         .emoji-item { font-size: 20px; cursor: pointer; transition: transform 0.2s; }
         .emoji-item:hover { transform: scale(1.25); }
 
-        /* --- Loading overlay --- */
         #loading-overlay {
             position: fixed; inset: 0; z-index: 10000;
             background: rgba(0,0,0,0.55);
@@ -417,11 +411,14 @@
 
 <script>
     // ============================================================
-    // BOOT WATCHDOG — обычный скрипт, гарантированно исполняется,
-    // даже если module-скрипт упадёт на import (недоступен CDN).
+    // BOOT WATCHDOG
+    // Показывает оверлей, пока модуль грузится.
+    // Фатальный таймер срабатывает ТОЛЬКО если модуль вообще не стартовал
+    // (например, CDN Firebase заблокирован). После старта модуля
+    // watchdog не вмешивается в работу — там уже свои withTimeout.
     // ============================================================
     (function () {
-        window.__ggBootState = { firebaseReady: false, connected: false, fatal: false };
+        window.__ggBootState = { moduleStarted: false, firebaseReady: false, connected: false };
         const overlay = document.getElementById('loading-overlay');
         const textEl = document.getElementById('loading-text');
         const cancelBtn = document.getElementById('loading-cancel-btn');
@@ -433,30 +430,20 @@
         }
         function hide() { overlay.classList.add('hidden-overlay'); }
         function fatal(msg) {
-            window.__ggBootState.fatal = true;
-            show(msg + " Попробуйте открыть сайт через VPN — Firebase может быть заблокирован вашим провайдером.", true);
+            show(msg, true);
             cancelBtn.style.display = 'inline-block';
         }
 
-        // Сразу показываем плашку, пока модуль грузится
         show("Подключение к серверу…", false);
 
-        // Таймер 1: если через 6 секунд SDK не загрузился — предупреждаем
-        const warnT = setTimeout(() => {
-            if (window.__ggBootState.fatal || window.__ggBootState.connected) return;
-            if (!window.__ggBootState.firebaseReady) {
-                show("Не удаётся загрузить Firebase SDK. Возможно, CDN заблокирован.", true);
-            } else {
-                show("Соединение с сервером устанавливается дольше обычного…", true);
-            }
-        }, 6000);
-
-        // Таймер 2: если через 15 секунд соединение не установлено — фатально
+        // Единственный фатальный таймер: если module-скрипт вообще
+        // не начал исполняться за 15 секунд — значит CDN Firebase недоступен.
         const failT = setTimeout(() => {
-            if (window.__ggBootState.fatal || window.__ggBootState.connected) return;
-            fatal("Сервер Firebase недоступен.");
+            if (window.__ggBootState.moduleStarted) return;
+            fatal("Не удалось загрузить Firebase SDK. Возможно, CDN заблокирован. Попробуйте VPN.");
         }, 15000);
 
+        // Кнопка "Отменить" — просто скрывает оверлей и разблокирует кнопку.
         cancelBtn.style.display = 'none';
         cancelBtn.onclick = function () {
             hide();
@@ -465,33 +452,33 @@
         };
 
         window.__ggLoading = { show, hide, fatal };
-
-        // Если модуль-скрипт вообще не запустится (например, из-за import-ошибки),
-        // поймаем это через window.onerror ниже в module-блоке.
+        window.__ggBootFailTimer = failT;
     })();
 </script>
 
 <script type="module">
-    // Оборачиваем импорт в try/catch через динамический import(),
-    // чтобы при недоступности CDN мы могли показать понятную ошибку,
-    // а не вечный спиннер.
-    let initializeApp, getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, get, set, update, remove;
+    // ---------- Динамический импорт Firebase SDK ----------
+    let initializeApp, getDatabase, ref, push, onChildAdded, onChildChanged,
+        onChildRemoved, get, set, update, remove, onValue;
 
     try {
         const appMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
         const dbMod  = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
-        initializeApp = appMod.initializeApp;
-        getDatabase   = dbMod.getDatabase;
-        ref           = dbMod.ref;
-        push          = dbMod.push;
-        onChildAdded  = dbMod.onChildAdded;
-        onChildChanged= dbMod.onChildChanged;
-        onChildRemoved= dbMod.onChildRemoved;
-        get           = dbMod.get;
-        set           = dbMod.set;
-        update        = dbMod.update;
-        remove        = dbMod.remove;
+        initializeApp  = appMod.initializeApp;
+        getDatabase    = dbMod.getDatabase;
+        ref            = dbMod.ref;
+        push           = dbMod.push;
+        onChildAdded   = dbMod.onChildAdded;
+        onChildChanged = dbMod.onChildChanged;
+        onChildRemoved = dbMod.onChildRemoved;
+        get            = dbMod.get;
+        set            = dbMod.set;
+        update         = dbMod.update;
+        remove         = dbMod.remove;
+        onValue        = dbMod.onValue;   // <-- КЛЮЧЕВОЙ ИМПОРТ
         window.__ggBootState.firebaseReady = true;
+        window.__ggBootState.moduleStarted = true;
+        clearTimeout(window.__ggBootFailTimer);
     } catch (e) {
         window.__ggLoading.fatal("Не удалось загрузить Firebase SDK: " + e.message);
         throw e;
@@ -510,24 +497,30 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Проверка реального соединения с Realtime Database.
-    // Пока .info/connected === false — мы не считаем, что подключение установлено.
+    // ---------- Надёжное отслеживание соединения ----------
+    // onValue (а НЕ onChildAdded) — правильный способ слушать .info/connected.
     (function watchConnection() {
         try {
             const connectedRef = ref(db, '.info/connected');
-            onChildAdded(connectedRef, (snap) => {
-                if (snap.val() === true) {
+            onValue(connectedRef, (snap) => {
+                const val = snap.val();
+                if (val === true) {
                     window.__ggBootState.connected = true;
                     if (typeof window.__ggResolveConnection === 'function') {
-                        window.__ggResolveConnection();
+                        const r = window.__ggResolveConnection;
                         window.__ggResolveConnection = null;
+                        r();
                     }
-                    // Не скрываем оверлей здесь принудительно — этим управляют
-                    // конкретные операции (login / restore). Но флаг connected = true
-                    // не даст watchdog'у срабатывать.
+                } else {
+                    window.__ggBootState.connected = false;
                 }
+            }, (err) => {
+                // Если onValue по какой-то причине упал — не блокируем UI.
+                console.warn('connection watch error:', err);
             });
-        } catch (_) {}
+        } catch (e) {
+            console.warn('connection watch setup error:', e);
+        }
     })();
 
     let currentUser = localStorage.getItem('chat_user');
@@ -537,7 +530,7 @@
     let currentReply = null;
     let editingId = null;
 
-    // ---------- Loading overlay (делегируем в boot watchdog) ----------
+    // ---------- Loading overlay ----------
     const loadingText = document.getElementById('loading-text');
     const loadingOverlay = document.getElementById('loading-overlay');
     let loadingWarnTimer = null;
@@ -553,12 +546,13 @@
 
     function showLoading(text = "Подключение…", opts = {}) {
         const warnAfterMs = opts.warnAfterMs ?? 8000;
-        const fallbackMs = opts.fallbackMs ?? 15000;
+        const fallbackMs = opts.fallbackMs ?? 0; // 0 = не скрывать автоматически
         const token = ++loadingActiveToken;
 
         loadingText.innerText = text;
         loadingText.classList.remove('warn');
         loadingOverlay.classList.remove('hidden-overlay');
+        document.getElementById('loading-cancel-btn').style.display = 'inline-block';
 
         clearTimeout(loadingWarnTimer);
         clearTimeout(loadingFallbackTimer);
@@ -566,7 +560,7 @@
         if (warnAfterMs > 0) {
             loadingWarnTimer = setTimeout(() => {
                 if (token !== loadingActiveToken) return;
-                loadingText.innerText = "Подключение занимает больше времени, чем обычно. Проверьте интернет или отмените попытку.";
+                loadingText.innerText = "Подключение занимает больше времени, чем обычно. Проверьте интернет.";
                 loadingText.classList.add('warn');
             }, warnAfterMs);
         }
@@ -582,12 +576,8 @@
         clearTimeout(loadingFallbackTimer);
         loadingActiveToken++;
         loadingOverlay.classList.add('hidden-overlay');
+        document.getElementById('loading-cancel-btn').style.display = 'none';
     }
-    document.getElementById('loading-cancel-btn').onclick = () => {
-        hideLoading();
-        authBtn.disabled = false;
-        authBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
-    };
 
     // ---------- Helpers ----------
     function nickKey(nick) {
@@ -599,7 +589,7 @@
         if (key === excludeKey) return null;
         let snap;
         try {
-            snap = await withTimeout(get(ref(db, 'users')), 10000, 'findNickCollision');
+            snap = await withTimeout(get(ref(db, 'users')), 15000, 'findNickCollision');
         } catch (e) {
             return null;
         }
@@ -690,34 +680,24 @@
         return null;
     }
 
-    // Ожидание реального соединения перед сетевыми операциями.
-    // Если через 12с не подключились — реджектим с timeout.
-    async function waitForConnection(ms = 12000) {
-        if (window.__ggBootState.connected) return;
-        await withTimeout(new Promise((resolve) => {
-            window.__ggResolveConnection = resolve;
-        }), ms, 'connect');
-        if (!window.__ggBootState.connected) throw new Error('timeout:connect');
-    }
-
+    // ---------- Auth: вход / регистрация ----------
     authForm.onsubmit = async (e) => {
         e.preventDefault();
         const uRaw = document.getElementById('auth-user').value.trim();
         const p = document.getElementById('auth-pass').value.trim();
-        if(!uRaw || !p) return errorEl.innerText = "Заполните ник и пароль";
+        if (!uRaw || !p) return errorEl.innerText = "Заполните ник и пароль";
 
         const uKey = nickKey(uRaw);
 
-        if(isLoginMode) {
+        if (isLoginMode) {
             authBtn.disabled = true;
             authBtn.innerText = "Вход...";
-            showLoading("Подключение…", { warnAfterMs: 6000, fallbackMs: 20000 });
+            showLoading("Вход…", { warnAfterMs: 8000 });
             try {
-                await waitForConnection(12000);
-                const snap = await withTimeout(get(ref(db, 'users/' + uKey)), 12000, 'login');
-                if(snap.exists()) {
+                const snap = await withTimeout(get(ref(db, 'users/' + uKey)), 20000, 'login');
+                if (snap.exists()) {
                     const userData = snap.val();
-                    const salt = userData.salt || ''; 
+                    const salt = userData.salt || '';
                     const hp = await hashPass(p + salt);
                     if (userData.password === hp) {
                         const display = userData.displayName || uRaw;
@@ -734,7 +714,7 @@
             } catch (err) {
                 hideLoading();
                 if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет или используйте VPN.";
+                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет.";
                 } else {
                     errorEl.innerText = "Ошибка: " + err.message;
                 }
@@ -745,18 +725,16 @@
             const pc = document.getElementById('auth-pass-confirm').value.trim();
             const sc = document.getElementById('auth-secret').value.trim();
 
-            if(p !== pc) return errorEl.innerText = "Пароли не совпадают";
+            if (p !== pc) return errorEl.innerText = "Пароли не совпадают";
             const passErr = checkPassSecurity(p);
-            if(passErr) return errorEl.innerText = passErr;
-            if(!sc) return errorEl.innerText = "Введите секретный код";
+            if (passErr) return errorEl.innerText = passErr;
+            if (!sc) return errorEl.innerText = "Введите секретный код";
 
             authBtn.disabled = true;
             authBtn.innerText = "Проверка кода...";
-            showLoading("Подключение…", { warnAfterMs: 6000, fallbackMs: 25000 });
+            showLoading("Регистрация…", { warnAfterMs: 8000 });
 
             try {
-                await waitForConnection(12000);
-
                 const collision = await findNickCollision(uRaw, null);
                 if (collision) {
                     hideLoading();
@@ -766,7 +744,7 @@
                 }
 
                 const scHash = await hashPass(sc);
-                const scSnap = await withTimeout(get(ref(db, 'sc')), 12000, 'reg-sc');
+                const scSnap = await withTimeout(get(ref(db, 'sc')), 20000, 'reg-sc');
                 let foundRealName = null;
 
                 if (scSnap.exists()) {
@@ -786,10 +764,12 @@
                     return errorEl.innerText = "Неверный секретный код";
                 }
 
-                const salt = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+                const salt = typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : Math.random().toString(36).substring(2);
                 const hp = await hashPass(p + salt);
 
-                const dupCheck = await withTimeout(get(ref(db, 'users/' + uKey)), 10000, 'reg-dup');
+                const dupCheck = await withTimeout(get(ref(db, 'users/' + uKey)), 15000, 'reg-dup');
                 if (dupCheck.exists()) {
                     hideLoading();
                     authBtn.disabled = false;
@@ -797,14 +777,14 @@
                     return errorEl.innerText = "Ник занят";
                 }
 
-                await withTimeout(set(ref(db, 'users/' + uKey), { 
-                    password: hp, 
+                await withTimeout(set(ref(db, 'users/' + uKey), {
+                    password: hp,
                     salt: salt,
                     displayName: uRaw,
                     realName: foundRealName
-                }), 12000, 'reg-set');
+                }), 20000, 'reg-set');
 
-                await withTimeout(remove(ref(db, 'sc/' + foundRealName)), 10000, 'reg-sc-remove');
+                await withTimeout(remove(ref(db, 'sc/' + foundRealName)), 15000, 'reg-sc-remove');
 
                 hideLoading();
                 login(uRaw, uKey);
@@ -813,7 +793,7 @@
                 authBtn.disabled = false;
                 authBtn.innerText = "Создать аккаунт";
                 if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет или используйте VPN.";
+                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет.";
                 } else {
                     errorEl.innerText = "Ошибка: " + err.message;
                 }
@@ -830,17 +810,17 @@
         initChat();
     }
 
-    // Восстановление сессии: не запускаем сразу, ждём соединения.
+    // ---------- Восстановление сессии ----------
+    // Здесь НЕ ждём waitForConnection — get() сам дождётся соединения.
     if (currentUser) {
         const storedKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
         authBtn.disabled = true;
         authBtn.innerText = "Загрузка...";
-        showLoading("Восстановление сессии…", { warnAfterMs: 6000, fallbackMs: 20000 });
+        showLoading("Восстановление сессии…", { warnAfterMs: 8000 });
 
-        waitForConnection(12000)
-            .then(() => withTimeout(get(ref(db, 'users/' + storedKey)), 12000, 'restore'))
+        withTimeout(get(ref(db, 'users/' + storedKey)), 20000, 'restore')
             .then(snap => {
-                if(snap.exists()) {
+                if (snap.exists()) {
                     const display = snap.val().displayName || currentUser;
                     hideLoading();
                     login(display, storedKey);
@@ -858,7 +838,7 @@
                 authBtn.disabled = false;
                 authBtn.innerText = "Войти";
                 if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Сервер недоступен. Войдите заново или проверьте VPN.";
+                    errorEl.innerText = "Сервер недоступен. Войдите заново или проверьте интернет.";
                 }
             });
     }
@@ -878,12 +858,10 @@
         const newKey = nickKey(newNickRaw);
 
         btn.disabled = true;
-        showLoading("Смена ника…", { warnAfterMs: 6000, fallbackMs: 25000 });
+        showLoading("Смена ника…", { warnAfterMs: 8000 });
 
         try {
-            await waitForConnection(12000);
-
-            const snap = await withTimeout(get(ref(db, 'users/' + oldKey)), 12000, 'nick-get');
+            const snap = await withTimeout(get(ref(db, 'users/' + oldKey)), 20000, 'nick-get');
             if (!snap.exists()) {
                 hideLoading();
                 btn.disabled = false;
@@ -917,10 +895,10 @@
                 salt: oldSalt,
                 displayName: newNickRaw,
                 ...(realName ? { realName } : {})
-            }), 12000, 'nick-set');
-            await withTimeout(remove(ref(db, 'users/' + oldKey)), 10000, 'nick-remove');
+            }), 20000, 'nick-set');
+            await withTimeout(remove(ref(db, 'users/' + oldKey)), 15000, 'nick-remove');
 
-            const chatSnap = await withTimeout(get(ref(db, 'chat_messages')), 12000, 'nick-chat-get');
+            const chatSnap = await withTimeout(get(ref(db, 'chat_messages')), 20000, 'nick-chat-get');
             if (chatSnap.exists()) {
                 const updates = {};
                 const chatData = chatSnap.val();
@@ -945,7 +923,7 @@
                     }
                 }
                 if (Object.keys(updates).length) {
-                    await withTimeout(update(ref(db), updates), 15000, 'nick-chat-update');
+                    await withTimeout(update(ref(db), updates), 25000, 'nick-chat-update');
                 }
             }
 
@@ -984,15 +962,13 @@
         if (newP !== newPConf) return errEl.innerText = "Новые пароли не совпадают";
 
         const passErr = checkPassSecurity(newP);
-        if(passErr) return errEl.innerText = passErr;
+        if (passErr) return errEl.innerText = passErr;
 
         const uKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
         const userRef = ref(db, 'users/' + uKey);
-        showLoading("Смена пароля…", { warnAfterMs: 6000, fallbackMs: 20000 });
+        showLoading("Смена пароля…", { warnAfterMs: 8000 });
         try {
-            await waitForConnection(12000);
-
-            const snap = await withTimeout(get(userRef), 12000, 'pass-get');
+            const snap = await withTimeout(get(userRef), 20000, 'pass-get');
             if (snap.exists()) {
                 const userData = snap.val();
                 const oldSalt = userData.salt || '';
@@ -1003,10 +979,12 @@
                     return errEl.innerText = "Неверный старый пароль";
                 }
 
-                const newSalt = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+                const newSalt = typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : Math.random().toString(36).substring(2);
                 const newHash = await hashPass(newP + newSalt);
 
-                await withTimeout(update(userRef, { password: newHash, salt: newSalt }), 12000, 'pass-update');
+                await withTimeout(update(userRef, { password: newHash, salt: newSalt }), 20000, 'pass-update');
 
                 hideLoading();
                 errEl.style.color = "var(--read)";
@@ -1028,7 +1006,7 @@
         }
     };
 
-    // --- Chat Logic ---
+    // ---------- Chat ----------
     function initChat() {
         const chatRef = ref(db, 'chat_messages');
         onChildAdded(chatRef, (snap) => {
@@ -1039,7 +1017,7 @@
         onChildChanged(chatRef, (snap) => {
             allMessages[snap.key] = snap.val();
             const el = document.getElementById("msg-" + snap.key);
-            if(el) el.innerHTML = getMsgInner(snap.key, snap.val());
+            if (el) el.innerHTML = getMsgInner(snap.key, snap.val());
         });
         onChildRemoved(chatRef, (snap) => {
             delete allMessages[snap.key];
@@ -1083,10 +1061,10 @@
             ticks = `<div class="ticks ${isRead ? 'read' : ''}">${tickSvg}</div>`;
         }
         let reactsHtml = '<div class="reactions-bar">';
-        if(data.reactions) {
+        if (data.reactions) {
             Object.entries(data.reactions).forEach(([emoji, users]) => {
                 const count = Object.keys(users).length;
-                if(count > 0) reactsHtml += `<div class="reaction-chip ${users[currentUser]?'active':''}" onclick="event.stopPropagation(); window.toggleReaction('${id}', '${emoji}')">${emoji} ${count}</div>`;
+                if (count > 0) reactsHtml += `<div class="reaction-chip ${users[currentUser]?'active':''}" onclick="event.stopPropagation(); window.toggleReaction('${id}', '${emoji}')">${emoji} ${count}</div>`;
             });
         }
         reactsHtml += '</div>';
@@ -1164,20 +1142,20 @@
         document.getElementById('context-menu').style.display = 'none';
     };
 
-    window.copyMsg = (t) => { navigator.clipboard.writeText(t); document.getElementById('context-menu').style.display='none'; };
-    window.delMsg = (id) => { remove(ref(db, 'chat_messages/' + id)); document.getElementById('context-menu').style.display='none'; };
+    window.copyMsg = (t) => { navigator.clipboard.writeText(t); document.getElementById('context-menu').style.display = 'none'; };
+    window.delMsg = (id) => { remove(ref(db, 'chat_messages/' + id)); document.getElementById('context-menu').style.display = 'none'; };
     window.delLocal = (id) => {
         const h = JSON.parse(localStorage.getItem('hidden_msgs') || '[]');
         h.push(id); localStorage.setItem('hidden_msgs', JSON.stringify(h));
         document.getElementById("msg-" + id)?.remove();
-        document.getElementById('context-menu').style.display='none';
+        document.getElementById('context-menu').style.display = 'none';
     };
 
     window.replyTo = (id, u, t) => {
         editingId = null; currentReply = { id, user: u, text: (t || '').slice(0, 30) };
         document.getElementById('reply-bar').classList.remove('hidden');
         document.getElementById('reply-text').innerText = "Ответ на: " + u;
-        document.getElementById('context-menu').style.display='none';
+        document.getElementById('context-menu').style.display = 'none';
         document.getElementById('message-input').focus();
     };
 
@@ -1186,19 +1164,32 @@
         document.getElementById('reply-bar').classList.remove('hidden');
         document.getElementById('reply-text').innerText = "Редактирование...";
         document.getElementById('message-input').value = allMessages[id]?.text || "";
-        document.getElementById('context-menu').style.display='none';
+        document.getElementById('context-menu').style.display = 'none';
         document.getElementById('message-input').focus();
     };
 
-    window.cancelInputState = () => { currentReply = null; editingId = null; document.getElementById('message-input').value = ""; document.getElementById('reply-bar').classList.add('hidden'); };
+    window.cancelInputState = () => {
+        currentReply = null;
+        editingId = null;
+        document.getElementById('message-input').value = "";
+        document.getElementById('reply-bar').classList.add('hidden');
+    };
     document.getElementById('cancel-reply-btn').onclick = window.cancelInputState;
 
     const sendMessage = async () => {
         const inp = document.getElementById('message-input');
-        const v = inp.value.trim(); if(!v) return;
+        const v = inp.value.trim(); if (!v) return;
         try {
-            if (editingId) { await withTimeout(update(ref(db, 'chat_messages/' + editingId), { text: v, edited: true }), 10000, 'edit'); }
-            else { await withTimeout(push(ref(db, 'chat_messages'), { username: currentUser, text: v, time: Date.now(), replyTo: currentReply }), 10000, 'send'); }
+            if (editingId) {
+                await withTimeout(update(ref(db, 'chat_messages/' + editingId), { text: v, edited: true }), 10000, 'edit');
+            } else {
+                await withTimeout(push(ref(db, 'chat_messages'), {
+                    username: currentUser,
+                    text: v,
+                    time: Date.now(),
+                    replyTo: currentReply
+                }), 10000, 'send');
+            }
             window.cancelInputState();
         } catch (_) {}
     };
@@ -1257,8 +1248,11 @@
     document.getElementById('global-logout-btn').onclick = () => { localStorage.clear(); location.reload(); };
 
     window.onclick = (e) => {
-        if(e.target.id === 'settings-modal' || e.target.id === 'info-modal' || e.target.id === 'change-pass-modal' || e.target.id === 'change-nick-modal') e.target.style.display = 'none';
-        if(!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
+        if (e.target.id === 'settings-modal' || e.target.id === 'info-modal' ||
+            e.target.id === 'change-pass-modal' || e.target.id === 'change-nick-modal') {
+            e.target.style.display = 'none';
+        }
+        if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
     };
 </script>
 </body>
