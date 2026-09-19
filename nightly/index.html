@@ -57,7 +57,6 @@
             }
         }
 
-        /* ВАЖНО: overflow-x: hidden только на body — иначе sticky-nav ломается. */
         body {
             font-family: 'Inter', sans-serif;
             background: var(--dark-bg);
@@ -87,10 +86,9 @@
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: var(--grid-size) var(--grid-size);
             background-position: -1px -1px;
-            /* лёгкое свечение в центре, чтобы сетка не была «плоской» */
-            background-color: #050200;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
         }
-        /* Растворение сетки к краям + мягкий центр */
         .bg-grid::after {
             content: "";
             position: absolute;
@@ -99,11 +97,6 @@
                 radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
                 radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
             pointer-events: none;
-        }
-        /* Маска плавного исчезновения линий у краёв */
-        .bg-grid {
-            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
-            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
         }
 
         /* ============ ФОН: плавающие пиксели ============ */
@@ -574,6 +567,50 @@
         }
         window.addEventListener('scroll', updateScroll, { passive: true });
         updateScroll();
+    </script>
+
+    <script>
+        // ============================================================
+        // АНТИ-DEVTOOLS (косметика, не защита)
+        // ============================================================
+
+        // 1. Блокируем контекстное меню (правый клик мыши)
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // 2. Блокируем горячие клавиши вызова DevTools
+        document.addEventListener('keydown', (e) => {
+            // F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+            }
+            // Ctrl+Shift+I / Cmd+Option+I (Инспектировать)
+            // Ctrl+Shift+J / Cmd+Option+J (Консоль)
+            // Ctrl+Shift+C / Cmd+Option+C (Выбор элемента)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key)) {
+                e.preventDefault();
+            }
+            // Ctrl+U / Cmd+Option+U (Исходный код страницы)
+            if ((e.ctrlKey || e.metaKey) && ['U', 'u'].includes(e.key)) {
+                e.preventDefault();
+            }
+            // Ctrl+S (Сохранение страницы)
+            if ((e.ctrlKey || e.metaKey) && ['S', 's'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // 3. Защита через ловушку debugger
+        setInterval(() => {
+            const startTime = performance.now();
+            debugger;
+            const endTime = performance.now();
+
+            if (endTime - startTime > 100) {
+                if (document.body) {
+                    document.body.innerHTML = '<h1>Доступ к DevTools запрещён</h1>';
+                }
+            }
+        }, 1000);
     </script>
 </body>
 </html>
