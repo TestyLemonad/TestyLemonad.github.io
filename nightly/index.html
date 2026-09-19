@@ -26,7 +26,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off" defer></script>
 
     <script type="application/ld+json">
     {
@@ -56,8 +55,8 @@
             }
         }
 
-        html { overflow-x: hidden; }
-
+        /* ВАЖНО: overflow-x: hidden только на body — как в исходнике.
+           Если продублировать на html, position: sticky у nav ломается. */
         body {
             font-family: 'Inter', sans-serif;
             background: var(--dark-bg);
@@ -105,7 +104,6 @@
                 transparent 65%);
             animation: blob-a 28s ease-in-out infinite alternate;
         }
-
         .bg-blob--2 {
             width: 58vmax;
             height: 58vmax;
@@ -117,7 +115,6 @@
                 transparent 70%);
             animation: blob-b 34s ease-in-out infinite alternate;
         }
-
         .bg-blob--3 {
             width: 62vmax;
             height: 62vmax;
@@ -129,7 +126,6 @@
                 transparent 70%);
             animation: blob-c 40s ease-in-out infinite alternate;
         }
-
         .bg-blob--4 {
             width: 42vmax;
             height: 42vmax;
@@ -311,6 +307,10 @@
     </style>
 </head>
 <body class="noise">
+    <!-- Баннер: синхронно, первым элементом в body — как в исходном варианте.
+         defer здесь сломает вставку баннера (используется document.write). -->
+    <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off"></script>
+
     <noscript>
         <div style="position:fixed;inset:0;background:#050200;color:#fff7ed;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;z-index:9999;">
             <div>
@@ -539,8 +539,6 @@
             projectItems.forEach(item => {
                 const category = item.getAttribute('data-category');
                 const type     = item.getAttribute('data-type');
-                // "all" показывает только реальные проекты.
-                // Остальные фильтры — только свою категорию (в т.ч. заглушки).
                 const show = (filter === 'all')
                     ? type === 'real'
                     : category === filter;
