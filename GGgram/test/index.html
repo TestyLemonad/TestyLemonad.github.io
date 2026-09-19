@@ -1,9 +1,9 @@
-<!DOCTYPE html> / бабл на 81 строке /
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>GGgram бета</title>
+    <title>GGgram</title>
     <link rel="icon" type="image/png" href="icon.png">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -45,63 +45,140 @@
             -ms-user-select: text !important;
         }
 
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             color: var(--text); margin: 0; display: flex; flex-direction: column; 
             height: 100vh; height: 100dvh; background: var(--bg); overflow: hidden;
+            overflow-x: hidden;
         }
 
         #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-box { background: var(--panel); padding: 30px; border-radius: 28px; width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); text-align: center; }
+        .auth-box { background: var(--panel); padding: 30px; border-radius: 28px; width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); text-align: center; animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .auth-input-group { margin-bottom: 16px; text-align: left; }
         .auth-input-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; margin-left: 4px; color: var(--accent); text-transform: uppercase; }
         .auth-input-wrapper { position: relative; display: flex; align-items: center; }
         .auth-input-wrapper svg.input-icon { position: absolute; left: 14px; color: var(--accent); opacity: 0.7; }
 
-        .auth-field { width: 100%; background: var(--auth-input); border: 2px solid transparent; border-radius: 14px; padding: 12px 42px 12px 42px; color: var(--text); font-size: 15px; outline: none; }
+        .auth-field { width: 100%; background: var(--auth-input); border: 2px solid transparent; border-radius: 14px; padding: 12px 42px 12px 42px; color: var(--text); font-size: 15px; outline: none; transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease; }
         .auth-field.no-left-icon { padding-left: 14px; }
-        .auth-field:focus { border-color: var(--accent); background: var(--panel); }
+        .auth-field:focus { border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px var(--quote-bg); }
 
-        .eye-btn { position: absolute; right: 14px; background: none; border: none; padding: 0; color: var(--accent); opacity: 0.7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
-        .eye-btn:hover { opacity: 1; }
+        .eye-btn { position: absolute; right: 14px; background: none; border: none; padding: 0; color: var(--accent); opacity: 0.7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.2s; }
+        .eye-btn:hover { opacity: 1; transform: scale(1.08); }
 
-        .tab { flex: 1; padding: 10px; cursor: pointer; border-radius: 11px; font-size: 13px; font-weight: 600; text-align: center; }
+        /* --- Auth tabs with sliding indicator --- */
+        .auth-tabs {
+            position: relative;
+            display: flex;
+            background: var(--auth-input);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .auth-tabs .tab-indicator {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: var(--accent);
+            border-radius: 11px;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 0;
+        }
+        .auth-tabs.reg-active .tab-indicator {
+            transform: translateX(100%);
+        }
+        .tab { position: relative; z-index: 1; flex: 1; padding: 10px; cursor: pointer; border-radius: 11px; font-size: 13px; font-weight: 600; text-align: center; transition: color 0.25s ease; color: var(--text); }
+        .tab.active { color: #fff; }
+
+        /* --- Auth form panel swap --- */
+        .auth-panel {
+            position: relative;
+            overflow: hidden;
+            transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .auth-panel-inner {
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+        }
+        .auth-panel-inner.swap-left {
+            transform: translateX(-14px);
+            opacity: 0;
+        }
+        .auth-panel-inner.swap-right {
+            transform: translateX(14px);
+            opacity: 0;
+        }
 
         header { background: var(--panel); height: 56px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; }
-        .header-left, .header-right { display: flex; align-items: center; gap: 10px; }
+        .header-left, .header-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .header-right { overflow: hidden; }
 
         .search-container { display: none; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: var(--panel); padding: 0 15px; align-items: center; z-index: 10; }
-        .search-container.active { display: flex; }
+        .search-container.active { display: flex; animation: fadeIn 0.2s ease both; }
         #search-input { flex: 1; background: var(--input-bg); border: none; color: var(--text); padding: 8px 15px; border-radius: 10px; outline: none; }
 
-        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
+        #chat-container { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; min-width: 0; width: 100%; }
 
-        blockquote { margin: 5px 0; padding: 5px 12px; border-left: 3px solid var(--quote-bar); background: var(--quote-bg); border-radius: 4px; font-style: italic; cursor: pointer; }
+        blockquote { margin: 5px 0; padding: 5px 12px; border-left: 3px solid var(--quote-bar); background: var(--quote-bg); border-radius: 4px; font-style: italic; cursor: pointer; word-break: break-word; overflow-wrap: anywhere; transition: background-color 0.2s ease; }
+        blockquote:hover { background: var(--quote-bg); filter: brightness(1.15); }
 
-        .message { padding: 6px 12px; border-radius: 16px; background: var(--msg-in); align-self: flex-start; max-width: 85%; border: 1px solid var(--border); position: relative; word-wrap: break-word; }
+        .message { padding: 6px 12px; border-radius: 16px; background: var(--msg-in); align-self: flex-start; max-width: 85%; border: 1px solid var(--border); position: relative; word-wrap: break-word; overflow-wrap: anywhere; word-break: break-word; min-width: 0; animation: msgIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .message.my { background: var(--msg-out); align-self: flex-end; border: none; }
         .message.highlight-anim { animation: highlight-pulse 2s ease-out; }
         @keyframes highlight-pulse { 0% { outline: 2px solid var(--accent); } 100% { outline: 2px solid transparent; } }
 
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(6px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
         /* Whitespace preservation for messages - Reduced gaps */
-        .message div, .message p { white-space: pre-wrap; word-break: break-word; margin-top: 0; margin-bottom: 2px; }
+        .message div, .message p { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; margin-top: 0; margin-bottom: 2px; }
         .message p:last-child { margin-bottom: 0; }
 
         .reactions-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-        .reaction-chip { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; font-size: 11px; cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
+        .reaction-chip { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; font-size: 11px; cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease; }
+        .reaction-chip:hover { transform: scale(1.06); }
         .reaction-chip.active { border-color: var(--accent); background: var(--quote-bg); }
 
         .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; opacity: 0.6; margin-top: 2px; line-height: 1; }
-        .ticks { display: flex; align-items: center; }
+        .ticks { display: flex; align-items: center; color: currentColor; transition: color 0.3s ease; }
         .ticks.read { color: var(--read); }
+        .ticks svg { display: block; }
 
         .input-area { background: var(--panel); padding: 10px; border-top: 1px solid var(--border); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         .input-row { display: flex; gap: 10px; align-items: flex-end; }
-        #message-input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 22px; flex: 1; font-size: 15px; resize: none; outline: none; max-height: 150px; }
+        #message-input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 22px; flex: 1; font-size: 15px; resize: none; outline: none; max-height: 150px; min-width: 0; }
 
-        .btn-main { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; }
-        .icon-btn { background: none; border: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; }
+        .btn-main { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: background-color 0.2s ease, transform 0.12s ease, filter 0.2s ease; }
+        .btn-main:hover { background: var(--accent-hover); }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { opacity: 0.6; cursor: not-allowed; }
+        .icon-btn { background: none; border: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; transition: transform 0.15s ease, opacity 0.2s ease; }
+        .icon-btn:hover { opacity: 0.8; }
+        .icon-btn:active { transform: scale(0.9); }
         .hidden { display: none !important; }
+
+        #reply-bar { animation: fadeInUp 0.22s ease both; }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -110,19 +187,72 @@
         input:checked + .slider { background-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        #settings-modal, #info-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .modal-box { background: var(--panel); width: 100%; max-width: 320px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        #settings-modal, #info-modal, #change-pass-modal, #change-nick-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #settings-modal[style*="flex"], #info-modal[style*="flex"], #change-pass-modal[style*="flex"], #change-nick-modal[style*="flex"] { animation: fadeIn 0.2s ease both; }
+        .modal-box { background: var(--panel); width: 100%; max-width: 320px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; animation: popIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
 
-        #context-menu { position: fixed; background: var(--context-bg); border: 1px solid var(--border); border-radius: 20px; z-index: 3000; min-width: 220px; display: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .context-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        #context-menu { position: fixed; background: var(--context-bg); border: 1px solid var(--border); border-radius: 20px; z-index: 3000; min-width: 220px; max-width: calc(100vw - 20px); display: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #context-menu.active { animation: popIn 0.16s ease-out both; transform-origin: top left; }
+        .context-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background-color 0.15s ease; }
+        .context-item:hover { background: var(--quote-bg); }
         .context-item:last-child { border-bottom: none; }
 
         .emoji-picker { display: flex; justify-content: space-around; padding: 10px; background: rgba(0,0,0,0.05); border-bottom: 1px solid var(--border); }
         .emoji-item { font-size: 20px; cursor: pointer; transition: transform 0.2s; }
+        .emoji-item:hover { transform: scale(1.25); }
+
+        /* --- Loading overlay --- */
+        #loading-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px;
+            transition: opacity 0.35s ease;
+            padding: 20px;
+            text-align: center;
+        }
+        #loading-overlay.hidden-overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading-overlay .spinner {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-overlay .loading-text {
+            font-size: 13px; color: var(--text); opacity: 0.9;
+            text-align: center; max-width: 260px; line-height: 1.4;
+        }
+        #loading-overlay .loading-text.warn { color: var(--error); opacity: 1; }
+        #loading-overlay .loading-cancel {
+            margin-top: 4px;
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0.9;
+        }
+        #loading-overlay .loading-cancel:hover { opacity: 1; }
     </style>
 </head>
 <body class="dark-theme">
+
+<div id="loading-overlay" class="hidden-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Подключение…</div>
+    <button type="button" class="loading-cancel" id="loading-cancel-btn">Отменить</button>
+</div>
 
 <div id="auth-screen">
     <div class="auth-box">
@@ -130,24 +260,27 @@
             <h2 style="margin: 0;">GGgram</h2>
             <p style="opacity: 0.5; font-size: 12px;">Приватный мессенджер</p>
         </div>
-        <div style="display: flex; background: var(--auth-input); border-radius: 14px; padding: 4px; margin-bottom: 20px;">
-            <div class="tab" id="tab-login">Вход</div>
+        <div class="auth-tabs" id="auth-tabs">
+            <div class="tab-indicator"></div>
+            <div class="tab active" id="tab-login">Вход</div>
             <div class="tab" id="tab-reg">Регистрация</div>
         </div>
-        <div id="auth-form">
+        <div class="auth-panel" id="auth-panel">
+        <div class="auth-panel-inner" id="auth-panel-inner">
+        <form id="auth-form" autocomplete="on">
             <div class="auth-input-group">
-                <label>Логин</label>
+                <label for="auth-user">Логин</label>
                 <div class="auth-input-wrapper">
                     <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <input type="text" id="auth-user" class="auth-field" placeholder="Ваш оригинальнейший никнейм">
+                    <input type="text" id="auth-user" name="username" class="auth-field" placeholder="Ваш оригинальнейший никнейм" autocomplete="username" autocapitalize="off" spellcheck="false">
                 </div>
             </div>
             <div class="auth-input-group">
-                <label>Пароль</label>
+                <label for="auth-pass">Пароль</label>
                 <div class="auth-input-wrapper">
                     <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <input type="password" id="auth-pass" class="auth-field" placeholder="Пароль. Это должно быть просто!">
-                    <button class="eye-btn" onclick="togglePassVisibility('auth-pass', this)">
+                    <input type="password" id="auth-pass" name="password" class="auth-field" placeholder="Пароль. Это должно быть просто!" autocomplete="current-password">
+                    <button type="button" class="eye-btn" onclick="togglePassVisibility('auth-pass', this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
                 </div>
@@ -155,26 +288,28 @@
 
             <div id="reg-fields" class="hidden">
                 <div class="auth-input-group">
-                    <label>Повтор пароля</label>
+                    <label for="auth-pass-confirm">Повтор пароля</label>
                     <div class="auth-input-wrapper">
                         <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                        <input type="password" id="auth-pass-confirm" class="auth-field" placeholder="Опять?!">
-                        <button class="eye-btn" onclick="togglePassVisibility('auth-pass-confirm', this)">
+                        <input type="password" id="auth-pass-confirm" name="password_confirm" class="auth-field" placeholder="Опять?!" autocomplete="new-password">
+                        <button type="button" class="eye-btn" onclick="togglePassVisibility('auth-pass-confirm', this)">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                         </button>
                     </div>
                 </div>
                 <div class="auth-input-group">
-                    <label>Секретный код</label>
+                    <label for="auth-secret">Секретный код</label>
                     <div class="auth-input-wrapper">
                         <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                        <input type="text" id="auth-secret" class="auth-field" placeholder="Код для доступа">
+                        <input type="text" id="auth-secret" name="secret" class="auth-field" placeholder="Код для доступа" autocomplete="off" autocapitalize="off" spellcheck="false">
                     </div>
                 </div>
             </div>
 
-            <button id="auth-btn" class="btn-main" style="width:100%; height: 48px; margin-top: 10px;">Войти</button>
+            <button type="submit" id="auth-btn" class="btn-main" style="width:100%; height: 48px; margin-top: 10px;">Войти</button>
             <p id="auth-error" style="color:var(--error); font-size:12px; margin-top:10px; min-height: 15px;"></p>
+        </form>
+        </div>
         </div>
     </div>
 </div>
@@ -221,23 +356,12 @@
             </label>
         </div>
 
-        <!-- Change Password Section -->
-        <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 8px; border-bottom: none; margin-top: 10px;">
-            <span style="font-weight: 600; font-size: 13px;">Изменить пароль</span>
-            <div class="auth-input-wrapper">
-                <input type="password" id="settings-old-pass" class="auth-field no-left-icon" placeholder="Старый пароль">
-                <button class="eye-btn" onclick="togglePassVisibility('settings-old-pass', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-            </div>
-            <div class="auth-input-wrapper">
-                <input type="password" id="settings-new-pass" class="auth-field no-left-icon" placeholder="Новый пароль">
-                <button class="eye-btn" onclick="togglePassVisibility('settings-new-pass', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-            </div>
-            <div class="auth-input-wrapper">
-                <input type="password" id="settings-new-pass-confirm" class="auth-field no-left-icon" placeholder="Повторите новый пароль">
-                <button class="eye-btn" onclick="togglePassVisibility('settings-new-pass-confirm', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-            </div>
-            <button id="change-pass-btn" class="btn-main" style="padding: 10px;">Сохранить пароль</button>
-            <p id="change-pass-error" style="color:var(--error); font-size:12px; margin:0; text-align:center; min-height:15px;"></p>
+        <div class="settings-item" style="border:none; margin-top:10px;">
+            <button id="open-change-nick-btn" class="btn-main" style="width:100%;">Сменить ник</button>
+        </div>
+
+        <div class="settings-item" style="border:none; margin-top:5px;">
+            <button id="open-change-pass-btn" class="btn-main" style="width:100%;">Изменить пароль</button>
         </div>
 
         <div class="settings-item" style="border:none; margin-top:5px;">
@@ -246,12 +370,132 @@
         <button id="close-settings-btn" class="btn-main" style="width:100%; margin-top:10px; background:var(--border); color:var(--text)">Закрыть</button>
     </div>
 </div>
+
+<div id="change-nick-modal">
+    <div class="modal-box">
+        <h3 style="margin-top: 0;">Сменить ник</h3>
+        <form id="change-nick-form" autocomplete="off">
+            <div class="auth-input-wrapper" style="margin-bottom: 10px;">
+                <input type="text" id="settings-new-nick" name="new_nick" class="auth-field no-left-icon" placeholder="Новый ник" autocapitalize="off" spellcheck="false">
+            </div>
+            <div class="auth-input-wrapper" style="margin-bottom: 10px;">
+                <input type="password" id="settings-nick-pass" name="nick_password" class="auth-field no-left-icon" placeholder="Пароль" autocomplete="current-password">
+                <button type="button" class="eye-btn" onclick="togglePassVisibility('settings-nick-pass', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+            <button type="submit" id="change-nick-btn" class="btn-main" style="padding: 10px; width:100%;">Сохранить ник</button>
+            <p id="change-nick-error" style="color:var(--error); font-size:12px; margin:10px 0 0; text-align:center; min-height:15px;"></p>
+        </form>
+        <button id="close-change-nick-btn" class="btn-main" style="width:100%; margin-top:10px; background:var(--border); color:var(--text)">Закрыть</button>
+    </div>
+</div>
+
+<div id="change-pass-modal">
+    <div class="modal-box">
+        <h3 style="margin-top: 0;">Изменить пароль</h3>
+        <form id="change-pass-form" autocomplete="on">
+            <div class="auth-input-wrapper" style="margin-bottom: 10px;">
+                <input type="password" id="settings-old-pass" name="old_password" class="auth-field no-left-icon" placeholder="Старый пароль" autocomplete="current-password">
+                <button type="button" class="eye-btn" onclick="togglePassVisibility('settings-old-pass', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+            <div class="auth-input-wrapper" style="margin-bottom: 10px;">
+                <input type="password" id="settings-new-pass" name="new_password" class="auth-field no-left-icon" placeholder="Новый пароль" autocomplete="new-password">
+                <button type="button" class="eye-btn" onclick="togglePassVisibility('settings-new-pass', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+            <div class="auth-input-wrapper" style="margin-bottom: 10px;">
+                <input type="password" id="settings-new-pass-confirm" name="new_password_confirm" class="auth-field no-left-icon" placeholder="Повторите новый пароль" autocomplete="new-password">
+                <button type="button" class="eye-btn" onclick="togglePassVisibility('settings-new-pass-confirm', this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+            </div>
+            <button type="submit" id="change-pass-btn" class="btn-main" style="padding: 10px; width:100%;">Сохранить пароль</button>
+            <p id="change-pass-error" style="color:var(--error); font-size:12px; margin:10px 0 0; text-align:center; min-height:15px;"></p>
+        </form>
+        <button id="close-change-pass-btn" class="btn-main" style="width:100%; margin-top:10px; background:var(--border); color:var(--text)">Закрыть</button>
+    </div>
+</div>
+
 <div id="info-modal"><div class="modal-box"><h3 id="info-title">Информация</h3><div id="info-content" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div><button onclick="document.getElementById('info-modal').style.display='none'" class="btn-main" style="width:100%">Закрыть</button></div></div>
 <div id="context-menu"></div>
 
+<script>
+    // ============================================================
+    // BOOT WATCHDOG — обычный скрипт, гарантированно исполняется,
+    // даже если module-скрипт упадёт на import (недоступен CDN).
+    // ============================================================
+    (function () {
+        window.__ggBootState = { firebaseReady: false, connected: false, fatal: false };
+        const overlay = document.getElementById('loading-overlay');
+        const textEl = document.getElementById('loading-text');
+        const cancelBtn = document.getElementById('loading-cancel-btn');
+
+        function show(text, warn) {
+            textEl.innerText = text;
+            textEl.classList.toggle('warn', !!warn);
+            overlay.classList.remove('hidden-overlay');
+        }
+        function hide() { overlay.classList.add('hidden-overlay'); }
+        function fatal(msg) {
+            window.__ggBootState.fatal = true;
+            show(msg + " Попробуйте открыть сайт через VPN — Firebase может быть заблокирован вашим провайдером.", true);
+            cancelBtn.style.display = 'inline-block';
+        }
+
+        // Сразу показываем плашку, пока модуль грузится
+        show("Подключение к серверу…", false);
+
+        // Таймер 1: если через 6 секунд SDK не загрузился — предупреждаем
+        const warnT = setTimeout(() => {
+            if (window.__ggBootState.fatal || window.__ggBootState.connected) return;
+            if (!window.__ggBootState.firebaseReady) {
+                show("Не удаётся загрузить Firebase SDK. Возможно, CDN заблокирован.", true);
+            } else {
+                show("Соединение с сервером устанавливается дольше обычного…", true);
+            }
+        }, 6000);
+
+        // Таймер 2: если через 15 секунд соединение не установлено — фатально
+        const failT = setTimeout(() => {
+            if (window.__ggBootState.fatal || window.__ggBootState.connected) return;
+            fatal("Сервер Firebase недоступен.");
+        }, 15000);
+
+        cancelBtn.style.display = 'none';
+        cancelBtn.onclick = function () {
+            hide();
+            const b = document.getElementById('auth-btn');
+            if (b) { b.disabled = false; b.innerText = 'Войти'; }
+        };
+
+        window.__ggLoading = { show, hide, fatal };
+
+        // Если модуль-скрипт вообще не запустится (например, из-за import-ошибки),
+        // поймаем это через window.onerror ниже в module-блоке.
+    })();
+</script>
+
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    // Оборачиваем импорт в try/catch через динамический import(),
+    // чтобы при недоступности CDN мы могли показать понятную ошибку,
+    // а не вечный спиннер.
+    let initializeApp, getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, get, set, update, remove;
+
+    try {
+        const appMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+        const dbMod  = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+        initializeApp = appMod.initializeApp;
+        getDatabase   = dbMod.getDatabase;
+        ref           = dbMod.ref;
+        push          = dbMod.push;
+        onChildAdded  = dbMod.onChildAdded;
+        onChildChanged= dbMod.onChildChanged;
+        onChildRemoved= dbMod.onChildRemoved;
+        get           = dbMod.get;
+        set           = dbMod.set;
+        update        = dbMod.update;
+        remove        = dbMod.remove;
+        window.__ggBootState.firebaseReady = true;
+    } catch (e) {
+        window.__ggLoading.fatal("Не удалось загрузить Firebase SDK: " + e.message);
+        throw e;
+    }
 
     const firebaseConfig = {
         apiKey: "AIzaSyC0VcGrjDffZ3FCD7x9KSJ79ujeLFTbC-o",
@@ -266,12 +510,109 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // Проверка реального соединения с Realtime Database.
+    // Пока .info/connected === false — мы не считаем, что подключение установлено.
+    (function watchConnection() {
+        try {
+            const connectedRef = ref(db, '.info/connected');
+            onChildAdded(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    window.__ggBootState.connected = true;
+                    if (typeof window.__ggResolveConnection === 'function') {
+                        window.__ggResolveConnection();
+                        window.__ggResolveConnection = null;
+                    }
+                    // Не скрываем оверлей здесь принудительно — этим управляют
+                    // конкретные операции (login / restore). Но флаг connected = true
+                    // не даст watchdog'у срабатывать.
+                }
+            });
+        } catch (_) {}
+    })();
+
     let currentUser = localStorage.getItem('chat_user');
     let isLoginMode = true;
     const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
     let allMessages = {};
     let currentReply = null;
     let editingId = null;
+
+    // ---------- Loading overlay (делегируем в boot watchdog) ----------
+    const loadingText = document.getElementById('loading-text');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    let loadingWarnTimer = null;
+    let loadingFallbackTimer = null;
+    let loadingActiveToken = 0;
+
+    function withTimeout(promise, ms, label = 'network') {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout:' + label)), ms))
+        ]);
+    }
+
+    function showLoading(text = "Подключение…", opts = {}) {
+        const warnAfterMs = opts.warnAfterMs ?? 8000;
+        const fallbackMs = opts.fallbackMs ?? 15000;
+        const token = ++loadingActiveToken;
+
+        loadingText.innerText = text;
+        loadingText.classList.remove('warn');
+        loadingOverlay.classList.remove('hidden-overlay');
+
+        clearTimeout(loadingWarnTimer);
+        clearTimeout(loadingFallbackTimer);
+
+        if (warnAfterMs > 0) {
+            loadingWarnTimer = setTimeout(() => {
+                if (token !== loadingActiveToken) return;
+                loadingText.innerText = "Подключение занимает больше времени, чем обычно. Проверьте интернет или отмените попытку.";
+                loadingText.classList.add('warn');
+            }, warnAfterMs);
+        }
+        if (fallbackMs > 0) {
+            loadingFallbackTimer = setTimeout(() => {
+                if (token !== loadingActiveToken) return;
+                hideLoading();
+            }, fallbackMs);
+        }
+    }
+    function hideLoading() {
+        clearTimeout(loadingWarnTimer);
+        clearTimeout(loadingFallbackTimer);
+        loadingActiveToken++;
+        loadingOverlay.classList.add('hidden-overlay');
+    }
+    document.getElementById('loading-cancel-btn').onclick = () => {
+        hideLoading();
+        authBtn.disabled = false;
+        authBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
+    };
+
+    // ---------- Helpers ----------
+    function nickKey(nick) {
+        return (nick || '').trim().toLowerCase();
+    }
+
+    async function findNickCollision(nick, excludeKey) {
+        const key = nickKey(nick);
+        if (key === excludeKey) return null;
+        let snap;
+        try {
+            snap = await withTimeout(get(ref(db, 'users')), 10000, 'findNickCollision');
+        } catch (e) {
+            return null;
+        }
+        if (!snap.exists()) return null;
+        const all = snap.val();
+        for (const [k, v] of Object.entries(all)) {
+            if (k === excludeKey) continue;
+            const dn = (v && v.displayName) ? String(v.displayName) : '';
+            if (nickKey(dn) === key) return k;
+            if (nickKey(k) === key) return k;
+        }
+        return null;
+    }
 
     // --- Theme Logic ---
     const themeToggle = document.getElementById('theme-toggle');
@@ -295,20 +636,32 @@
 
     marked.setOptions({ breaks: true, gfm: true });
 
+    const authForm = document.getElementById('auth-form');
     const authBtn = document.getElementById('auth-btn');
     const errorEl = document.getElementById('auth-error');
 
+    const authTabs = document.getElementById('auth-tabs');
+    const authPanel = document.getElementById('auth-panel');
+    const authPanelInner = document.getElementById('auth-panel-inner');
+
     function updateTabUI() {
         const isLogin = isLoginMode;
-        document.getElementById('tab-login').style.cssText = isLogin ? 'background:var(--accent); color:white' : '';
-        document.getElementById('tab-reg').style.cssText = !isLogin ? 'background:var(--accent); color:white' : '';
-        document.getElementById('reg-fields').classList.toggle('hidden', isLogin);
-        authBtn.innerText = isLogin ? "Войти" : "Создать аккаунт";
-        errorEl.innerText = "";
+        document.getElementById('tab-login').classList.toggle('active', isLogin);
+        document.getElementById('tab-reg').classList.toggle('active', !isLogin);
+        authTabs.classList.toggle('reg-active', !isLogin);
+
+        authPanelInner.classList.add(isLogin ? 'swap-right' : 'swap-left');
+        setTimeout(() => {
+            document.getElementById('reg-fields').classList.toggle('hidden', isLogin);
+            authBtn.innerText = isLogin ? "Войти" : "Создать аккаунт";
+            document.getElementById('auth-pass').setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+            authPanelInner.classList.remove('swap-right', 'swap-left');
+            errorEl.innerText = "";
+        }, 200);
     }
 
-    document.getElementById('tab-login').onclick = () => { isLoginMode = true; updateTabUI(); };
-    document.getElementById('tab-reg').onclick = () => { isLoginMode = false; updateTabUI(); };
+    document.getElementById('tab-login').onclick = () => { if (isLoginMode) return; isLoginMode = true; updateTabUI(); };
+    document.getElementById('tab-reg').onclick = () => { if (!isLoginMode) return; isLoginMode = false; updateTabUI(); };
     updateTabUI();
 
     window.togglePassVisibility = (id, btn) => {
@@ -337,32 +690,54 @@
         return null;
     }
 
-    authBtn.onclick = async () => {
-        const u = document.getElementById('auth-user').value.trim().toLowerCase();
-        const p = document.getElementById('auth-pass').value.trim();
-        if(!u || !p) return errorEl.innerText = "Заполните ник и пароль";
+    // Ожидание реального соединения перед сетевыми операциями.
+    // Если через 12с не подключились — реджектим с timeout.
+    async function waitForConnection(ms = 12000) {
+        if (window.__ggBootState.connected) return;
+        await withTimeout(new Promise((resolve) => {
+            window.__ggResolveConnection = resolve;
+        }), ms, 'connect');
+        if (!window.__ggBootState.connected) throw new Error('timeout:connect');
+    }
 
-        const userRef = ref(db, 'users/' + u);
+    authForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const uRaw = document.getElementById('auth-user').value.trim();
+        const p = document.getElementById('auth-pass').value.trim();
+        if(!uRaw || !p) return errorEl.innerText = "Заполните ник и пароль";
+
+        const uKey = nickKey(uRaw);
 
         if(isLoginMode) {
             authBtn.disabled = true;
             authBtn.innerText = "Вход...";
+            showLoading("Подключение…", { warnAfterMs: 6000, fallbackMs: 20000 });
             try {
-                const snap = await get(userRef);
+                await waitForConnection(12000);
+                const snap = await withTimeout(get(ref(db, 'users/' + uKey)), 12000, 'login');
                 if(snap.exists()) {
                     const userData = snap.val();
                     const salt = userData.salt || ''; 
                     const hp = await hashPass(p + salt);
                     if (userData.password === hp) {
-                        login(u);
+                        const display = userData.displayName || uRaw;
+                        hideLoading();
+                        login(display, uKey);
                     } else {
+                        hideLoading();
                         errorEl.innerText = "Неверный ник или пароль";
                     }
                 } else {
+                    hideLoading();
                     errorEl.innerText = "Неверный ник или пароль";
                 }
             } catch (err) {
-                errorEl.innerText = "Ошибка: " + err.message;
+                hideLoading();
+                if (String(err.message || '').startsWith('timeout:')) {
+                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет или используйте VPN.";
+                } else {
+                    errorEl.innerText = "Ошибка: " + err.message;
+                }
             }
             authBtn.disabled = false;
             authBtn.innerText = "Войти";
@@ -377,17 +752,21 @@
 
             authBtn.disabled = true;
             authBtn.innerText = "Проверка кода...";
+            showLoading("Подключение…", { warnAfterMs: 6000, fallbackMs: 25000 });
 
             try {
-                const snap = await get(userRef);
-                if(snap.exists()) {
+                await waitForConnection(12000);
+
+                const collision = await findNickCollision(uRaw, null);
+                if (collision) {
+                    hideLoading();
                     authBtn.disabled = false;
                     authBtn.innerText = "Создать аккаунт";
                     return errorEl.innerText = "Ник занят";
                 }
 
                 const scHash = await hashPass(sc);
-                const scSnap = await get(ref(db, 'sc'));
+                const scSnap = await withTimeout(get(ref(db, 'sc')), 12000, 'reg-sc');
                 let foundRealName = null;
 
                 if (scSnap.exists()) {
@@ -401,6 +780,7 @@
                 }
 
                 if (!foundRealName) {
+                    hideLoading();
                     authBtn.disabled = false;
                     authBtn.innerText = "Создать аккаунт";
                     return errorEl.innerText = "Неверный секретный код";
@@ -409,49 +789,191 @@
                 const salt = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2);
                 const hp = await hashPass(p + salt);
 
-                await set(userRef, { 
+                const dupCheck = await withTimeout(get(ref(db, 'users/' + uKey)), 10000, 'reg-dup');
+                if (dupCheck.exists()) {
+                    hideLoading();
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Создать аккаунт";
+                    return errorEl.innerText = "Ник занят";
+                }
+
+                await withTimeout(set(ref(db, 'users/' + uKey), { 
                     password: hp, 
                     salt: salt,
+                    displayName: uRaw,
                     realName: foundRealName
-                });
+                }), 12000, 'reg-set');
 
-                await remove(ref(db, 'sc/' + foundRealName));
+                await withTimeout(remove(ref(db, 'sc/' + foundRealName)), 10000, 'reg-sc-remove');
 
-                login(u);
+                hideLoading();
+                login(uRaw, uKey);
             } catch (err) {
+                hideLoading();
                 authBtn.disabled = false;
                 authBtn.innerText = "Создать аккаунт";
-                errorEl.innerText = "Ошибка: " + err.message;
+                if (String(err.message || '').startsWith('timeout:')) {
+                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет или используйте VPN.";
+                } else {
+                    errorEl.innerText = "Ошибка: " + err.message;
+                }
             }
         }
     };
 
-    function login(u) {
-        currentUser = u;
-        localStorage.setItem('chat_user', u);
+    function login(displayName, uKey) {
+        currentUser = displayName;
+        localStorage.setItem('chat_user', displayName);
+        if (uKey) localStorage.setItem('chat_user_key', uKey);
         document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('user-display').innerText = "@" + u;
+        document.getElementById('user-display').innerText = "@" + displayName;
         initChat();
     }
 
-    if(currentUser) {
+    // Восстановление сессии: не запускаем сразу, ждём соединения.
+    if (currentUser) {
+        const storedKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
         authBtn.disabled = true;
         authBtn.innerText = "Загрузка...";
-        get(ref(db, 'users/' + currentUser)).then(snap => {
-            if(snap.exists()) {
-                login(currentUser);
-            } else {
-                localStorage.removeItem('chat_user');
-                currentUser = null;
+        showLoading("Восстановление сессии…", { warnAfterMs: 6000, fallbackMs: 20000 });
+
+        waitForConnection(12000)
+            .then(() => withTimeout(get(ref(db, 'users/' + storedKey)), 12000, 'restore'))
+            .then(snap => {
+                if(snap.exists()) {
+                    const display = snap.val().displayName || currentUser;
+                    hideLoading();
+                    login(display, storedKey);
+                } else {
+                    localStorage.removeItem('chat_user');
+                    localStorage.removeItem('chat_user_key');
+                    currentUser = null;
+                    hideLoading();
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Войти";
+                }
+            })
+            .catch((err) => {
+                hideLoading();
                 authBtn.disabled = false;
                 authBtn.innerText = "Войти";
-            }
-        }).catch(() => {
-            login(currentUser); 
-        });
+                if (String(err.message || '').startsWith('timeout:')) {
+                    errorEl.innerText = "Сервер недоступен. Войдите заново или проверьте VPN.";
+                }
+            });
     }
 
-    document.getElementById('change-pass-btn').onclick = async () => {
+    // ---------- Change nick ----------
+    document.getElementById('change-nick-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const newNickRaw = document.getElementById('settings-new-nick').value.trim();
+        const pass = document.getElementById('settings-nick-pass').value.trim();
+        const errEl = document.getElementById('change-nick-error');
+        const btn = document.getElementById('change-nick-btn');
+        errEl.style.color = "var(--error)";
+
+        if (!newNickRaw || !pass) return errEl.innerText = "Заполните все поля";
+
+        const oldKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
+        const newKey = nickKey(newNickRaw);
+
+        btn.disabled = true;
+        showLoading("Смена ника…", { warnAfterMs: 6000, fallbackMs: 25000 });
+
+        try {
+            await waitForConnection(12000);
+
+            const snap = await withTimeout(get(ref(db, 'users/' + oldKey)), 12000, 'nick-get');
+            if (!snap.exists()) {
+                hideLoading();
+                btn.disabled = false;
+                return errEl.innerText = "Аккаунт не найден";
+            }
+            const userData = snap.val();
+            const salt = userData.salt || '';
+            const hp = await hashPass(pass + salt);
+            if (hp !== userData.password) {
+                hideLoading();
+                btn.disabled = false;
+                return errEl.innerText = "Неверный пароль";
+            }
+
+            if (newKey === oldKey) {
+                hideLoading();
+                btn.disabled = false;
+                return errEl.innerText = "Это ваш текущий ник";
+            }
+
+            const collision = await findNickCollision(newNickRaw, oldKey);
+            if (collision) {
+                hideLoading();
+                btn.disabled = false;
+                return errEl.innerText = "Ник занят";
+            }
+
+            const { password, salt: oldSalt, realName } = userData;
+            await withTimeout(set(ref(db, 'users/' + newKey), {
+                password,
+                salt: oldSalt,
+                displayName: newNickRaw,
+                ...(realName ? { realName } : {})
+            }), 12000, 'nick-set');
+            await withTimeout(remove(ref(db, 'users/' + oldKey)), 10000, 'nick-remove');
+
+            const chatSnap = await withTimeout(get(ref(db, 'chat_messages')), 12000, 'nick-chat-get');
+            if (chatSnap.exists()) {
+                const updates = {};
+                const chatData = chatSnap.val();
+                for (const [mid, m] of Object.entries(chatData)) {
+                    if (m.username === currentUser) {
+                        updates[`chat_messages/${mid}/username`] = newNickRaw;
+                    }
+                    if (m.replyTo && m.replyTo.user === currentUser) {
+                        updates[`chat_messages/${mid}/replyTo/user`] = newNickRaw;
+                    }
+                    if (m.readBy && m.readBy[currentUser] !== undefined) {
+                        updates[`chat_messages/${mid}/readBy/${newNickRaw}`] = m.readBy[currentUser];
+                        updates[`chat_messages/${mid}/readBy/${currentUser}`] = null;
+                    }
+                    if (m.reactions) {
+                        for (const [emoji, users] of Object.entries(m.reactions)) {
+                            if (users && users[currentUser] !== undefined) {
+                                updates[`chat_messages/${mid}/reactions/${emoji}/${newNickRaw}`] = users[currentUser];
+                                updates[`chat_messages/${mid}/reactions/${emoji}/${currentUser}`] = null;
+                            }
+                        }
+                    }
+                }
+                if (Object.keys(updates).length) {
+                    await withTimeout(update(ref(db), updates), 15000, 'nick-chat-update');
+                }
+            }
+
+            currentUser = newNickRaw;
+            localStorage.setItem('chat_user', newNickRaw);
+            localStorage.setItem('chat_user_key', newKey);
+            document.getElementById('user-display').innerText = "@" + newNickRaw;
+
+            hideLoading();
+            errEl.style.color = "var(--read)";
+            errEl.innerText = "Ник успешно изменен";
+            document.getElementById('settings-new-nick').value = '';
+            document.getElementById('settings-nick-pass').value = '';
+            btn.disabled = false;
+        } catch (err) {
+            hideLoading();
+            btn.disabled = false;
+            if (String(err.message || '').startsWith('timeout:')) {
+                errEl.innerText = "Не удалось подключиться к серверу.";
+            } else {
+                errEl.innerText = "Ошибка: " + err.message;
+            }
+        }
+    };
+
+    // ---------- Change password ----------
+    document.getElementById('change-pass-form').onsubmit = async (e) => {
+        e.preventDefault();
         const oldP = document.getElementById('settings-old-pass').value.trim();
         const newP = document.getElementById('settings-new-pass').value.trim();
         const newPConf = document.getElementById('settings-new-pass-confirm').value.trim();
@@ -464,31 +986,45 @@
         const passErr = checkPassSecurity(newP);
         if(passErr) return errEl.innerText = passErr;
 
-        const userRef = ref(db, 'users/' + currentUser);
+        const uKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
+        const userRef = ref(db, 'users/' + uKey);
+        showLoading("Смена пароля…", { warnAfterMs: 6000, fallbackMs: 20000 });
         try {
-            const snap = await get(userRef);
+            await waitForConnection(12000);
+
+            const snap = await withTimeout(get(userRef), 12000, 'pass-get');
             if (snap.exists()) {
                 const userData = snap.val();
                 const oldSalt = userData.salt || '';
                 const oldHash = await hashPass(oldP + oldSalt);
 
                 if (userData.password !== oldHash) {
+                    hideLoading();
                     return errEl.innerText = "Неверный старый пароль";
                 }
 
                 const newSalt = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2);
                 const newHash = await hashPass(newP + newSalt);
 
-                await update(userRef, { password: newHash, salt: newSalt });
+                await withTimeout(update(userRef, { password: newHash, salt: newSalt }), 12000, 'pass-update');
 
+                hideLoading();
                 errEl.style.color = "var(--read)";
                 errEl.innerText = "Пароль успешно изменен";
                 document.getElementById('settings-old-pass').value = '';
                 document.getElementById('settings-new-pass').value = '';
                 document.getElementById('settings-new-pass-confirm').value = '';
+            } else {
+                hideLoading();
+                errEl.innerText = "Аккаунт не найден";
             }
         } catch (e) {
-            errEl.innerText = "Ошибка смены пароля";
+            hideLoading();
+            if (String(e.message || '').startsWith('timeout:')) {
+                errEl.innerText = "Не удалось подключиться к серверу.";
+            } else {
+                errEl.innerText = "Ошибка смены пароля";
+            }
         }
     };
 
@@ -513,7 +1049,9 @@
 
     async function markAsRead(id, data) {
         if (data.username !== currentUser && (!data.readBy || !data.readBy[currentUser])) {
-            await set(ref(db, `chat_messages/${id}/readBy/${currentUser}`), Date.now());
+            try {
+                await withTimeout(set(ref(db, `chat_messages/${id}/readBy/${currentUser}`), Date.now()), 10000, 'read');
+            } catch (_) {}
         }
     }
 
@@ -539,7 +1077,10 @@
         let ticks = '';
         if (data.username === currentUser) {
             const isRead = data.readBy && Object.keys(data.readBy).some(u => u !== currentUser);
-            ticks = `<div class="ticks ${isRead ? 'read' : ''}">${isRead ? '✓✓' : '✓'}</div>`;
+            const tickSvg = isRead
+                ? '<svg width="14" height="10" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,6 5,10 12,2"></polyline><polyline points="7,6 11,10 18,2"></polyline></svg>'
+                : '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,6 5,10 11,2"></polyline></svg>';
+            ticks = `<div class="ticks ${isRead ? 'read' : ''}">${tickSvg}</div>`;
         }
         let reactsHtml = '<div class="reactions-bar">';
         if(data.reactions) {
@@ -563,12 +1104,35 @@
 
     function showContext(e, id, data) {
         const menu = document.getElementById('context-menu');
-        menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 230) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 250) + 'px';
         const isMy = data.username === currentUser;
         let ems = `<div class="emoji-picker">` + EMOJIS.map(em => `<span class="emoji-item" onclick="window.toggleReaction('${id}','${em}')">${em}</span>`).join('') + `</div>`;
         menu.innerHTML = `${ems}<div class="context-item" id="ctx-copy">📋 Копировать</div><div class="context-item" id="ctx-reply">↩️ Ответить</div>${isMy ? `<div class="context-item" id="ctx-edit">✏️ Изменить</div><div class="context-item" id="ctx-readers">👀 Кто прочитал</div>` : ''}<div class="context-item" style="color:var(--error)" id="ctx-hide">🗑️ Скрыть</div>${isMy ? `<div class="context-item" style="color:var(--error)" id="ctx-del">🗑️ Удалить у всех</div>` : ''}`;
+
+        menu.style.visibility = 'hidden';
+        menu.style.display = 'block';
+        menu.classList.remove('active');
+
+        const rect = menu.getBoundingClientRect();
+        const mw = rect.width;
+        const mh = rect.height;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const margin = 10;
+
+        let x = e.clientX;
+        let y = e.clientY;
+
+        if (x + mw + margin > vw) x = vw - mw - margin;
+        if (x < margin) x = margin;
+        if (y + mh + margin > vh) y = y - mh;
+        if (y < margin) y = margin;
+        if (y + mh + margin > vh) y = vh - mh - margin;
+
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.style.visibility = 'visible';
+        menu.classList.add('active');
+
         document.getElementById('ctx-copy').onclick = () => { window.copyMsg(data.text); };
         document.getElementById('ctx-reply').onclick = () => { window.replyTo(id, data.username, data.text); };
         if (isMy) {
@@ -592,8 +1156,11 @@
 
     window.toggleReaction = async (msgId, emoji) => {
         const reactRef = ref(db, `chat_messages/${msgId}/reactions/${emoji}/${currentUser}`);
-        const snap = await get(reactRef);
-        snap.exists() ? await remove(reactRef) : await set(reactRef, true);
+        try {
+            const snap = await withTimeout(get(reactRef), 8000, 'react-get');
+            if (snap.exists()) await withTimeout(remove(reactRef), 8000, 'react-remove');
+            else await withTimeout(set(reactRef, true), 8000, 'react-set');
+        } catch (_) {}
         document.getElementById('context-menu').style.display = 'none';
     };
 
@@ -629,27 +1196,24 @@
     const sendMessage = async () => {
         const inp = document.getElementById('message-input');
         const v = inp.value.trim(); if(!v) return;
-        if (editingId) { await update(ref(db, 'chat_messages/' + editingId), { text: v, edited: true }); }
-        else { await push(ref(db, 'chat_messages'), { username: currentUser, text: v, time: Date.now(), replyTo: currentReply }); }
-        window.cancelInputState();
+        try {
+            if (editingId) { await withTimeout(update(ref(db, 'chat_messages/' + editingId), { text: v, edited: true }), 10000, 'edit'); }
+            else { await withTimeout(push(ref(db, 'chat_messages'), { username: currentUser, text: v, time: Date.now(), replyTo: currentReply }), 10000, 'send'); }
+            window.cancelInputState();
+        } catch (_) {}
     };
 
     document.getElementById('send-btn').onclick = sendMessage;
 
-    // Keyboard handling
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     document.getElementById('message-input').onkeydown = (e) => {
         if (e.key === 'Enter') {
             if (isMobile) {
-                // On mobile, Enter just adds a new line (default behavior)
                 return;
             } else {
-                // On Desktop
                 if (e.shiftKey) {
-                    // Shift + Enter = new line (default)
                     return;
                 } else {
-                    // Enter = send
                     e.preventDefault();
                     sendMessage();
                 }
@@ -674,11 +1238,26 @@
 
     document.getElementById('open-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
     document.getElementById('close-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'none';
+
+    document.getElementById('open-change-nick-btn').onclick = () => {
+        document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('change-nick-error').innerText = '';
+        document.getElementById('change-nick-modal').style.display = 'flex';
+    };
+    document.getElementById('close-change-nick-btn').onclick = () => document.getElementById('change-nick-modal').style.display = 'none';
+
+    document.getElementById('open-change-pass-btn').onclick = () => {
+        document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('change-pass-error').innerText = '';
+        document.getElementById('change-pass-modal').style.display = 'flex';
+    };
+    document.getElementById('close-change-pass-btn').onclick = () => document.getElementById('change-pass-modal').style.display = 'none';
+
     document.getElementById('clear-cache-btn').onclick = () => { localStorage.removeItem('hidden_msgs'); location.reload(); };
     document.getElementById('global-logout-btn').onclick = () => { localStorage.clear(); location.reload(); };
 
     window.onclick = (e) => {
-        if(e.target.id === 'settings-modal' || e.target.id === 'info-modal') e.target.style.display = 'none';
+        if(e.target.id === 'settings-modal' || e.target.id === 'info-modal' || e.target.id === 'change-pass-modal' || e.target.id === 'change-nick-modal') e.target.style.display = 'none';
         if(!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
     };
 </script>
