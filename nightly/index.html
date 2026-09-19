@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="KRZ90IgwnHZJ0NoI5obiDu0KmztDm6h4dwAbTx5t9Ww">
+    <meta name="theme-color" content="#050200">
+
+    <link rel="canonical" href="https://testylemonad.github.io/">
+    <title>TestyLemonad</title>
+    <link rel="icon" type="image/png" href="TestyLemonad.png">
+
+    <meta name="description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon. Создаю веб-приколюхи и хардвейр проекты. А это мой официальный сайт!">
+    <meta property="og:title" content="TestyLemonad">
+    <meta property="og:description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon. Создаю веб-приколюхи и хардвейр проекты. А это мой официальный сайт!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://testylemonad.github.io/">
+    <meta property="og:image" content="https://testylemonad.github.io/TestyLemonad.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TestyLemonad">
+    <meta name="twitter:description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon.">
+    <meta name="twitter:image" content="https://testylemonad.github.io/TestyLemonad.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TODO(prod): заменить Tailwind CDN на собранный билд, three.js — self-host + SRI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off" defer></script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "TestyLemonad",
+        "url": "https://testylemonad.github.io/",
+        "sameAs": ["https://github.com/testylemonad"],
+        "description": "Девелопер и сооснователь OpenLemon. Веб-приколюхи и хардвейр проекты."
+    }
+    </script>
+
+    <style>
+        :root {
+            --lemon-yellow: #ffd700;
+            --deep-orange: #ff8c00;
+            --dark-bg: #050200;
+            --card-bg: rgba(20, 10, 5, 0.4);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        html { overflow-x: hidden; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: #fff7ed;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Прячем стандартный курсор только там, где реально есть кастомный */
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            * { cursor: none !important; }
+        }
+
+        /* Ripple */
+        .ripple-obj {
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(8); opacity: 0; }
+        }
+
+        /* Кастомный курсор */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 204, 21, 0.3);
+            border: 1px solid var(--lemon-yellow);
+            border-radius: 50%;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+            transform: scale(1);
+        }
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
+            background: rgba(250, 204, 21, 0.1);
+            border-color: #fff;
+        }
+
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            filter: blur(2px);
+            background: radial-gradient(circle at 50% 40%, #2a1400 0%, #050200 70%);
+        }
+        @media (max-width: 1023px) {
+            #canvas-container { filter: none; }
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.9) 100%);
+        }
+
+        .noise::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            z-index: 2;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #050200;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #ff9900;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-size: 10px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(251, 191, 36, 0.08);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.5s ease,
+                        background 0.5s ease,
+                        box-shadow 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1023px) {
+            .glass-card {
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                background: rgba(20, 10, 5, 0.75);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .glass-card:hover {
+                transform: translateY(-8px);
+                border-color: rgba(251, 191, 36, 0.3);
+                box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+                background: rgba(30, 15, 5, 0.5);
+            }
+        }
+
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
+            z-index: 90;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .project-item { transition: opacity 0.3s ease; }
+        .project-item.is-hidden { display: none; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
+
+        .btn-glow:hover { box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); }
+
+        .filter-btn.active {
+            background: var(--lemon-yellow);
+            color: #000;
+            border-color: var(--lemon-yellow);
+        }
+    </style>
+</head>
+<body class="noise">
+    <noscript>
+        <div style="position:fixed;inset:0;background:#050200;color:#fff7ed;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;z-index:9999;">
+            <div>
+                <h1 style="margin:0 0 16px;font-size:28px;">TestyLemonad</h1>
+                <p style="margin:0 0 12px;opacity:.7;">Для полноценной работы сайта нужен JavaScript.</p>
+                <p style="margin:0;">
+                    <a href="https://github.com/testylemonad" style="color:#ffd700;">github.com/testylemonad</a>
+                </p>
+            </div>
+        </div>
+    </noscript>
+
+    <div id="custom-cursor" aria-hidden="true">
+        <div class="cursor-inner"></div>
+    </div>
+
+    <div id="loader" role="status" aria-live="polite">Загрузочка... Подожди немного, бро!</div>
+    <div class="scroll-progress" id="scroll-bar"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div id="canvas-container" aria-hidden="true"></div>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="sticky top-0 z-50 w-full px-4 sm:px-6 py-4 backdrop-blur-xl border-b border-white/5">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="hidden sm:block text-xl font-bold mono gradient-text tracking-tighter">
+                    testylemonad.github.io
+                </div>
+                <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
+                    <button type="button" data-scroll-top class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</button>
+                    <a href="#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+                    <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Герой -->
+        <header class="relative flex-grow flex flex-col justify-center items-center text-center px-6 py-16 sm:py-32 overflow-hidden">
+            <div class="animate-fade-in max-w-4xl mx-auto">
+                <h1 class="text-4xl sm:text-6xl md:text-8xl font-extrabold mb-8 tracking-tighter text-white leading-tight">
+                    Привет, я <br class="sm:hidden"> <span class="gradient-text">TestyLemonad</span>
+                </h1>
+                <p class="text-orange-100/70 text-lg sm:text-2xl max-w-2xl mx-auto mb-6 font-light">
+                    — девелопер и сооснователь OpenLemon. Создаю прикольные веб-штуки и хардвейр проекты.
+                </p>
+                <p class="text-orange-100/70 text-lg sm:text-2xl max-w-2xl mx-auto mb-12 font-light">
+                    Добро пожаловать на мой сайт!
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#projects" class="btn-glow inline-block bg-yellow-400 hover:bg-yellow-300 text-orange-950 px-10 py-4 rounded-2xl font-bold transition-all transform hover:scale-105">
+                        Посмотреть проекты
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Проекты -->
+        <section id="projects" class="relative w-full px-4 sm:px-6 py-16 sm:py-24">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-6 mb-16">
+                    <h2 class="text-2xl sm:text-4xl font-black text-white whitespace-nowrap">Мои проекты</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/50 to-transparent flex-grow hidden sm:block"></div>
+
+                    <div class="flex flex-wrap gap-2" role="group" aria-label="Фильтр проектов">
+                        <button type="button" aria-pressed="true"  class="filter-btn active text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="all">Все</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="html">HTML</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="python">Python</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="collab">Совместные</button>
+                    </div>
+                </div>
+
+                <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Encoder -->
+                    <div class="project-item glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
+                        <div class="p-4 flex flex-col h-full relative z-10">
+                            <div class="w-full aspect-video bg-gradient-to-br from-yellow-500 to-orange-600 rounded-[1.5rem] mb-6 flex items-center justify-center overflow-hidden relative border border-white/5">
+                                <span class="relative text-3xl font-black text-white drop-shadow-2xl">Encoder</span>
+                            </div>
+                            <div class="px-3 pb-4 flex flex-col flex-grow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-2xl font-bold text-white">Encoder</h3>
+                                    <span class="text-[10px] bg-yellow-400/10 text-yellow-400 px-2 py-1 rounded border border-yellow-400/20 uppercase font-bold">HTML</span>
+                                </div>
+                                <p class="text-orange-100/65 text-base mb-6 flex-grow">Самый полезный мой проект. Шифратор, позволяющий с лёгкостью шифровать и дешифровать текст, а также переводить различные значения в различные системы счисления.</p>
+                                <a href="/encoder" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center bg-white text-black py-3 rounded-xl font-bold hover:bg-yellow-400 transition-all">Перейти</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TestyColor -->
+                    <div class="project-item glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
+                        <div class="p-4 flex flex-col h-full relative z-10">
+                            <div class="w-full aspect-video bg-gradient-to-br from-orange-400 to-yellow-500 rounded-[1.5rem] mb-6 flex items-center justify-center overflow-hidden relative border border-white/5">
+                                <span class="relative text-3xl font-black text-white drop-shadow-2xl">TestyColor</span>
+                            </div>
+                            <div class="px-3 pb-4 flex flex-col flex-grow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-2xl font-bold text-white">TestyColor</h3>
+                                    <span class="text-[10px] bg-yellow-400/10 text-yellow-400 px-2 py-1 rounded border border-yellow-400/20 uppercase font-bold">HTML</span>
+                                </div>
+                                <p class="text-orange-100/65 text-base mb-6 flex-grow">Простенькая палитра, с возможностью подбирать цвета на удобной палитре, копировать цвет в различных видах (RGB, HEX и CMYK), смотреть подходящие цвета, а также сохранять цвета в избранное.</p>
+                                <a href="/TestyColor" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center bg-white text-black py-3 rounded-xl font-bold hover:bg-yellow-400 transition-all">Перейти</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Заглушка Python (скрыта по умолчанию) -->
+                    <div class="project-item is-hidden border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="python" data-type="placeholder">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-16 h-16 bg-orange-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <p class="text-orange-400/90 font-medium text-sm">Здесь скоро появятся Python проекты...</p>
+                        </div>
+                    </div>
+
+                    <!-- Заглушка Совместные (скрыта по умолчанию) -->
+                    <div class="project-item is-hidden border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="collab" data-type="placeholder">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-16 h-16 bg-orange-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <p class="text-orange-400/90 font-medium text-sm">Здесь скоро появится Ф.Е.Д.Я. 😉</p>
+                            <p class="text-orange-400/90 font-medium text-sm">Или не очень скоро...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Футер -->
+        <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
+            <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
+                <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+                <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
+                    &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script type="module">
+        // ===== Окружение =====
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== Лоадер =====
+        const loader = document.getElementById('loader');
+        let loaderHidden = false;
+        function hideLoader() {
+            if (loaderHidden || !loader) return;
+            loaderHidden = true;
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 1000);
+        }
+        // Страховка на случай, если что-то вообще не сработает
+        setTimeout(hideLoader, 6000);
+
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
+
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
+
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+                if (reduceMotion) {
+                    // без лерпа — просто мгновенно
+                    cursor.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
+                }
+            }, { passive: true });
+
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+                    requestAnimationFrame(loop);
+                })();
+            }
+
+            // Делегирование hover
+            const HOVER_SEL = 'a, button, .cursor-trigger, .project-item';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.add('cursor-hover');
+                }
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.remove('cursor-hover');
+                }
+            }, { passive: true });
+        }
+
+        // ===== Плавный скролл наверх =====
+        const scrollTopBtn = document.querySelector('[data-scroll-top]');
+        if (scrollTopBtn) {
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+            });
+        }
+
+        // ===== Фильтры проектов =====
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const projectItems  = document.querySelectorAll('.project-item');
+
+        function filterProjects(filter) {
+            projectItems.forEach(item => {
+                const category = item.getAttribute('data-category');
+                const type     = item.getAttribute('data-type');
+
+                // Логика: "all" показывает только реальные проекты.
+                // Остальные фильтры показывают ровно свою категорию (в т.ч. заглушки).
+                const show = (filter === 'all')
+                    ? type === 'real'
+                    : category === filter;
+
+                item.classList.toggle('is-hidden', !show);
+            });
+        }
+
+        filterProjects('all');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-pressed', 'true');
+                filterProjects(btn.getAttribute('data-filter'));
+            });
+        });
+
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScroll, { passive: true });
+        updateScroll();
+
+        // ===== Three.js фон =====
+        const canvasContainer = document.getElementById('canvas-container');
+
+        function fallbackBg() {
+            canvasContainer.style.background =
+                'radial-gradient(circle at 50% 40%, #2a1400 0%, #050200 70%)';
+        }
+
+        function initThree() {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(
+                75, window.innerWidth / window.innerHeight, 0.1, 1000
+            );
+            camera.position.z = 8;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            canvasContainer.appendChild(renderer.domElement);
+
+            const mesh = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(2.5, 12),
+                new THREE.MeshBasicMaterial({
+                    color: 0xff9900, wireframe: true, transparent: true, opacity: 0.15
+                })
+            );
+            scene.add(mesh);
+
+            const pCount = 4000;
+            const posArray = new Float32Array(pCount * 3);
+            for (let i = 0; i < pCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 20;
+            }
+            const pGeom = new THREE.BufferGeometry();
+            pGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particles = new THREE.Points(pGeom, new THREE.PointsMaterial({
+                size: 0.02, color: 0xff9900, transparent: true, opacity: 0.3
+            }));
+            scene.add(particles);
+
+            let paused = false;
+            document.addEventListener('visibilitychange', () => {
+                paused = document.hidden;
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (paused) return;
+                mesh.rotation.y += 0.001;
+                particles.rotation.y -= 0.0005;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }, { passive: true });
+        }
+
+        window.addEventListener('load', () => {
+            const noWebGL = !window.WebGLRenderingContext;
+            const noThree = typeof THREE === 'undefined';
+
+            if (reduceMotion || noThree || noWebGL) {
+                fallbackBg();
+                hideLoader();
+                return;
+            }
+            try {
+                initThree();
+            } catch (err) {
+                console.error('Three.js init failed:', err);
+                fallbackBg();
+            } finally {
+                hideLoader();
+            }
+        });
+    </script>
+</body>
+</html>
