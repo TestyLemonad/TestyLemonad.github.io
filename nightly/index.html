@@ -23,12 +23,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- TODO(prod): заменить Tailwind CDN на собранный билд, three.js — self-host + SRI -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
     <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off" defer></script>
 
     <script type="application/ld+json">
@@ -74,12 +71,94 @@
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Прячем стандартный курсор только там, где реально есть кастомный */
         @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
             * { cursor: none !important; }
         }
 
-        /* Ripple */
+        /* ============ ФОН: CSS-блобы ============ */
+        .bg-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            background: #050200;
+            pointer-events: none;
+        }
+
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+
+        .bg-blob--1 {
+            width: 72vmax;
+            height: 72vmax;
+            top: -30%;
+            left: -25%;
+            background: radial-gradient(circle at center,
+                rgba(255, 200, 0, 0.30) 0%,
+                rgba(255, 140, 0, 0.12) 35%,
+                transparent 65%);
+            animation: blob-a 28s ease-in-out infinite alternate;
+        }
+
+        .bg-blob--2 {
+            width: 58vmax;
+            height: 58vmax;
+            top: 15%;
+            right: -22%;
+            background: radial-gradient(circle at center,
+                rgba(255, 140, 0, 0.22) 0%,
+                rgba(255, 90, 0, 0.08) 40%,
+                transparent 70%);
+            animation: blob-b 34s ease-in-out infinite alternate;
+        }
+
+        .bg-blob--3 {
+            width: 62vmax;
+            height: 62vmax;
+            bottom: -25%;
+            left: 8%;
+            background: radial-gradient(circle at center,
+                rgba(255, 170, 0, 0.18) 0%,
+                rgba(200, 60, 0, 0.08) 45%,
+                transparent 70%);
+            animation: blob-c 40s ease-in-out infinite alternate;
+        }
+
+        .bg-blob--4 {
+            width: 42vmax;
+            height: 42vmax;
+            top: 38%;
+            left: 38%;
+            background: radial-gradient(circle at center,
+                rgba(255, 230, 100, 0.16) 0%,
+                transparent 65%);
+            animation: blob-d 24s ease-in-out infinite alternate;
+        }
+
+        @keyframes blob-a {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(8vw, 6vh, 0) scale(1.15); }
+        }
+        @keyframes blob-b {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(-10vw, -4vh, 0) scale(1.2); }
+        }
+        @keyframes blob-c {
+            0%   { transform: translate3d(0, 0, 0) scale(1.1); }
+            100% { transform: translate3d(6vw, -8vh, 0) scale(0.95); }
+        }
+        @keyframes blob-d {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(-8vw, 10vh, 0) scale(1.25); }
+        }
+
+        /* ============ Ripple ============ */
         .ripple-obj {
             position: fixed;
             background: rgba(250, 204, 21, 0.3);
@@ -93,7 +172,7 @@
             to { transform: scale(8); opacity: 0; }
         }
 
-        /* Кастомный курсор */
+        /* ============ Кастомный курсор ============ */
         #custom-cursor {
             position: fixed;
             top: 0;
@@ -113,7 +192,6 @@
             border: 1px solid var(--lemon-yellow);
             border-radius: 50%;
             transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
-            transform: scale(1);
         }
         .cursor-hover .cursor-inner {
             transform: scale(2.5);
@@ -121,17 +199,7 @@
             border-color: #fff;
         }
 
-        #canvas-container {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            filter: blur(2px);
-            background: radial-gradient(circle at 50% 40%, #2a1400 0%, #050200 70%);
-        }
-        @media (max-width: 1023px) {
-            #canvas-container { filter: none; }
-        }
-
+        /* ============ Виньетка и noise ============ */
         .vignette {
             position: fixed;
             inset: 0;
@@ -150,22 +218,21 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: #050200;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #ff9900;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            font-size: 10px;
-            text-align: center;
-            padding: 20px;
+        /* ============ Liquid Glass Nav ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.45);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            .glass-nav { background: rgba(8, 4, 2, 0.9); }
         }
 
         .content-wrapper {
@@ -197,7 +264,7 @@
             .glass-card {
                 backdrop-filter: none;
                 -webkit-backdrop-filter: none;
-                background: rgba(20, 10, 5, 0.75);
+                background: rgba(20, 10, 5, 0.72);
             }
         }
 
@@ -256,18 +323,25 @@
         </div>
     </noscript>
 
+    <!-- Кастомный курсор -->
     <div id="custom-cursor" aria-hidden="true">
         <div class="cursor-inner"></div>
     </div>
 
-    <div id="loader" role="status" aria-live="polite">Загрузочка... Подожди немного, бро!</div>
-    <div class="scroll-progress" id="scroll-bar"></div>
+    <!-- CSS-фон -->
+    <div class="bg-scene" aria-hidden="true">
+        <div class="bg-blob bg-blob--1"></div>
+        <div class="bg-blob bg-blob--2"></div>
+        <div class="bg-blob bg-blob--3"></div>
+        <div class="bg-blob bg-blob--4"></div>
+    </div>
     <div class="vignette" aria-hidden="true"></div>
-    <div id="canvas-container" aria-hidden="true"></div>
+
+    <div class="scroll-progress" id="scroll-bar"></div>
 
     <div class="content-wrapper min-h-screen flex flex-col">
-        <!-- Навигация -->
-        <nav class="sticky top-0 z-50 w-full px-4 sm:px-6 py-4 backdrop-blur-xl border-b border-white/5">
+        <!-- Liquid Glass Nav -->
+        <nav class="glass-nav w-full px-4 sm:px-6 py-4">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="hidden sm:block text-xl font-bold mono gradient-text tracking-tighter">
                     testylemonad.github.io
@@ -390,21 +464,8 @@
     </div>
 
     <script type="module">
-        // ===== Окружение =====
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
-
-        // ===== Лоадер =====
-        const loader = document.getElementById('loader');
-        let loaderHidden = false;
-        function hideLoader() {
-            if (loaderHidden || !loader) return;
-            loaderHidden = true;
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 1000);
-        }
-        // Страховка на случай, если что-то вообще не сработает
-        setTimeout(hideLoader, 6000);
 
         // ===== Ripple =====
         if (!reduceMotion) {
@@ -436,7 +497,6 @@
                     shown = true;
                 }
                 if (reduceMotion) {
-                    // без лерпа — просто мгновенно
                     cursor.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
                 }
             }, { passive: true });
@@ -450,7 +510,6 @@
                 })();
             }
 
-            // Делегирование hover
             const HOVER_SEL = 'a, button, .cursor-trigger, .project-item';
             document.addEventListener('mouseover', (e) => {
                 if (e.target.closest && e.target.closest(HOVER_SEL)) {
@@ -480,13 +539,11 @@
             projectItems.forEach(item => {
                 const category = item.getAttribute('data-category');
                 const type     = item.getAttribute('data-type');
-
-                // Логика: "all" показывает только реальные проекты.
-                // Остальные фильтры показывают ровно свою категорию (в т.ч. заглушки).
+                // "all" показывает только реальные проекты.
+                // Остальные фильтры — только свою категорию (в т.ч. заглушки).
                 const show = (filter === 'all')
                     ? type === 'real'
                     : category === filter;
-
                 item.classList.toggle('is-hidden', !show);
             });
         }
@@ -513,87 +570,6 @@
         }
         window.addEventListener('scroll', updateScroll, { passive: true });
         updateScroll();
-
-        // ===== Three.js фон =====
-        const canvasContainer = document.getElementById('canvas-container');
-
-        function fallbackBg() {
-            canvasContainer.style.background =
-                'radial-gradient(circle at 50% 40%, #2a1400 0%, #050200 70%)';
-        }
-
-        function initThree() {
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(
-                75, window.innerWidth / window.innerHeight, 0.1, 1000
-            );
-            camera.position.z = 8;
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            canvasContainer.appendChild(renderer.domElement);
-
-            const mesh = new THREE.Mesh(
-                new THREE.IcosahedronGeometry(2.5, 12),
-                new THREE.MeshBasicMaterial({
-                    color: 0xff9900, wireframe: true, transparent: true, opacity: 0.15
-                })
-            );
-            scene.add(mesh);
-
-            const pCount = 4000;
-            const posArray = new Float32Array(pCount * 3);
-            for (let i = 0; i < pCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 20;
-            }
-            const pGeom = new THREE.BufferGeometry();
-            pGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const particles = new THREE.Points(pGeom, new THREE.PointsMaterial({
-                size: 0.02, color: 0xff9900, transparent: true, opacity: 0.3
-            }));
-            scene.add(particles);
-
-            let paused = false;
-            document.addEventListener('visibilitychange', () => {
-                paused = document.hidden;
-            });
-
-            function animate() {
-                requestAnimationFrame(animate);
-                if (paused) return;
-                mesh.rotation.y += 0.001;
-                particles.rotation.y -= 0.0005;
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            }, { passive: true });
-        }
-
-        window.addEventListener('load', () => {
-            const noWebGL = !window.WebGLRenderingContext;
-            const noThree = typeof THREE === 'undefined';
-
-            if (reduceMotion || noThree || noWebGL) {
-                fallbackBg();
-                hideLoader();
-                return;
-            }
-            try {
-                initThree();
-            } catch (err) {
-                console.error('Three.js init failed:', err);
-                fallbackBg();
-            } finally {
-                hideLoader();
-            }
-        });
     </script>
 </body>
 </html>
