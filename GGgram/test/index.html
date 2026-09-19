@@ -238,6 +238,31 @@
             opacity: 0.9;
         }
         #loading-overlay .loading-cancel:hover { opacity: 1; }
+
+        /* Индикатор состояния REST-подключения */
+        #net-indicator {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            z-index: 9000;
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            opacity: 0.85;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        #net-indicator.online { display: flex; color: var(--read); }
+        #net-indicator.offline { display: flex; color: var(--error); }
+        #net-indicator .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor;
+        }
     </style>
 </head>
 <body class="dark-theme">
@@ -246,6 +271,11 @@
     <div class="spinner"></div>
     <div class="loading-text" id="loading-text">Подключение…</div>
     <button type="button" class="loading-cancel" id="loading-cancel-btn">Отменить</button>
+</div>
+
+<div id="net-indicator" title="Состояние соединения с сервером">
+    <span class="dot"></span>
+    <span id="net-indicator-text">online</span>
 </div>
 
 <div id="auth-screen">
@@ -409,192 +439,130 @@
 <div id="info-modal"><div class="modal-box"><h3 id="info-title">Информация</h3><div id="info-content" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div><button onclick="document.getElementById('info-modal').style.display='none'" class="btn-main" style="width:100%">Закрыть</button></div></div>
 <div id="context-menu"></div>
 
-<script>
-    // ============================================================
-    // BOOT WATCHDOG
-    // Показывает оверлей, пока модуль грузится.
-    // Фатальный таймер срабатывает ТОЛЬКО если модуль вообще не стартовал
-    // (например, CDN Firebase заблокирован). После старта модуля
-    // watchdog не вмешивается в работу — там уже свои withTimeout.
-    // ============================================================
-    (function () {
-        window.__ggBootState = { moduleStarted: false, firebaseReady: false, connected: false };
-        const overlay = document.getElementById('loading-overlay');
-        const textEl = document.getElementById('loading-text');
-        const cancelBtn = document.getElementById('loading-cancel-btn');
-
-        function show(text, warn) {
-            textEl.innerText = text;
-            textEl.classList.toggle('warn', !!warn);
-            overlay.classList.remove('hidden-overlay');
-        }
-        function hide() { overlay.classList.add('hidden-overlay'); }
-        function fatal(msg) {
-            show(msg, true);
-            cancelBtn.style.display = 'inline-block';
-        }
-
-        show("Подключение к серверу…", false);
-
-        // Единственный фатальный таймер: если module-скрипт вообще
-        // не начал исполняться за 15 секунд — значит CDN Firebase недоступен.
-        const failT = setTimeout(() => {
-            if (window.__ggBootState.moduleStarted) return;
-            fatal("Не удалось загрузить Firebase SDK. Возможно, CDN заблокирован. Попробуйте VPN.");
-        }, 15000);
-
-        // Кнопка "Отменить" — просто скрывает оверлей и разблокирует кнопку.
-        cancelBtn.style.display = 'none';
-        cancelBtn.onclick = function () {
-            hide();
-            const b = document.getElementById('auth-btn');
-            if (b) { b.disabled = false; b.innerText = 'Войти'; }
-        };
-
-        window.__ggLoading = { show, hide, fatal };
-        window.__ggBootFailTimer = failT;
-    })();
-</script>
-
 <script type="module">
-    // ---------- Динамический импорт Firebase SDK ----------
-    let initializeApp, getDatabase, ref, push, onChildAdded, onChildChanged,
-        onChildRemoved, get, set, update, remove, onValue;
+    // ============================================================
+    // REST-версия. Никакого Firebase SDK, никаких WebSocket.
+    // Только fetch() к https://<project>.firebasedatabase.app/<path>.json
+    // ============================================================
 
-    try {
-        const appMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-        const dbMod  = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
-        initializeApp  = appMod.initializeApp;
-        getDatabase    = dbMod.getDatabase;
-        ref            = dbMod.ref;
-        push           = dbMod.push;
-        onChildAdded   = dbMod.onChildAdded;
-        onChildChanged = dbMod.onChildChanged;
-        onChildRemoved = dbMod.onChildRemoved;
-        get            = dbMod.get;
-        set            = dbMod.set;
-        update         = dbMod.update;
-        remove         = dbMod.remove;
-        onValue        = dbMod.onValue;   // <-- КЛЮЧЕВОЙ ИМПОРТ
-        window.__ggBootState.firebaseReady = true;
-        window.__ggBootState.moduleStarted = true;
-        clearTimeout(window.__ggBootFailTimer);
-    } catch (e) {
-        window.__ggLoading.fatal("Не удалось загрузить Firebase SDK: " + e.message);
-        throw e;
-    }
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyC0VcGrjDffZ3FCD7x9KSJ79ujeLFTbC-o",
-        authDomain: "testy-talk.firebaseapp.com",
-        databaseURL: "https://testy-talk-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "testy-talk",
-        storageBucket: "testy-talk.firebasestorage.app",
-        messagingSenderId: "172541851795",
-        appId: "1:172541851795:web:af233412e9e47016dbb566"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // ---------- Надёжное отслеживание соединения ----------
-    // onValue (а НЕ onChildAdded) — правильный способ слушать .info/connected.
-    (function watchConnection() {
-        try {
-            const connectedRef = ref(db, '.info/connected');
-            onValue(connectedRef, (snap) => {
-                const val = snap.val();
-                if (val === true) {
-                    window.__ggBootState.connected = true;
-                    if (typeof window.__ggResolveConnection === 'function') {
-                        const r = window.__ggResolveConnection;
-                        window.__ggResolveConnection = null;
-                        r();
-                    }
-                } else {
-                    window.__ggBootState.connected = false;
-                }
-            }, (err) => {
-                // Если onValue по какой-то причине упал — не блокируем UI.
-                console.warn('connection watch error:', err);
-            });
-        } catch (e) {
-            console.warn('connection watch setup error:', e);
-        }
-    })();
-
-    let currentUser = localStorage.getItem('chat_user');
-    let isLoginMode = true;
-    const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-    let allMessages = {};
-    let currentReply = null;
-    let editingId = null;
+    const DB_URL = 'https://testy-talk-default-rtdb.europe-west1.firebasedatabase.app';
 
     // ---------- Loading overlay ----------
     const loadingText = document.getElementById('loading-text');
     const loadingOverlay = document.getElementById('loading-overlay');
     let loadingWarnTimer = null;
-    let loadingFallbackTimer = null;
     let loadingActiveToken = 0;
-
-    function withTimeout(promise, ms, label = 'network') {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout:' + label)), ms))
-        ]);
-    }
 
     function showLoading(text = "Подключение…", opts = {}) {
         const warnAfterMs = opts.warnAfterMs ?? 8000;
-        const fallbackMs = opts.fallbackMs ?? 0; // 0 = не скрывать автоматически
         const token = ++loadingActiveToken;
-
         loadingText.innerText = text;
         loadingText.classList.remove('warn');
         loadingOverlay.classList.remove('hidden-overlay');
         document.getElementById('loading-cancel-btn').style.display = 'inline-block';
-
         clearTimeout(loadingWarnTimer);
-        clearTimeout(loadingFallbackTimer);
-
         if (warnAfterMs > 0) {
             loadingWarnTimer = setTimeout(() => {
                 if (token !== loadingActiveToken) return;
-                loadingText.innerText = "Подключение занимает больше времени, чем обычно. Проверьте интернет.";
+                loadingText.innerText = "Долго… Проверьте интернет.";
                 loadingText.classList.add('warn');
             }, warnAfterMs);
-        }
-        if (fallbackMs > 0) {
-            loadingFallbackTimer = setTimeout(() => {
-                if (token !== loadingActiveToken) return;
-                hideLoading();
-            }, fallbackMs);
         }
     }
     function hideLoading() {
         clearTimeout(loadingWarnTimer);
-        clearTimeout(loadingFallbackTimer);
         loadingActiveToken++;
         loadingOverlay.classList.add('hidden-overlay');
         document.getElementById('loading-cancel-btn').style.display = 'none';
     }
+    document.getElementById('loading-cancel-btn').onclick = () => {
+        hideLoading();
+        authBtn.disabled = false;
+        authBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
+    };
+
+    // ---------- REST helpers ----------
+    async function httpJSON(method, path, body, timeoutMs = 15000) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+            const opts = {
+                method,
+                cache: 'no-store',
+                signal: ctrl.signal,
+                headers: { 'Accept': 'application/json' }
+            };
+            if (body !== undefined) {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(body);
+            }
+            const url = DB_URL + path + (path.includes('?') ? '' : '.json');
+            const r = await fetch(url, opts);
+            if (!r.ok) {
+                const text = await r.text().catch(() => '');
+                const err = new Error('http_' + r.status + (text ? ' ' + text.slice(0, 120) : ''));
+                err.status = r.status;
+                throw err;
+            }
+            const text = await r.text();
+            if (!text) return null;
+            try { return JSON.parse(text); } catch { return null; }
+        } finally {
+            clearTimeout(t);
+        }
+    }
+
+    const dbGet    = (path, timeoutMs) => httpJSON('GET',    '/' + path, undefined, timeoutMs);
+    const dbPut    = (path, body, timeoutMs) => httpJSON('PUT',    '/' + path, body,      timeoutMs);
+    const dbPatch  = (path, body, timeoutMs) => httpJSON('PATCH',  '/' + path, body,      timeoutMs);
+    const dbPost   = (path, body, timeoutMs) => httpJSON('POST',   '/' + path, body,      timeoutMs);
+    const dbDelete = (path, timeoutMs) => httpJSON('DELETE', '/' + path, undefined, timeoutMs);
+
+    // ---------- Net indicator ----------
+    const netInd = document.getElementById('net-indicator');
+    const netIndText = document.getElementById('net-indicator-text');
+    let netFailCount = 0;
+    function setNetStatus(ok) {
+        if (ok) { netFailCount = 0; netInd.classList.remove('offline'); netInd.classList.add('online'); netIndText.innerText = 'online'; }
+        else {
+            netFailCount++;
+            if (netFailCount >= 2) { netInd.classList.remove('online'); netInd.classList.add('offline'); netIndText.innerText = 'нет связи'; }
+        }
+    }
+
+    // ---------- State ----------
+    let currentUser = localStorage.getItem('chat_user');
+    let currentUserKey = localStorage.getItem('chat_user_key');
+    let isLoginMode = true;
+    const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+    let allMessages = {};
+    let renderedMsgIds = new Set();
+    let currentReply = null;
+    let editingId = null;
+    let pollTimer = null;
+    let hiddenMsgs = new Set(JSON.parse(localStorage.getItem('hidden_msgs') || '[]'));
 
     // ---------- Helpers ----------
-    function nickKey(nick) {
-        return (nick || '').trim().toLowerCase();
+    function nickKey(nick) { return (nick || '').trim().toLowerCase(); }
+
+    async function hashPass(p) {
+        const msg = new TextEncoder().encode(p);
+        const hash = await crypto.subtle.digest('SHA-256', msg);
+        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function checkPassSecurity(p) {
+        if (p.length < 6) return "Пароль должен быть от 6 символов";
+        if (!/[A-Za-zА-Яа-я]/.test(p)) return "Пароль должен содержать буквы";
+        if (!/[0-9]/.test(p)) return "Пароль должен содержать цифры";
+        return null;
     }
 
     async function findNickCollision(nick, excludeKey) {
         const key = nickKey(nick);
         if (key === excludeKey) return null;
-        let snap;
-        try {
-            snap = await withTimeout(get(ref(db, 'users')), 15000, 'findNickCollision');
-        } catch (e) {
-            return null;
-        }
-        if (!snap.exists()) return null;
-        const all = snap.val();
+        let all;
+        try { all = await dbGet('users', 15000); } catch { return null; }
+        if (!all) return null;
         for (const [k, v] of Object.entries(all)) {
             if (k === excludeKey) continue;
             const dn = (v && v.displayName) ? String(v.displayName) : '';
@@ -604,16 +572,11 @@
         return null;
     }
 
-    // --- Theme Logic ---
+    // ---------- Theme ----------
     const themeToggle = document.getElementById('theme-toggle');
     const applyTheme = (theme) => {
-        if (theme === 'light') {
-            document.body.classList.add('light-theme');
-            themeToggle.checked = true;
-        } else {
-            document.body.classList.remove('light-theme');
-            themeToggle.checked = false;
-        }
+        if (theme === 'light') { document.body.classList.add('light-theme'); themeToggle.checked = true; }
+        else { document.body.classList.remove('light-theme'); themeToggle.checked = false; }
     };
     const savedTheme = localStorage.getItem('theme');
     const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
@@ -629,9 +592,7 @@
     const authForm = document.getElementById('auth-form');
     const authBtn = document.getElementById('auth-btn');
     const errorEl = document.getElementById('auth-error');
-
     const authTabs = document.getElementById('auth-tabs');
-    const authPanel = document.getElementById('auth-panel');
     const authPanelInner = document.getElementById('auth-panel-inner');
 
     function updateTabUI() {
@@ -639,17 +600,14 @@
         document.getElementById('tab-login').classList.toggle('active', isLogin);
         document.getElementById('tab-reg').classList.toggle('active', !isLogin);
         authTabs.classList.toggle('reg-active', !isLogin);
-
         authPanelInner.classList.add(isLogin ? 'swap-right' : 'swap-left');
         setTimeout(() => {
             document.getElementById('reg-fields').classList.toggle('hidden', isLogin);
             authBtn.innerText = isLogin ? "Войти" : "Создать аккаунт";
-            document.getElementById('auth-pass').setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
             authPanelInner.classList.remove('swap-right', 'swap-left');
             errorEl.innerText = "";
         }, 200);
     }
-
     document.getElementById('tab-login').onclick = () => { if (isLoginMode) return; isLoginMode = true; updateTabUI(); };
     document.getElementById('tab-reg').onclick = () => { if (!isLoginMode) return; isLoginMode = false; updateTabUI(); };
     updateTabUI();
@@ -667,20 +625,7 @@
         }
     };
 
-    async function hashPass(p) {
-        const msg = new TextEncoder().encode(p);
-        const hash = await crypto.subtle.digest('SHA-256', msg);
-        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    function checkPassSecurity(p) {
-        if (p.length < 6) return "Пароль должен быть от 6 символов";
-        if (!/[A-Za-zА-Яа-я]/.test(p)) return "Пароль должен содержать буквы";
-        if (!/[0-9]/.test(p)) return "Пароль должен содержать цифры";
-        return null;
-    }
-
-    // ---------- Auth: вход / регистрация ----------
+    // ---------- Auth ----------
     authForm.onsubmit = async (e) => {
         e.preventDefault();
         const uRaw = document.getElementById('auth-user').value.trim();
@@ -692,11 +637,11 @@
         if (isLoginMode) {
             authBtn.disabled = true;
             authBtn.innerText = "Вход...";
-            showLoading("Вход…", { warnAfterMs: 8000 });
+            showLoading("Вход…", { warnAfterMs: 6000 });
             try {
-                const snap = await withTimeout(get(ref(db, 'users/' + uKey)), 20000, 'login');
-                if (snap.exists()) {
-                    const userData = snap.val();
+                const userData = await dbGet('users/' + encodeURIComponent(uKey), 15000);
+                setNetStatus(true);
+                if (userData) {
                     const salt = userData.salt || '';
                     const hp = await hashPass(p + salt);
                     if (userData.password === hp) {
@@ -712,12 +657,9 @@
                     errorEl.innerText = "Неверный ник или пароль";
                 }
             } catch (err) {
+                setNetStatus(false);
                 hideLoading();
-                if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет.";
-                } else {
-                    errorEl.innerText = "Ошибка: " + err.message;
-                }
+                errorEl.innerText = "Ошибка сети: " + (err.message || err);
             }
             authBtn.disabled = false;
             authBtn.innerText = "Войти";
@@ -732,7 +674,7 @@
 
             authBtn.disabled = true;
             authBtn.innerText = "Проверка кода...";
-            showLoading("Регистрация…", { warnAfterMs: 8000 });
+            showLoading("Регистрация…", { warnAfterMs: 6000 });
 
             try {
                 const collision = await findNickCollision(uRaw, null);
@@ -744,19 +686,13 @@
                 }
 
                 const scHash = await hashPass(sc);
-                const scSnap = await withTimeout(get(ref(db, 'sc')), 20000, 'reg-sc');
+                const scData = await dbGet('sc', 15000);
                 let foundRealName = null;
-
-                if (scSnap.exists()) {
-                    const scData = scSnap.val();
+                if (scData) {
                     for (const [name, hash] of Object.entries(scData)) {
-                        if (hash === scHash) {
-                            foundRealName = name;
-                            break;
-                        }
+                        if (hash === scHash) { foundRealName = name; break; }
                     }
                 }
-
                 if (!foundRealName) {
                     hideLoading();
                     authBtn.disabled = false;
@@ -764,70 +700,70 @@
                     return errorEl.innerText = "Неверный секретный код";
                 }
 
-                const salt = typeof crypto.randomUUID === 'function'
+                const salt = (typeof crypto.randomUUID === 'function')
                     ? crypto.randomUUID()
                     : Math.random().toString(36).substring(2);
                 const hp = await hashPass(p + salt);
 
-                const dupCheck = await withTimeout(get(ref(db, 'users/' + uKey)), 15000, 'reg-dup');
-                if (dupCheck.exists()) {
+                // Повторная проверка на дубликат (гонка)
+                const dup = await dbGet('users/' + encodeURIComponent(uKey), 10000);
+                if (dup) {
                     hideLoading();
                     authBtn.disabled = false;
                     authBtn.innerText = "Создать аккаунт";
                     return errorEl.innerText = "Ник занят";
                 }
 
-                await withTimeout(set(ref(db, 'users/' + uKey), {
+                await dbPut('users/' + encodeURIComponent(uKey), {
                     password: hp,
                     salt: salt,
                     displayName: uRaw,
                     realName: foundRealName
-                }), 20000, 'reg-set');
+                }, 15000);
 
-                await withTimeout(remove(ref(db, 'sc/' + foundRealName)), 15000, 'reg-sc-remove');
+                await dbDelete('sc/' + encodeURIComponent(foundRealName), 15000);
 
+                setNetStatus(true);
                 hideLoading();
                 login(uRaw, uKey);
             } catch (err) {
+                setNetStatus(false);
                 hideLoading();
                 authBtn.disabled = false;
                 authBtn.innerText = "Создать аккаунт";
-                if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Не удалось подключиться к серверу. Проверьте интернет.";
-                } else {
-                    errorEl.innerText = "Ошибка: " + err.message;
-                }
+                errorEl.innerText = "Ошибка: " + (err.message || err);
             }
         }
     };
 
     function login(displayName, uKey) {
         currentUser = displayName;
+        currentUserKey = uKey;
         localStorage.setItem('chat_user', displayName);
-        if (uKey) localStorage.setItem('chat_user_key', uKey);
+        localStorage.setItem('chat_user_key', uKey);
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('user-display').innerText = "@" + displayName;
-        initChat();
+        startChat();
     }
 
-    // ---------- Восстановление сессии ----------
-    // Здесь НЕ ждём waitForConnection — get() сам дождётся соединения.
+    // ---------- Session restore ----------
     if (currentUser) {
-        const storedKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
+        if (!currentUserKey) currentUserKey = nickKey(currentUser);
         authBtn.disabled = true;
         authBtn.innerText = "Загрузка...";
-        showLoading("Восстановление сессии…", { warnAfterMs: 8000 });
+        showLoading("Восстановление сессии…", { warnAfterMs: 6000 });
 
-        withTimeout(get(ref(db, 'users/' + storedKey)), 20000, 'restore')
-            .then(snap => {
-                if (snap.exists()) {
-                    const display = snap.val().displayName || currentUser;
+        dbGet('users/' + encodeURIComponent(currentUserKey), 15000)
+            .then(userData => {
+                if (userData) {
+                    const display = userData.displayName || currentUser;
                     hideLoading();
-                    login(display, storedKey);
+                    login(display, currentUserKey);
                 } else {
                     localStorage.removeItem('chat_user');
                     localStorage.removeItem('chat_user_key');
                     currentUser = null;
+                    currentUserKey = null;
                     hideLoading();
                     authBtn.disabled = false;
                     authBtn.innerText = "Войти";
@@ -837,205 +773,103 @@
                 hideLoading();
                 authBtn.disabled = false;
                 authBtn.innerText = "Войти";
-                if (String(err.message || '').startsWith('timeout:')) {
-                    errorEl.innerText = "Сервер недоступен. Войдите заново или проверьте интернет.";
-                }
+                errorEl.innerText = "Сервер недоступен: " + (err.message || err);
             });
     }
 
-    // ---------- Change nick ----------
-    document.getElementById('change-nick-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const newNickRaw = document.getElementById('settings-new-nick').value.trim();
-        const pass = document.getElementById('settings-nick-pass').value.trim();
-        const errEl = document.getElementById('change-nick-error');
-        const btn = document.getElementById('change-nick-btn');
-        errEl.style.color = "var(--error)";
-
-        if (!newNickRaw || !pass) return errEl.innerText = "Заполните все поля";
-
-        const oldKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
-        const newKey = nickKey(newNickRaw);
-
-        btn.disabled = true;
-        showLoading("Смена ника…", { warnAfterMs: 8000 });
-
+    // ---------- Chat: initial load + polling ----------
+    async function startChat() {
+        // Первая загрузка — получаем все сообщения сразу
         try {
-            const snap = await withTimeout(get(ref(db, 'users/' + oldKey)), 20000, 'nick-get');
-            if (!snap.exists()) {
-                hideLoading();
-                btn.disabled = false;
-                return errEl.innerText = "Аккаунт не найден";
-            }
-            const userData = snap.val();
-            const salt = userData.salt || '';
-            const hp = await hashPass(pass + salt);
-            if (hp !== userData.password) {
-                hideLoading();
-                btn.disabled = false;
-                return errEl.innerText = "Неверный пароль";
-            }
-
-            if (newKey === oldKey) {
-                hideLoading();
-                btn.disabled = false;
-                return errEl.innerText = "Это ваш текущий ник";
-            }
-
-            const collision = await findNickCollision(newNickRaw, oldKey);
-            if (collision) {
-                hideLoading();
-                btn.disabled = false;
-                return errEl.innerText = "Ник занят";
-            }
-
-            const { password, salt: oldSalt, realName } = userData;
-            await withTimeout(set(ref(db, 'users/' + newKey), {
-                password,
-                salt: oldSalt,
-                displayName: newNickRaw,
-                ...(realName ? { realName } : {})
-            }), 20000, 'nick-set');
-            await withTimeout(remove(ref(db, 'users/' + oldKey)), 15000, 'nick-remove');
-
-            const chatSnap = await withTimeout(get(ref(db, 'chat_messages')), 20000, 'nick-chat-get');
-            if (chatSnap.exists()) {
-                const updates = {};
-                const chatData = chatSnap.val();
-                for (const [mid, m] of Object.entries(chatData)) {
-                    if (m.username === currentUser) {
-                        updates[`chat_messages/${mid}/username`] = newNickRaw;
-                    }
-                    if (m.replyTo && m.replyTo.user === currentUser) {
-                        updates[`chat_messages/${mid}/replyTo/user`] = newNickRaw;
-                    }
-                    if (m.readBy && m.readBy[currentUser] !== undefined) {
-                        updates[`chat_messages/${mid}/readBy/${newNickRaw}`] = m.readBy[currentUser];
-                        updates[`chat_messages/${mid}/readBy/${currentUser}`] = null;
-                    }
-                    if (m.reactions) {
-                        for (const [emoji, users] of Object.entries(m.reactions)) {
-                            if (users && users[currentUser] !== undefined) {
-                                updates[`chat_messages/${mid}/reactions/${emoji}/${newNickRaw}`] = users[currentUser];
-                                updates[`chat_messages/${mid}/reactions/${emoji}/${currentUser}`] = null;
-                            }
-                        }
+            const data = await dbGet('chat_messages', 20000);
+            setNetStatus(true);
+            if (data) {
+                const ids = Object.keys(data);
+                ids.sort((a, b) => (data[a].time || 0) - (data[b].time || 0));
+                for (const id of ids) {
+                    allMessages[id] = data[id];
+                    if (!renderedMsgIds.has(id) && !hiddenMsgs.has(id)) {
+                        renderMsg(id, data[id]);
+                        renderedMsgIds.add(id);
                     }
                 }
-                if (Object.keys(updates).length) {
-                    await withTimeout(update(ref(db), updates), 25000, 'nick-chat-update');
-                }
-            }
-
-            currentUser = newNickRaw;
-            localStorage.setItem('chat_user', newNickRaw);
-            localStorage.setItem('chat_user_key', newKey);
-            document.getElementById('user-display').innerText = "@" + newNickRaw;
-
-            hideLoading();
-            errEl.style.color = "var(--read)";
-            errEl.innerText = "Ник успешно изменен";
-            document.getElementById('settings-new-nick').value = '';
-            document.getElementById('settings-nick-pass').value = '';
-            btn.disabled = false;
-        } catch (err) {
-            hideLoading();
-            btn.disabled = false;
-            if (String(err.message || '').startsWith('timeout:')) {
-                errEl.innerText = "Не удалось подключиться к серверу.";
-            } else {
-                errEl.innerText = "Ошибка: " + err.message;
-            }
-        }
-    };
-
-    // ---------- Change password ----------
-    document.getElementById('change-pass-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const oldP = document.getElementById('settings-old-pass').value.trim();
-        const newP = document.getElementById('settings-new-pass').value.trim();
-        const newPConf = document.getElementById('settings-new-pass-confirm').value.trim();
-        const errEl = document.getElementById('change-pass-error');
-        errEl.style.color = "var(--error)";
-
-        if (!oldP || !newP || !newPConf) return errEl.innerText = "Заполните все поля";
-        if (newP !== newPConf) return errEl.innerText = "Новые пароли не совпадают";
-
-        const passErr = checkPassSecurity(newP);
-        if (passErr) return errEl.innerText = passErr;
-
-        const uKey = localStorage.getItem('chat_user_key') || nickKey(currentUser);
-        const userRef = ref(db, 'users/' + uKey);
-        showLoading("Смена пароля…", { warnAfterMs: 8000 });
-        try {
-            const snap = await withTimeout(get(userRef), 20000, 'pass-get');
-            if (snap.exists()) {
-                const userData = snap.val();
-                const oldSalt = userData.salt || '';
-                const oldHash = await hashPass(oldP + oldSalt);
-
-                if (userData.password !== oldHash) {
-                    hideLoading();
-                    return errEl.innerText = "Неверный старый пароль";
-                }
-
-                const newSalt = typeof crypto.randomUUID === 'function'
-                    ? crypto.randomUUID()
-                    : Math.random().toString(36).substring(2);
-                const newHash = await hashPass(newP + newSalt);
-
-                await withTimeout(update(userRef, { password: newHash, salt: newSalt }), 20000, 'pass-update');
-
-                hideLoading();
-                errEl.style.color = "var(--read)";
-                errEl.innerText = "Пароль успешно изменен";
-                document.getElementById('settings-old-pass').value = '';
-                document.getElementById('settings-new-pass').value = '';
-                document.getElementById('settings-new-pass-confirm').value = '';
-            } else {
-                hideLoading();
-                errEl.innerText = "Аккаунт не найден";
+                markVisibleAsRead();
             }
         } catch (e) {
-            hideLoading();
-            if (String(e.message || '').startsWith('timeout:')) {
-                errEl.innerText = "Не удалось подключиться к серверу.";
-            } else {
-                errEl.innerText = "Ошибка смены пароля";
-            }
+            setNetStatus(false);
         }
-    };
-
-    // ---------- Chat ----------
-    function initChat() {
-        const chatRef = ref(db, 'chat_messages');
-        onChildAdded(chatRef, (snap) => {
-            allMessages[snap.key] = snap.val();
-            renderMsg(snap.key, snap.val());
-            markAsRead(snap.key, snap.val());
-        });
-        onChildChanged(chatRef, (snap) => {
-            allMessages[snap.key] = snap.val();
-            const el = document.getElementById("msg-" + snap.key);
-            if (el) el.innerHTML = getMsgInner(snap.key, snap.val());
-        });
-        onChildRemoved(chatRef, (snap) => {
-            delete allMessages[snap.key];
-            document.getElementById("msg-" + snap.key)?.remove();
-        });
+        // Polling каждые 2 секунды: получаем весь узел, диффаем.
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollMessages, 2000);
     }
 
-    async function markAsRead(id, data) {
-        if (data.username !== currentUser && (!data.readBy || !data.readBy[currentUser])) {
+    async function pollMessages() {
+        if (!currentUser) return;
+        let data;
+        try {
+            data = await dbGet('chat_messages', 12000);
+            setNetStatus(true);
+        } catch (e) {
+            setNetStatus(false);
+            return;
+        }
+        if (!data) return;
+
+        const ids = Object.keys(data);
+        ids.sort((a, b) => (data[a].time || 0) - (data[b].time || 0));
+
+        let needScroll = false;
+        for (const id of ids) {
+            const prev = allMessages[id];
+            const cur = data[id];
+            allMessages[id] = cur;
+
+            // Новое сообщение
+            if (!prev) {
+                if (!renderedMsgIds.has(id) && !hiddenMsgs.has(id)) {
+                    renderMsg(id, cur);
+                    renderedMsgIds.add(id);
+                    needScroll = true;
+                }
+                continue;
+            }
+
+            // Изменилось — перерисовываем innerHTML на месте
+            if (JSON.stringify(prev) !== JSON.stringify(cur)) {
+                const el = document.getElementById('msg-' + id);
+                if (el) el.innerHTML = getMsgInner(id, cur);
+            }
+        }
+        // Удалённые
+        for (const id of Object.keys(allMessages)) {
+            if (!(id in data)) {
+                delete allMessages[id];
+                renderedMsgIds.delete(id);
+                document.getElementById('msg-' + id)?.remove();
+            }
+        }
+        if (needScroll) {
+            const c = document.getElementById('chat-container');
+            c.scrollTop = c.scrollHeight;
+        }
+        markVisibleAsRead();
+    }
+
+    async function markVisibleAsRead() {
+        for (const id of Object.keys(allMessages)) {
+            const m = allMessages[id];
+            if (!m || m.username === currentUser) continue;
+            if (m.readBy && m.readBy[currentUser]) continue;
             try {
-                await withTimeout(set(ref(db, `chat_messages/${id}/readBy/${currentUser}`), Date.now()), 10000, 'read');
+                await dbPut(`chat_messages/${id}/readBy/${encodeURIComponent(currentUser)}`, Date.now(), 8000);
+                if (!m.readBy) m.readBy = {};
+                m.readBy[currentUser] = Date.now();
             } catch (_) {}
         }
     }
 
     function renderMsg(id, data) {
-        const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_msgs') || '[]');
-        if (hiddenMsgs.includes(id)) return;
+        if (hiddenMsgs.has(id)) return;
         const div = document.createElement('div');
         div.className = `message ${data.username === currentUser ? 'my' : ''}`;
         div.id = "msg-" + id;
@@ -1044,11 +878,12 @@
         let pt; div.ontouchstart = (e) => { pt = setTimeout(() => showContext(e.touches[0], id, data), 500); };
         div.ontouchend = () => clearTimeout(pt);
         document.getElementById('chat-container').appendChild(div);
-        document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
     }
 
     function getMsgInner(id, data) {
-        const quote = data.replyTo ? `<blockquote onclick="window.scrollToMsg('${data.replyTo.id}')"><b>${data.replyTo.user}</b>: ${data.replyTo.text.slice(0,30)}...</blockquote>` : '';
+        const quote = data.replyTo
+            ? `<blockquote onclick="window.scrollToMsg('${data.replyTo.id}')"><b>${data.replyTo.user}</b>: ${String(data.replyTo.text || '').slice(0,30)}...</blockquote>`
+            : '';
         const md = marked.parse(data.text || '');
         const time = new Date(data.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         const edited = data.edited ? `<span style="opacity:0.4; font-size:9px">изм.</span>` : '';
@@ -1063,6 +898,7 @@
         let reactsHtml = '<div class="reactions-bar">';
         if (data.reactions) {
             Object.entries(data.reactions).forEach(([emoji, users]) => {
+                if (!users) return;
                 const count = Object.keys(users).length;
                 if (count > 0) reactsHtml += `<div class="reaction-chip ${users[currentUser]?'active':''}" onclick="event.stopPropagation(); window.toggleReaction('${id}', '${emoji}')">${emoji} ${count}</div>`;
             });
@@ -1091,21 +927,15 @@
         menu.classList.remove('active');
 
         const rect = menu.getBoundingClientRect();
-        const mw = rect.width;
-        const mh = rect.height;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
+        const mw = rect.width, mh = rect.height;
+        const vw = window.innerWidth, vh = window.innerHeight;
         const margin = 10;
-
-        let x = e.clientX;
-        let y = e.clientY;
-
+        let x = e.clientX, y = e.clientY;
         if (x + mw + margin > vw) x = vw - mw - margin;
         if (x < margin) x = margin;
         if (y + mh + margin > vh) y = y - mh;
         if (y < margin) y = margin;
         if (y + mh + margin > vh) y = vh - mh - margin;
-
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
         menu.style.visibility = 'visible';
@@ -1126,28 +956,47 @@
         const modal = document.getElementById('info-modal');
         const content = document.getElementById('info-content');
         document.getElementById('info-title').innerText = "Просмотрено:";
-        const readers = msg.readBy ? Object.keys(msg.readBy).filter(u => u !== currentUser) : [];
+        const readers = (msg && msg.readBy) ? Object.keys(msg.readBy).filter(u => u !== currentUser) : [];
         content.innerHTML = readers.length ? readers.map(u => `<div style="padding:5px 0">@${u}</div>`).join('') : "Никто еще не прочитал";
         modal.style.display = 'flex';
         document.getElementById('context-menu').style.display = 'none';
     };
 
     window.toggleReaction = async (msgId, emoji) => {
-        const reactRef = ref(db, `chat_messages/${msgId}/reactions/${emoji}/${currentUser}`);
+        const m = allMessages[msgId];
+        if (!m) return;
+        const has = m.reactions && m.reactions[emoji] && m.reactions[emoji][currentUser];
         try {
-            const snap = await withTimeout(get(reactRef), 8000, 'react-get');
-            if (snap.exists()) await withTimeout(remove(reactRef), 8000, 'react-remove');
-            else await withTimeout(set(reactRef, true), 8000, 'react-set');
-        } catch (_) {}
+            if (has) {
+                await dbDelete(`chat_messages/${msgId}/reactions/${emoji}/${encodeURIComponent(currentUser)}`, 8000);
+                if (m.reactions && m.reactions[emoji]) delete m.reactions[emoji][currentUser];
+            } else {
+                await dbPut(`chat_messages/${msgId}/reactions/${emoji}/${encodeURIComponent(currentUser)}`, true, 8000);
+                if (!m.reactions) m.reactions = {};
+                if (!m.reactions[emoji]) m.reactions[emoji] = {};
+                m.reactions[emoji][currentUser] = true;
+            }
+            const el = document.getElementById('msg-' + msgId);
+            if (el) el.innerHTML = getMsgInner(msgId, m);
+        } catch (e) {
+            setNetStatus(false);
+        }
         document.getElementById('context-menu').style.display = 'none';
     };
 
-    window.copyMsg = (t) => { navigator.clipboard.writeText(t); document.getElementById('context-menu').style.display = 'none'; };
-    window.delMsg = (id) => { remove(ref(db, 'chat_messages/' + id)); document.getElementById('context-menu').style.display = 'none'; };
+    window.copyMsg = (t) => { navigator.clipboard.writeText(t).catch(()=>{}); document.getElementById('context-menu').style.display = 'none'; };
+    window.delMsg = async (id) => {
+        try { await dbDelete('chat_messages/' + id, 10000); } catch (_) {}
+        delete allMessages[id];
+        renderedMsgIds.delete(id);
+        document.getElementById('msg-' + id)?.remove();
+        document.getElementById('context-menu').style.display = 'none';
+    };
     window.delLocal = (id) => {
-        const h = JSON.parse(localStorage.getItem('hidden_msgs') || '[]');
-        h.push(id); localStorage.setItem('hidden_msgs', JSON.stringify(h));
+        hiddenMsgs.add(id);
+        localStorage.setItem('hidden_msgs', JSON.stringify([...hiddenMsgs]));
         document.getElementById("msg-" + id)?.remove();
+        renderedMsgIds.delete(id);
         document.getElementById('context-menu').style.display = 'none';
     };
 
@@ -1181,42 +1030,40 @@
         const v = inp.value.trim(); if (!v) return;
         try {
             if (editingId) {
-                await withTimeout(update(ref(db, 'chat_messages/' + editingId), { text: v, edited: true }), 10000, 'edit');
+                await dbPatch('chat_messages/' + editingId, { text: v, edited: true }, 10000);
             } else {
-                await withTimeout(push(ref(db, 'chat_messages'), {
+                // POST создаёт уникальный ключ — как push() в SDK
+                await dbPost('chat_messages', {
                     username: currentUser,
                     text: v,
                     time: Date.now(),
                     replyTo: currentReply
-                }), 10000, 'send');
+                }, 12000);
             }
             window.cancelInputState();
-        } catch (_) {}
+            // Сразу подтянуть свежие данные
+            pollMessages();
+        } catch (e) {
+            setNetStatus(false);
+        }
     };
-
     document.getElementById('send-btn').onclick = sendMessage;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     document.getElementById('message-input').onkeydown = (e) => {
         if (e.key === 'Enter') {
-            if (isMobile) {
-                return;
-            } else {
-                if (e.shiftKey) {
-                    return;
-                } else {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            }
+            if (isMobile) return;
+            if (e.shiftKey) return;
+            e.preventDefault();
+            sendMessage();
         }
     };
 
+    // ---------- Search ----------
     const searchInput = document.getElementById('search-input');
     document.getElementById('open-search-btn').onclick = () => { document.getElementById('search-bar').classList.add('active'); searchInput.focus(); };
     document.getElementById('close-search-btn').onclick = () => { document.getElementById('search-bar').classList.remove('active'); searchInput.value = ''; filterMessages(''); };
     searchInput.oninput = (e) => filterMessages(e.target.value.toLowerCase());
-
     function filterMessages(q) {
         document.querySelectorAll('.message').forEach(el => {
             const id = el.id.replace('msg-', '');
@@ -1227,6 +1074,135 @@
         });
     }
 
+    // ---------- Change nick ----------
+    document.getElementById('change-nick-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const newNickRaw = document.getElementById('settings-new-nick').value.trim();
+        const pass = document.getElementById('settings-nick-pass').value.trim();
+        const errEl = document.getElementById('change-nick-error');
+        const btn = document.getElementById('change-nick-btn');
+        errEl.style.color = "var(--error)";
+
+        if (!newNickRaw || !pass) return errEl.innerText = "Заполните все поля";
+
+        const oldKey = currentUserKey || nickKey(currentUser);
+        const newKey = nickKey(newNickRaw);
+
+        btn.disabled = true;
+        showLoading("Смена ника…", { warnAfterMs: 6000 });
+
+        try {
+            const userData = await dbGet('users/' + encodeURIComponent(oldKey), 15000);
+            if (!userData) { hideLoading(); btn.disabled = false; return errEl.innerText = "Аккаунт не найден"; }
+            const salt = userData.salt || '';
+            const hp = await hashPass(pass + salt);
+            if (hp !== userData.password) { hideLoading(); btn.disabled = false; return errEl.innerText = "Неверный пароль"; }
+            if (newKey === oldKey) { hideLoading(); btn.disabled = false; return errEl.innerText = "Это ваш текущий ник"; }
+
+            const collision = await findNickCollision(newNickRaw, oldKey);
+            if (collision) { hideLoading(); btn.disabled = false; return errEl.innerText = "Ник занят"; }
+
+            const { password, salt: oldSalt, realName } = userData;
+            await dbPut('users/' + encodeURIComponent(newKey), {
+                password, salt: oldSalt, displayName: newNickRaw,
+                ...(realName ? { realName } : {})
+            }, 15000);
+            await dbDelete('users/' + encodeURIComponent(oldKey), 15000);
+
+            // Обновить старые сообщения: username, replyTo.user, readBy, reactions
+            const chatData = await dbGet('chat_messages', 20000);
+            if (chatData) {
+                const patches = {};
+                for (const [mid, m] of Object.entries(chatData)) {
+                    if (m.username === currentUser) patches[`${mid}/username`] = newNickRaw;
+                    if (m.replyTo && m.replyTo.user === currentUser) patches[`${mid}/replyTo/user`] = newNickRaw;
+                    if (m.readBy && m.readBy[currentUser] !== undefined) {
+                        patches[`${mid}/readBy/${newNickRaw}`] = m.readBy[currentUser];
+                        patches[`${mid}/readBy/${currentUser}`] = null;
+                    }
+                    if (m.reactions) {
+                        for (const [emoji, users] of Object.entries(m.reactions)) {
+                            if (users && users[currentUser] !== undefined) {
+                                patches[`${mid}/reactions/${emoji}/${newNickRaw}`] = users[currentUser];
+                                patches[`${mid}/reactions/${emoji}/${currentUser}`] = null;
+                            }
+                        }
+                    }
+                }
+                if (Object.keys(patches).length) {
+                    await dbPatch('chat_messages', patches, 25000);
+                }
+            }
+
+            currentUser = newNickRaw;
+            currentUserKey = newKey;
+            localStorage.setItem('chat_user', newNickRaw);
+            localStorage.setItem('chat_user_key', newKey);
+            document.getElementById('user-display').innerText = "@" + newNickRaw;
+
+            // Перерисовать всё, т.к. сменился currentUser
+            renderedMsgIds.clear();
+            document.getElementById('chat-container').innerHTML = '';
+            allMessages = {};
+            hideLoading();
+            errEl.style.color = "var(--read)";
+            errEl.innerText = "Ник успешно изменен";
+            document.getElementById('settings-new-nick').value = '';
+            document.getElementById('settings-nick-pass').value = '';
+            btn.disabled = false;
+            // Перезагрузить сообщения
+            startChat();
+        } catch (err) {
+            setNetStatus(false);
+            hideLoading();
+            btn.disabled = false;
+            errEl.innerText = "Ошибка: " + (err.message || err);
+        }
+    };
+
+    // ---------- Change password ----------
+    document.getElementById('change-pass-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const oldP = document.getElementById('settings-old-pass').value.trim();
+        const newP = document.getElementById('settings-new-pass').value.trim();
+        const newPConf = document.getElementById('settings-new-pass-confirm').value.trim();
+        const errEl = document.getElementById('change-pass-error');
+        errEl.style.color = "var(--error)";
+
+        if (!oldP || !newP || !newPConf) return errEl.innerText = "Заполните все поля";
+        if (newP !== newPConf) return errEl.innerText = "Новые пароли не совпадают";
+        const passErr = checkPassSecurity(newP);
+        if (passErr) return errEl.innerText = passErr;
+
+        const uKey = currentUserKey || nickKey(currentUser);
+        showLoading("Смена пароля…", { warnAfterMs: 6000 });
+        try {
+            const userData = await dbGet('users/' + encodeURIComponent(uKey), 15000);
+            if (!userData) { hideLoading(); return errEl.innerText = "Аккаунт не найден"; }
+            const oldSalt = userData.salt || '';
+            const oldHash = await hashPass(oldP + oldSalt);
+            if (userData.password !== oldHash) { hideLoading(); return errEl.innerText = "Неверный старый пароль"; }
+
+            const newSalt = (typeof crypto.randomUUID === 'function')
+                ? crypto.randomUUID()
+                : Math.random().toString(36).substring(2);
+            const newHash = await hashPass(newP + newSalt);
+
+            await dbPatch('users/' + encodeURIComponent(uKey), { password: newHash, salt: newSalt }, 15000);
+            hideLoading();
+            errEl.style.color = "var(--read)";
+            errEl.innerText = "Пароль успешно изменен";
+            document.getElementById('settings-old-pass').value = '';
+            document.getElementById('settings-new-pass').value = '';
+            document.getElementById('settings-new-pass-confirm').value = '';
+        } catch (e) {
+            setNetStatus(false);
+            hideLoading();
+            errEl.innerText = "Ошибка: " + (e.message || e);
+        }
+    };
+
+    // ---------- UI wiring ----------
     document.getElementById('open-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
     document.getElementById('close-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'none';
 
@@ -1245,7 +1221,11 @@
     document.getElementById('close-change-pass-btn').onclick = () => document.getElementById('change-pass-modal').style.display = 'none';
 
     document.getElementById('clear-cache-btn').onclick = () => { localStorage.removeItem('hidden_msgs'); location.reload(); };
-    document.getElementById('global-logout-btn').onclick = () => { localStorage.clear(); location.reload(); };
+    document.getElementById('global-logout-btn').onclick = () => {
+        if (pollTimer) clearInterval(pollTimer);
+        localStorage.clear();
+        location.reload();
+    };
 
     window.onclick = (e) => {
         if (e.target.id === 'settings-modal' || e.target.id === 'info-modal' ||
@@ -1254,6 +1234,9 @@
         }
         if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
     };
+
+    // Показываем индикатор сети
+    netInd.classList.add('online');
 </script>
 </body>
 </html>
