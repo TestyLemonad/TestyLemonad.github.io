@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000">
     <title>GGgram</title>
     <link rel="icon" type="image/png" href="icon.png">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -15,7 +16,6 @@
             --auth-input: #1b2632;
             --transition-speed: 0.3s;
         }
-
         body.light-theme {
             --bg: #f0f2f5; --panel: #ffffff; --text: #000000; --accent: #0088cc;
             --accent-hover: #0077b5; --msg-in: #ffffff; --msg-out: #effdde;
@@ -23,147 +23,61 @@
             --read: #4caf50; --quote-bar: #0088cc; --quote-bg: rgba(0, 136, 204, 0.08);
             --auth-input: #f0f2f5;
         }
-
-        * { 
-            -webkit-tap-highlight-color: transparent; 
-            box-sizing: border-box; 
-            user-select: none; 
-            -webkit-user-select: none; 
-            -ms-user-select: none;
-            transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
-        }
-
-        input, textarea, .message * {
-            transition: none !important;
-        }
-
-        input, textarea {
-            user-select: text !important;
-            -webkit-user-select: text !important;
-            -ms-user-select: text !important;
-        }
-
-        html, body {
-            max-width: 100%;
-            overflow-x: hidden;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            color: var(--text); margin: 0; display: flex; flex-direction: column; 
-            height: 100vh; height: 100dvh; background: var(--bg); overflow: hidden;
-            overflow-x: hidden;
-        }
-
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; user-select: none; -webkit-user-select: none; -ms-user-select: none; transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
+        input, textarea, .message * { transition: none !important; }
+        input, textarea { user-select: text !important; -webkit-user-select: text !important; -ms-user-select: text !important; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: var(--bg); overflow: hidden; overflow-x: hidden; }
         #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .auth-box { background: var(--panel); padding: 30px; border-radius: 28px; width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); text-align: center; animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .auth-input-group { margin-bottom: 16px; text-align: left; }
         .auth-input-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; margin-left: 4px; color: var(--accent); text-transform: uppercase; }
         .auth-input-wrapper { position: relative; display: flex; align-items: center; }
         .auth-input-wrapper svg.input-icon { position: absolute; left: 14px; color: var(--accent); opacity: 0.7; }
-
         .auth-field { width: 100%; background: var(--auth-input); border: 2px solid transparent; border-radius: 14px; padding: 12px 42px 12px 42px; color: var(--text); font-size: 15px; outline: none; transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease; }
         .auth-field.no-left-icon { padding-left: 14px; }
         .auth-field:focus { border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px var(--quote-bg); }
-
         .eye-btn { position: absolute; right: 14px; background: none; border: none; padding: 0; color: var(--accent); opacity: 0.7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.2s; }
         .eye-btn:hover { opacity: 1; transform: scale(1.08); }
-
-        .auth-tabs {
-            position: relative;
-            display: flex;
-            background: var(--auth-input);
-            border-radius: 14px;
-            padding: 4px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        .auth-tabs .tab-indicator {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            width: calc(50% - 4px);
-            height: calc(100% - 8px);
-            background: var(--accent);
-            border-radius: 11px;
-            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-            z-index: 0;
-        }
-        .auth-tabs.reg-active .tab-indicator {
-            transform: translateX(100%);
-        }
+        .auth-tabs { position: relative; display: flex; background: var(--auth-input); border-radius: 14px; padding: 4px; margin-bottom: 20px; overflow: hidden; }
+        .auth-tabs .tab-indicator { position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); background: var(--accent); border-radius: 11px; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); z-index: 0; }
+        .auth-tabs.reg-active .tab-indicator { transform: translateX(100%); }
         .tab { position: relative; z-index: 1; flex: 1; padding: 10px; cursor: pointer; border-radius: 11px; font-size: 13px; font-weight: 600; text-align: center; transition: color 0.25s ease; color: var(--text); }
         .tab.active { color: #fff; }
-
-        .auth-panel {
-            position: relative;
-            overflow: hidden;
-            transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .auth-panel-inner {
-            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
-        }
-        .auth-panel-inner.swap-left {
-            transform: translateX(-14px);
-            opacity: 0;
-        }
-        .auth-panel-inner.swap-right {
-            transform: translateX(14px);
-            opacity: 0;
-        }
-
+        .auth-panel { position: relative; overflow: hidden; transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+        .auth-panel-inner { transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease; }
+        .auth-panel-inner.swap-left { transform: translateX(-14px); opacity: 0; }
+        .auth-panel-inner.swap-right { transform: translateX(14px); opacity: 0; }
         header { background: var(--panel); height: 56px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; }
         .header-left, .header-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .header-right { overflow: hidden; }
-
         .search-container { display: none; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: var(--panel); padding: 0 15px; align-items: center; z-index: 10; }
         .search-container.active { display: flex; animation: fadeIn 0.2s ease both; }
         #search-input { flex: 1; background: var(--input-bg); border: none; color: var(--text); padding: 8px 15px; border-radius: 10px; outline: none; }
-
         #chat-container { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; min-width: 0; width: 100%; }
-
         blockquote { margin: 5px 0; padding: 5px 12px; border-left: 3px solid var(--quote-bar); background: var(--quote-bg); border-radius: 4px; font-style: italic; cursor: pointer; word-break: break-word; overflow-wrap: anywhere; transition: background-color 0.2s ease; }
         blockquote:hover { background: var(--quote-bg); filter: brightness(1.15); }
-
         .message { padding: 6px 12px; border-radius: 16px; background: var(--msg-in); align-self: flex-start; max-width: 85%; border: 1px solid var(--border); position: relative; word-wrap: break-word; overflow-wrap: anywhere; word-break: break-word; min-width: 0; animation: msgIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .message.my { background: var(--msg-out); align-self: flex-end; border: none; }
         .message.highlight-anim { animation: highlight-pulse 2s ease-out; }
         @keyframes highlight-pulse { 0% { outline: 2px solid var(--accent); } 100% { outline: 2px solid transparent; } }
-
-        @keyframes msgIn {
-            from { opacity: 0; transform: translateY(6px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.94); }
-            to   { opacity: 1; transform: scale(1); }
-        }
-
+        @keyframes msgIn { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
         .message div, .message p { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; margin-top: 0; margin-bottom: 2px; }
         .message p:last-child { margin-bottom: 0; }
-
         .reactions-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
         .reaction-chip { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; font-size: 11px; cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease; }
         .reaction-chip:hover { transform: scale(1.06); }
         .reaction-chip.active { border-color: var(--accent); background: var(--quote-bg); }
-
         .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; opacity: 0.6; margin-top: 2px; line-height: 1; }
         .ticks { display: flex; align-items: center; color: currentColor; transition: color 0.3s ease; }
         .ticks.read { color: var(--read); }
         .ticks svg { display: block; }
-
         .input-area { background: var(--panel); padding: 10px; border-top: 1px solid var(--border); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         .input-row { display: flex; gap: 10px; align-items: flex-end; }
         #message-input { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 22px; flex: 1; font-size: 15px; resize: none; outline: none; max-height: 150px; min-width: 0; }
-
         .btn-main { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: background-color 0.2s ease, transform 0.12s ease, filter 0.2s ease; }
         .btn-main:hover { background: var(--accent-hover); }
         .btn-main:active { transform: scale(0.97); }
@@ -172,97 +86,37 @@
         .icon-btn:hover { opacity: 0.8; }
         .icon-btn:active { transform: scale(0.9); }
         .hidden { display: none !important; }
-
         #reply-bar { animation: fadeInUp 0.22s ease both; }
-
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; border-radius: 34px; transition: .4s; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; }
         input:checked + .slider { background-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
-
         #settings-modal, #info-modal, #change-pass-modal, #change-nick-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
         #settings-modal[style*="flex"], #info-modal[style*="flex"], #change-pass-modal[style*="flex"], #change-nick-modal[style*="flex"] { animation: fadeIn 0.2s ease both; }
         .modal-box { background: var(--panel); width: 100%; max-width: 320px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; animation: popIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
-
         #context-menu { position: fixed; background: var(--context-bg); border: 1px solid var(--border); border-radius: 20px; z-index: 3000; min-width: 220px; max-width: calc(100vw - 20px); display: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         #context-menu.active { animation: popIn 0.16s ease-out both; transform-origin: top left; }
         .context-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 10px; transition: background-color 0.15s ease; }
         .context-item:hover { background: var(--quote-bg); }
         .context-item:last-child { border-bottom: none; }
-
         .emoji-picker { display: flex; justify-content: space-around; padding: 10px; background: rgba(0,0,0,0.05); border-bottom: 1px solid var(--border); }
         .emoji-item { font-size: 20px; cursor: pointer; transition: transform 0.2s; }
         .emoji-item:hover { transform: scale(1.25); }
-
-        #loading-overlay {
-            position: fixed; inset: 0; z-index: 10000;
-            background: rgba(0,0,0,0.55);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 18px;
-            transition: opacity 0.35s ease;
-            padding: 20px;
-            text-align: center;
-        }
-        #loading-overlay.hidden-overlay {
-            opacity: 0;
-            pointer-events: none;
-        }
-        #loading-overlay .spinner {
-            width: 44px; height: 44px;
-            border-radius: 50%;
-            border: 4px solid var(--border);
-            border-top-color: var(--accent);
-            animation: spin 0.9s linear infinite;
-        }
+        #loading-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transition: opacity 0.35s ease; padding: 20px; text-align: center; }
+        #loading-overlay.hidden-overlay { opacity: 0; pointer-events: none; }
+        #loading-overlay .spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #loading-overlay .loading-text {
-            font-size: 13px; color: var(--text); opacity: 0.9;
-            text-align: center; max-width: 260px; line-height: 1.4;
-        }
+        #loading-overlay .loading-text { font-size: 13px; color: var(--text); opacity: 0.9; text-align: center; max-width: 260px; line-height: 1.4; }
         #loading-overlay .loading-text.warn { color: var(--error); opacity: 1; }
-        #loading-overlay .loading-cancel {
-            margin-top: 4px;
-            background: var(--panel);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 14px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            opacity: 0.9;
-        }
+        #loading-overlay .loading-cancel { margin-top: 4px; background: var(--panel); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; opacity: 0.9; }
         #loading-overlay .loading-cancel:hover { opacity: 1; }
-
-        /* Индикатор состояния REST-подключения */
-        #net-indicator {
-            position: fixed;
-            bottom: 12px;
-            left: 12px;
-            z-index: 9000;
-            background: var(--panel);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 6px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            opacity: 0.85;
-            display: none;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-        }
+        #net-indicator { position: fixed; bottom: 12px; left: 12px; z-index: 9000; background: var(--panel); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 10px; font-size: 11px; opacity: 0.85; display: none; align-items: center; gap: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
         #net-indicator.online { display: flex; color: var(--read); }
         #net-indicator.offline { display: flex; color: var(--error); }
-        #net-indicator .dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: currentColor;
-        }
+        #net-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     </style>
 </head>
 <body class="dark-theme">
@@ -309,7 +163,6 @@
                     </button>
                 </div>
             </div>
-
             <div id="reg-fields" class="hidden">
                 <div class="auth-input-group">
                     <label for="auth-pass-confirm">Повтор пароля</label>
@@ -329,7 +182,6 @@
                     </div>
                 </div>
             </div>
-
             <button type="submit" id="auth-btn" class="btn-main" style="width:100%; height: 48px; margin-top: 10px;">Войти</button>
             <p id="auth-error" style="color:var(--error); font-size:12px; margin-top:10px; min-height: 15px;"></p>
         </form>
@@ -379,15 +231,12 @@
                 <span class="slider"></span>
             </label>
         </div>
-
         <div class="settings-item" style="border:none; margin-top:10px;">
             <button id="open-change-nick-btn" class="btn-main" style="width:100%;">Сменить ник</button>
         </div>
-
         <div class="settings-item" style="border:none; margin-top:5px;">
             <button id="open-change-pass-btn" class="btn-main" style="width:100%;">Изменить пароль</button>
         </div>
-
         <div class="settings-item" style="border:none; margin-top:5px;">
             <button id="clear-cache-btn" class="btn-main" style="width:100%; background:var(--error)">Очистить кэш сообщений</button>
         </div>
@@ -441,18 +290,49 @@
 
 <script type="module">
     // ============================================================
-    // REST-версия. Никакого Firebase SDK, никаких WebSocket.
-    // Только fetch() к https://<project>.firebasedatabase.app/<path>.json
+    // REST + локальный кеш + version-polling + инкремент ID.
     // ============================================================
 
     const DB_URL = 'https://testy-talk-default-rtdb.europe-west1.firebasedatabase.app';
+    const CACHE_KEY = 'gg_cache_v2';
+    const HIDDEN_KEY = 'hidden_msgs';
+
+    // ---------- Формат времени: ччммсс-ддммггг (локальное) ----------
+    function nowTimeStr() {
+        const d = new Date();
+        const p = n => String(n).padStart(2, '0');
+        return `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${p(d.getDate())}${p(d.getMonth()+1)}${d.getFullYear()}`;
+    }
+    function formatTimeForDisplay(t) {
+        // t уже в формате ччммсс-ддммггг
+        if (typeof t !== 'string' || t.length < 15) return '??:??';
+        const hh = t.slice(0,2), mm = t.slice(2,4);
+        return `${hh}:${mm}`;
+    }
+
+    // ---------- Локальный кеш ----------
+    let cache = { messages: {}, versions: {}, next_id: 0, myReads: {}, myReactions: {} };
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) cache = Object.assign(cache, JSON.parse(raw));
+    } catch (_) {}
+    let cacheDirty = false;
+    function saveCache() {
+        cacheDirty = true;
+        clearTimeout(saveCache._t);
+        saveCache._t = setTimeout(() => {
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); cacheDirty = false; } catch (_) {}
+        }, 300);
+    }
+    window.addEventListener('beforeunload', () => {
+        if (cacheDirty) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch (_) {} }
+    });
 
     // ---------- Loading overlay ----------
     const loadingText = document.getElementById('loading-text');
     const loadingOverlay = document.getElementById('loading-overlay');
     let loadingWarnTimer = null;
     let loadingActiveToken = 0;
-
     function showLoading(text = "Подключение…", opts = {}) {
         const warnAfterMs = opts.warnAfterMs ?? 8000;
         const token = ++loadingActiveToken;
@@ -486,12 +366,7 @@
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), timeoutMs);
         try {
-            const opts = {
-                method,
-                cache: 'no-store',
-                signal: ctrl.signal,
-                headers: { 'Accept': 'application/json' }
-            };
+            const opts = { method, cache: 'no-store', signal: ctrl.signal, headers: { 'Accept': 'application/json' } };
             if (body !== undefined) {
                 opts.headers['Content-Type'] = 'application/json';
                 opts.body = JSON.stringify(body);
@@ -507,15 +382,11 @@
             const text = await r.text();
             if (!text) return null;
             try { return JSON.parse(text); } catch { return null; }
-        } finally {
-            clearTimeout(t);
-        }
+        } finally { clearTimeout(t); }
     }
-
     const dbGet    = (path, timeoutMs) => httpJSON('GET',    '/' + path, undefined, timeoutMs);
     const dbPut    = (path, body, timeoutMs) => httpJSON('PUT',    '/' + path, body,      timeoutMs);
     const dbPatch  = (path, body, timeoutMs) => httpJSON('PATCH',  '/' + path, body,      timeoutMs);
-    const dbPost   = (path, body, timeoutMs) => httpJSON('POST',   '/' + path, body,      timeoutMs);
     const dbDelete = (path, timeoutMs) => httpJSON('DELETE', '/' + path, undefined, timeoutMs);
 
     // ---------- Net indicator ----------
@@ -526,7 +397,7 @@
         if (ok) { netFailCount = 0; netInd.classList.remove('offline'); netInd.classList.add('online'); netIndText.innerText = 'online'; }
         else {
             netFailCount++;
-            if (netFailCount >= 2) { netInd.classList.remove('online'); netInd.classList.add('offline'); netIndText.innerText = 'нет связи'; }
+            if (netFailCount >= 2) { netInd.classList.remove('online'); netInd.classList.add('offline'); netIndText.innerText = 'нет связи (оффлайн)'; }
         }
     }
 
@@ -535,15 +406,16 @@
     let currentUserKey = localStorage.getItem('chat_user_key');
     let isLoginMode = true;
     const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-    let allMessages = {};
+    let allMessages = {}; // id -> {username,text,time,replyTo,readBy,reactions,version,edited}
+    let remoteVersions = {}; // id -> version
     let renderedMsgIds = new Set();
     let currentReply = null;
     let editingId = null;
     let pollTimer = null;
-    let hiddenMsgs = new Set(JSON.parse(localStorage.getItem('hidden_msgs') || '[]'));
+    let isOffline = false;
+    let hiddenMsgs = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'));
 
-    // ---------- Helpers ----------
-    function nickKey(nick) { return (nick || '').trim().toLowerCase(); }
+    function nickKey(n) { return (n || '').trim().toLowerCase(); }
 
     async function hashPass(p) {
         const msg = new TextEncoder().encode(p);
@@ -556,7 +428,6 @@
         if (!/[0-9]/.test(p)) return "Пароль должен содержать цифры";
         return null;
     }
-
     async function findNickCollision(nick, excludeKey) {
         const key = nickKey(nick);
         if (key === excludeKey) return null;
@@ -572,6 +443,23 @@
         return null;
     }
 
+    // ---------- Атомарное получение нового ID ----------
+    // В REST RTDB нет атомарного INCR, поэтому используем «читаем — пишем,
+    // если не изменилось». На нашем масштабе (единичные отправки) работает.
+    async function allocateMessageId() {
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const cur = await dbGet('next_id', 8000);
+            const curVal = (typeof cur === 'number') ? cur : 0;
+            const nextVal = curVal + 1;
+            // Оптимистичный PUT. Если кто-то успел раньше — next_id уже другой,
+            // и следующий цикл перечитает.
+            await dbPut('next_id', nextVal, 8000);
+            const check = await dbGet('next_id', 8000);
+            if (check === nextVal) return nextVal;
+        }
+        throw new Error('id_alloc_failed');
+    }
+
     // ---------- Theme ----------
     const themeToggle = document.getElementById('theme-toggle');
     const applyTheme = (theme) => {
@@ -583,8 +471,7 @@
     if (savedTheme) applyTheme(savedTheme); else if (prefersLight) applyTheme('light');
     themeToggle.onchange = (e) => {
         const theme = e.target.checked ? 'light' : 'dark';
-        applyTheme(theme);
-        localStorage.setItem('theme', theme);
+        applyTheme(theme); localStorage.setItem('theme', theme);
     };
 
     marked.setOptions({ breaks: true, gfm: true });
@@ -615,12 +502,10 @@
     window.togglePassVisibility = (id, btn) => {
         const input = document.getElementById(id);
         if (input.type === 'password') {
-            input.type = 'text';
-            btn.style.opacity = '1';
+            input.type = 'text'; btn.style.opacity = '1';
             btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
         } else {
-            input.type = 'password';
-            btn.style.opacity = '0.7';
+            input.type = 'password'; btn.style.opacity = '0.7';
             btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
         }
     };
@@ -631,12 +516,10 @@
         const uRaw = document.getElementById('auth-user').value.trim();
         const p = document.getElementById('auth-pass').value.trim();
         if (!uRaw || !p) return errorEl.innerText = "Заполните ник и пароль";
-
         const uKey = nickKey(uRaw);
 
         if (isLoginMode) {
-            authBtn.disabled = true;
-            authBtn.innerText = "Вход...";
+            authBtn.disabled = true; authBtn.innerText = "Вход...";
             showLoading("Вход…", { warnAfterMs: 6000 });
             try {
                 const userData = await dbGet('users/' + encodeURIComponent(uKey), 15000);
@@ -646,91 +529,48 @@
                     const hp = await hashPass(p + salt);
                     if (userData.password === hp) {
                         const display = userData.displayName || uRaw;
-                        hideLoading();
-                        login(display, uKey);
-                    } else {
-                        hideLoading();
-                        errorEl.innerText = "Неверный ник или пароль";
-                    }
-                } else {
-                    hideLoading();
-                    errorEl.innerText = "Неверный ник или пароль";
-                }
+                        hideLoading(); login(display, uKey);
+                    } else { hideLoading(); errorEl.innerText = "Неверный ник или пароль"; }
+                } else { hideLoading(); errorEl.innerText = "Неверный ник или пароль"; }
             } catch (err) {
-                setNetStatus(false);
-                hideLoading();
+                setNetStatus(false); hideLoading();
                 errorEl.innerText = "Ошибка сети: " + (err.message || err);
             }
-            authBtn.disabled = false;
-            authBtn.innerText = "Войти";
+            authBtn.disabled = false; authBtn.innerText = "Войти";
         } else {
             const pc = document.getElementById('auth-pass-confirm').value.trim();
             const sc = document.getElementById('auth-secret').value.trim();
-
             if (p !== pc) return errorEl.innerText = "Пароли не совпадают";
             const passErr = checkPassSecurity(p);
             if (passErr) return errorEl.innerText = passErr;
             if (!sc) return errorEl.innerText = "Введите секретный код";
 
-            authBtn.disabled = true;
-            authBtn.innerText = "Проверка кода...";
+            authBtn.disabled = true; authBtn.innerText = "Проверка кода...";
             showLoading("Регистрация…", { warnAfterMs: 6000 });
 
             try {
                 const collision = await findNickCollision(uRaw, null);
                 if (collision) {
-                    hideLoading();
-                    authBtn.disabled = false;
-                    authBtn.innerText = "Создать аккаунт";
+                    hideLoading(); authBtn.disabled = false; authBtn.innerText = "Создать аккаунт";
                     return errorEl.innerText = "Ник занят";
                 }
-
                 const scHash = await hashPass(sc);
                 const scData = await dbGet('sc', 15000);
                 let foundRealName = null;
-                if (scData) {
-                    for (const [name, hash] of Object.entries(scData)) {
-                        if (hash === scHash) { foundRealName = name; break; }
-                    }
-                }
+                if (scData) for (const [name, hash] of Object.entries(scData)) if (hash === scHash) { foundRealName = name; break; }
                 if (!foundRealName) {
-                    hideLoading();
-                    authBtn.disabled = false;
-                    authBtn.innerText = "Создать аккаунт";
+                    hideLoading(); authBtn.disabled = false; authBtn.innerText = "Создать аккаунт";
                     return errorEl.innerText = "Неверный секретный код";
                 }
-
-                const salt = (typeof crypto.randomUUID === 'function')
-                    ? crypto.randomUUID()
-                    : Math.random().toString(36).substring(2);
+                const salt = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
                 const hp = await hashPass(p + salt);
-
-                // Повторная проверка на дубликат (гонка)
                 const dup = await dbGet('users/' + encodeURIComponent(uKey), 10000);
-                if (dup) {
-                    hideLoading();
-                    authBtn.disabled = false;
-                    authBtn.innerText = "Создать аккаунт";
-                    return errorEl.innerText = "Ник занят";
-                }
-
-                await dbPut('users/' + encodeURIComponent(uKey), {
-                    password: hp,
-                    salt: salt,
-                    displayName: uRaw,
-                    realName: foundRealName
-                }, 15000);
-
+                if (dup) { hideLoading(); authBtn.disabled = false; authBtn.innerText = "Создать аккаунт"; return errorEl.innerText = "Ник занят"; }
+                await dbPut('users/' + encodeURIComponent(uKey), { password: hp, salt, displayName: uRaw, realName: foundRealName }, 15000);
                 await dbDelete('sc/' + encodeURIComponent(foundRealName), 15000);
-
-                setNetStatus(true);
-                hideLoading();
-                login(uRaw, uKey);
+                setNetStatus(true); hideLoading(); login(uRaw, uKey);
             } catch (err) {
-                setNetStatus(false);
-                hideLoading();
-                authBtn.disabled = false;
-                authBtn.innerText = "Создать аккаунт";
+                setNetStatus(false); hideLoading(); authBtn.disabled = false; authBtn.innerText = "Создать аккаунт";
                 errorEl.innerText = "Ошибка: " + (err.message || err);
             }
         }
@@ -749,143 +589,211 @@
     // ---------- Session restore ----------
     if (currentUser) {
         if (!currentUserKey) currentUserKey = nickKey(currentUser);
-        authBtn.disabled = true;
-        authBtn.innerText = "Загрузка...";
+        authBtn.disabled = true; authBtn.innerText = "Загрузка...";
         showLoading("Восстановление сессии…", { warnAfterMs: 6000 });
-
         dbGet('users/' + encodeURIComponent(currentUserKey), 15000)
             .then(userData => {
                 if (userData) {
                     const display = userData.displayName || currentUser;
-                    hideLoading();
-                    login(display, currentUserKey);
+                    hideLoading(); login(display, currentUserKey);
                 } else {
                     localStorage.removeItem('chat_user');
                     localStorage.removeItem('chat_user_key');
-                    currentUser = null;
-                    currentUserKey = null;
-                    hideLoading();
-                    authBtn.disabled = false;
-                    authBtn.innerText = "Войти";
+                    currentUser = null; currentUserKey = null;
+                    hideLoading(); authBtn.disabled = false; authBtn.innerText = "Войти";
                 }
             })
-            .catch((err) => {
-                hideLoading();
-                authBtn.disabled = false;
-                authBtn.innerText = "Войти";
-                errorEl.innerText = "Сервер недоступен: " + (err.message || err);
+            .catch(() => {
+                // Нет сети — работаем офлайн из кеша
+                hideLoading(); authBtn.disabled = false; authBtn.innerText = "Войти";
+                if (cache.messages && Object.keys(cache.messages).length) {
+                    login(currentUser, currentUserKey);
+                    setNetStatus(false);
+                } else {
+                    errorEl.innerText = "Сервер недоступен, кеша нет.";
+                }
             });
     }
 
-    // ---------- Chat: initial load + polling ----------
-    async function startChat() {
-        // Первая загрузка — получаем все сообщения сразу
-        try {
-            const data = await dbGet('chat_messages', 20000);
-            setNetStatus(true);
-            if (data) {
-                const ids = Object.keys(data);
-                ids.sort((a, b) => (data[a].time || 0) - (data[b].time || 0));
-                for (const id of ids) {
-                    allMessages[id] = data[id];
-                    if (!renderedMsgIds.has(id) && !hiddenMsgs.has(id)) {
-                        renderMsg(id, data[id]);
-                        renderedMsgIds.add(id);
-                    }
-                }
-                markVisibleAsRead();
+    // ---------- Chat ----------
+    function loadFromCache() {
+        allMessages = {};
+        renderedMsgIds.clear();
+        document.getElementById('chat-container').innerHTML = '';
+        const ids = Object.keys(cache.messages || {}).map(Number).sort((a, b) => a - b);
+        for (const id of ids) {
+            const m = cache.messages[id];
+            if (!m) continue;
+            allMessages[id] = m;
+            remoteVersions[id] = m.version || 1;
+            if (!hiddenMsgs.has(String(id))) {
+                renderMsg(String(id), m);
+                renderedMsgIds.add(String(id));
             }
-        } catch (e) {
-            setNetStatus(false);
         }
-        // Polling каждые 2 секунды: получаем весь узел, диффаем.
-        if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(pollMessages, 2000);
     }
 
-    async function pollMessages() {
-        if (!currentUser) return;
-        let data;
+    async function startChat() {
+        // 1. Мгновенно показываем кеш
+        loadFromCache();
+        // 2. Пробуем сеть
         try {
-            data = await dbGet('chat_messages', 12000);
+            const remoteVersionsData = await dbGet('versions', 12000);
             setNetStatus(true);
+            isOffline = false;
+            await syncAll(remoteVersionsData || {});
         } catch (e) {
-            setNetStatus(false);
-            return;
+            setNetStatus(false); isOffline = true;
         }
-        if (!data) return;
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollTick, 500);
+    }
 
-        const ids = Object.keys(data);
-        ids.sort((a, b) => (data[a].time || 0) - (data[b].time || 0));
-
-        let needScroll = false;
-        for (const id of ids) {
-            const prev = allMessages[id];
-            const cur = data[id];
-            allMessages[id] = cur;
-
-            // Новое сообщение
-            if (!prev) {
-                if (!renderedMsgIds.has(id) && !hiddenMsgs.has(id)) {
-                    renderMsg(id, cur);
-                    renderedMsgIds.add(id);
-                    needScroll = true;
-                }
-                continue;
+    // Полная синхронизация: versions + подгрузка всех недостающих сообщений
+    async function syncAll(remoteVersionsData) {
+        remoteVersions = remoteVersionsData || {};
+        // подгружаем missing/changed
+        const toFetch = [];
+        for (const [idStr, ver] of Object.entries(remoteVersions)) {
+            const localVer = allMessages[idStr] && allMessages[idStr].version;
+            if (localVer !== ver) toFetch.push(idStr);
+        }
+        // параллельно, но небольшими пачками
+        const CHUNK = 8;
+        for (let i = 0; i < toFetch.length; i += CHUNK) {
+            const chunk = toFetch.slice(i, i + CHUNK);
+            await Promise.all(chunk.map(async idStr => {
+                try {
+                    const msg = await dbGet('chat_messages/' + idStr, 10000);
+                    if (msg) {
+                        allMessages[idStr] = msg;
+                        cache.messages[idStr] = msg;
+                        // отрисовать/обновить
+                        if (!renderedMsgIds.has(idStr) && !hiddenMsgs.has(idStr)) {
+                            renderMsg(idStr, msg);
+                            renderedMsgIds.add(idStr);
+                        } else {
+                            const el = document.getElementById('msg-' + idStr);
+                            if (el) el.innerHTML = getMsgInner(idStr, msg);
+                        }
+                    }
+                } catch (_) {}
+            }));
+        }
+        // Удалённые сообщения (есть локально, нет в remoteVersions)
+        for (const idStr of Object.keys(allMessages)) {
+            if (!(idStr in remoteVersions)) {
+                delete allMessages[idStr];
+                delete cache.messages[idStr];
+                renderedMsgIds.delete(idStr);
+                document.getElementById('msg-' + idStr)?.remove();
             }
-
-            // Изменилось — перерисовываем innerHTML на месте
-            if (JSON.stringify(prev) !== JSON.stringify(cur)) {
-                const el = document.getElementById('msg-' + id);
-                if (el) el.innerHTML = getMsgInner(id, cur);
-            }
         }
-        // Удалённые
-        for (const id of Object.keys(allMessages)) {
-            if (!(id in data)) {
-                delete allMessages[id];
-                renderedMsgIds.delete(id);
-                document.getElementById('msg-' + id)?.remove();
-            }
-        }
-        if (needScroll) {
-            const c = document.getElementById('chat-container');
-            c.scrollTop = c.scrollHeight;
-        }
+        cache.versions = Object.assign({}, remoteVersions);
+        saveCache();
+        scrollToBottomIfNeeded();
         markVisibleAsRead();
     }
 
+    // Лёгкий polling: только versions. Если что-то изменилось — догружаем.
+    async function pollTick() {
+        if (!currentUser) return;
+        let versions;
+        try {
+            versions = await dbGet('versions', 6000);
+            setNetStatus(true);
+            isOffline = false;
+        } catch (e) {
+            setNetStatus(false); isOffline = true;
+            return;
+        }
+        if (!versions) versions = {};
+        // Список id, у которых версия изменилась или которых у нас нет
+        const toFetch = [];
+        for (const [idStr, ver] of Object.entries(versions)) {
+            const localVer = (allMessages[idStr] && allMessages[idStr].version) || 0;
+            if (localVer !== ver) toFetch.push(idStr);
+        }
+        // Удаления
+        let deleted = false;
+        for (const idStr of Object.keys(allMessages)) {
+            if (!(idStr in versions)) {
+                delete allMessages[idStr];
+                delete cache.messages[idStr];
+                renderedMsgIds.delete(idStr);
+                document.getElementById('msg-' + idStr)?.remove();
+                deleted = true;
+            }
+        }
+        if (toFetch.length) {
+            for (const idStr of toFetch) {
+                try {
+                    const msg = await dbGet('chat_messages/' + idStr, 8000);
+                    if (msg) {
+                        allMessages[idStr] = msg;
+                        cache.messages[idStr] = msg;
+                        if (!renderedMsgIds.has(idStr) && !hiddenMsgs.has(idStr)) {
+                            renderMsg(idStr, msg);
+                            renderedMsgIds.add(idStr);
+                            scrollToBottomIfNeeded();
+                        } else {
+                            const el = document.getElementById('msg-' + idStr);
+                            if (el) el.innerHTML = getMsgInner(idStr, msg);
+                        }
+                    }
+                } catch (_) {}
+            }
+        }
+        cache.versions = Object.assign({}, versions);
+        if (toFetch.length || deleted) saveCache();
+        markVisibleAsRead();
+    }
+
+    function scrollToBottomIfNeeded() {
+        const c = document.getElementById('chat-container');
+        // автоскролл, если мы у самого низа
+        const nearBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 150;
+        if (nearBottom) c.scrollTop = c.scrollHeight;
+    }
+
     async function markVisibleAsRead() {
-        for (const id of Object.keys(allMessages)) {
-            const m = allMessages[id];
+        for (const idStr of Object.keys(allMessages)) {
+            const m = allMessages[idStr];
             if (!m || m.username === currentUser) continue;
             if (m.readBy && m.readBy[currentUser]) continue;
             try {
-                await dbPut(`chat_messages/${id}/readBy/${encodeURIComponent(currentUser)}`, Date.now(), 8000);
-                if (!m.readBy) m.readBy = {};
-                m.readBy[currentUser] = Date.now();
+                await dbPut(`chat_messages/${idStr}/readBy/${encodeURIComponent(currentUser)}`, nowTimeStr(), 8000);
+                // bump version — чтобы отправитель увидел "прочитано"
+                const v = (m.version || 1) + 1;
+                await dbPut(`chat_messages/${idStr}/version`, v, 8000);
+                await dbPut(`versions/${idStr}`, v, 8000);
+                m.readBy = m.readBy || {};
+                m.readBy[currentUser] = nowTimeStr();
+                m.version = v;
+                cache.messages[idStr] = m;
+                saveCache();
             } catch (_) {}
         }
     }
 
-    function renderMsg(id, data) {
-        if (hiddenMsgs.has(id)) return;
+    function renderMsg(idStr, data) {
+        if (hiddenMsgs.has(idStr)) return;
         const div = document.createElement('div');
         div.className = `message ${data.username === currentUser ? 'my' : ''}`;
-        div.id = "msg-" + id;
-        div.innerHTML = getMsgInner(id, data);
-        div.oncontextmenu = (e) => { e.preventDefault(); showContext(e, id, data); };
-        let pt; div.ontouchstart = (e) => { pt = setTimeout(() => showContext(e.touches[0], id, data), 500); };
+        div.id = "msg-" + idStr;
+        div.innerHTML = getMsgInner(idStr, data);
+        div.oncontextmenu = (e) => { e.preventDefault(); showContext(e, idStr, data); };
+        let pt; div.ontouchstart = (e) => { pt = setTimeout(() => showContext(e.touches[0], idStr, data), 500); };
         div.ontouchend = () => clearTimeout(pt);
         document.getElementById('chat-container').appendChild(div);
     }
 
-    function getMsgInner(id, data) {
+    function getMsgInner(idStr, data) {
         const quote = data.replyTo
             ? `<blockquote onclick="window.scrollToMsg('${data.replyTo.id}')"><b>${data.replyTo.user}</b>: ${String(data.replyTo.text || '').slice(0,30)}...</blockquote>`
             : '';
         const md = marked.parse(data.text || '');
-        const time = new Date(data.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const time = formatTimeForDisplay(data.time);
         const edited = data.edited ? `<span style="opacity:0.4; font-size:9px">изм.</span>` : '';
         let ticks = '';
         if (data.username === currentUser) {
@@ -900,7 +808,7 @@
             Object.entries(data.reactions).forEach(([emoji, users]) => {
                 if (!users) return;
                 const count = Object.keys(users).length;
-                if (count > 0) reactsHtml += `<div class="reaction-chip ${users[currentUser]?'active':''}" onclick="event.stopPropagation(); window.toggleReaction('${id}', '${emoji}')">${emoji} ${count}</div>`;
+                if (count > 0) reactsHtml += `<div class="reaction-chip ${users[currentUser]?'active':''}" onclick="event.stopPropagation(); window.toggleReaction('${idStr}', '${emoji}')">${emoji} ${count}</div>`;
             });
         }
         reactsHtml += '</div>';
@@ -921,25 +829,17 @@
         const isMy = data.username === currentUser;
         let ems = `<div class="emoji-picker">` + EMOJIS.map(em => `<span class="emoji-item" onclick="window.toggleReaction('${id}','${em}')">${em}</span>`).join('') + `</div>`;
         menu.innerHTML = `${ems}<div class="context-item" id="ctx-copy">📋 Копировать</div><div class="context-item" id="ctx-reply">↩️ Ответить</div>${isMy ? `<div class="context-item" id="ctx-edit">✏️ Изменить</div><div class="context-item" id="ctx-readers">👀 Кто прочитал</div>` : ''}<div class="context-item" style="color:var(--error)" id="ctx-hide">🗑️ Скрыть</div>${isMy ? `<div class="context-item" style="color:var(--error)" id="ctx-del">🗑️ Удалить у всех</div>` : ''}`;
-
-        menu.style.visibility = 'hidden';
-        menu.style.display = 'block';
-        menu.classList.remove('active');
-
+        menu.style.visibility = 'hidden'; menu.style.display = 'block'; menu.classList.remove('active');
         const rect = menu.getBoundingClientRect();
-        const mw = rect.width, mh = rect.height;
-        const vw = window.innerWidth, vh = window.innerHeight;
-        const margin = 10;
+        const mw = rect.width, mh = rect.height, vw = window.innerWidth, vh = window.innerHeight, margin = 10;
         let x = e.clientX, y = e.clientY;
         if (x + mw + margin > vw) x = vw - mw - margin;
         if (x < margin) x = margin;
         if (y + mh + margin > vh) y = y - mh;
         if (y < margin) y = margin;
         if (y + mh + margin > vh) y = vh - mh - margin;
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-        menu.style.visibility = 'visible';
-        menu.classList.add('active');
+        menu.style.left = x + 'px'; menu.style.top = y + 'px';
+        menu.style.visibility = 'visible'; menu.classList.add('active');
 
         document.getElementById('ctx-copy').onclick = () => { window.copyMsg(data.text); };
         document.getElementById('ctx-reply').onclick = () => { window.replyTo(id, data.username, data.text); };
@@ -976,30 +876,34 @@
                 if (!m.reactions[emoji]) m.reactions[emoji] = {};
                 m.reactions[emoji][currentUser] = true;
             }
+            const v = (m.version || 1) + 1;
+            await dbPut(`chat_messages/${msgId}/version`, v, 8000);
+            await dbPut(`versions/${msgId}`, v, 8000);
+            m.version = v;
+            cache.messages[msgId] = m; saveCache();
             const el = document.getElementById('msg-' + msgId);
             if (el) el.innerHTML = getMsgInner(msgId, m);
-        } catch (e) {
-            setNetStatus(false);
-        }
+        } catch (e) { setNetStatus(false); }
         document.getElementById('context-menu').style.display = 'none';
     };
 
     window.copyMsg = (t) => { navigator.clipboard.writeText(t).catch(()=>{}); document.getElementById('context-menu').style.display = 'none'; };
     window.delMsg = async (id) => {
-        try { await dbDelete('chat_messages/' + id, 10000); } catch (_) {}
-        delete allMessages[id];
-        renderedMsgIds.delete(id);
+        try {
+            await dbDelete('chat_messages/' + id, 10000);
+            await dbDelete('versions/' + id, 10000);
+        } catch (_) {}
+        delete allMessages[id]; delete cache.messages[id]; renderedMsgIds.delete(id);
         document.getElementById('msg-' + id)?.remove();
+        saveCache();
         document.getElementById('context-menu').style.display = 'none';
     };
     window.delLocal = (id) => {
-        hiddenMsgs.add(id);
-        localStorage.setItem('hidden_msgs', JSON.stringify([...hiddenMsgs]));
+        hiddenMsgs.add(id); localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hiddenMsgs]));
         document.getElementById("msg-" + id)?.remove();
         renderedMsgIds.delete(id);
         document.getElementById('context-menu').style.display = 'none';
     };
-
     window.replyTo = (id, u, t) => {
         editingId = null; currentReply = { id, user: u, text: (t || '').slice(0, 30) };
         document.getElementById('reply-bar').classList.remove('hidden');
@@ -1007,7 +911,6 @@
         document.getElementById('context-menu').style.display = 'none';
         document.getElementById('message-input').focus();
     };
-
     window.editMsg = (id) => {
         currentReply = null; editingId = id;
         document.getElementById('reply-bar').classList.remove('hidden');
@@ -1016,10 +919,8 @@
         document.getElementById('context-menu').style.display = 'none';
         document.getElementById('message-input').focus();
     };
-
     window.cancelInputState = () => {
-        currentReply = null;
-        editingId = null;
+        currentReply = null; editingId = null;
         document.getElementById('message-input').value = "";
         document.getElementById('reply-bar').classList.add('hidden');
     };
@@ -1030,21 +931,37 @@
         const v = inp.value.trim(); if (!v) return;
         try {
             if (editingId) {
-                await dbPatch('chat_messages/' + editingId, { text: v, edited: true }, 10000);
+                // Редактирование: version++
+                const m = allMessages[editingId];
+                const newVer = ((m && m.version) || 1) + 1;
+                await dbPatch('chat_messages/' + editingId, { text: v, edited: true, version: newVer }, 10000);
+                await dbPut('versions/' + editingId, newVer, 8000);
+                if (m) { m.text = v; m.edited = true; m.version = newVer; cache.messages[editingId] = m; saveCache(); }
             } else {
-                // POST создаёт уникальный ключ — как push() в SDK
-                await dbPost('chat_messages', {
+                // Новое сообщение: получаем инкрементный ID
+                const newId = await allocateMessageId();
+                const msg = {
                     username: currentUser,
                     text: v,
-                    time: Date.now(),
-                    replyTo: currentReply
-                }, 12000);
+                    time: nowTimeStr(),
+                    version: 1,
+                    ...(currentReply ? { replyTo: currentReply } : {})
+                };
+                await dbPut('chat_messages/' + newId, msg, 12000);
+                await dbPut('versions/' + newId, 1, 8000);
+                allMessages[newId] = msg;
+                cache.messages[newId] = msg;
+                if (!renderedMsgIds.has(String(newId)) && !hiddenMsgs.has(String(newId))) {
+                    renderMsg(String(newId), msg);
+                    renderedMsgIds.add(String(newId));
+                    scrollToBottomIfNeeded();
+                }
+                saveCache();
             }
             window.cancelInputState();
-            // Сразу подтянуть свежие данные
-            pollMessages();
         } catch (e) {
             setNetStatus(false);
+            console.warn('send failed:', e);
         }
     };
     document.getElementById('send-btn').onclick = sendMessage;
@@ -1054,8 +971,7 @@
         if (e.key === 'Enter') {
             if (isMobile) return;
             if (e.shiftKey) return;
-            e.preventDefault();
-            sendMessage();
+            e.preventDefault(); sendMessage();
         }
     };
 
@@ -1082,15 +998,10 @@
         const errEl = document.getElementById('change-nick-error');
         const btn = document.getElementById('change-nick-btn');
         errEl.style.color = "var(--error)";
-
         if (!newNickRaw || !pass) return errEl.innerText = "Заполните все поля";
-
         const oldKey = currentUserKey || nickKey(currentUser);
         const newKey = nickKey(newNickRaw);
-
-        btn.disabled = true;
-        showLoading("Смена ника…", { warnAfterMs: 6000 });
-
+        btn.disabled = true; showLoading("Смена ника…", { warnAfterMs: 6000 });
         try {
             const userData = await dbGet('users/' + encodeURIComponent(oldKey), 15000);
             if (!userData) { hideLoading(); btn.disabled = false; return errEl.innerText = "Аккаунт не найден"; }
@@ -1098,64 +1009,53 @@
             const hp = await hashPass(pass + salt);
             if (hp !== userData.password) { hideLoading(); btn.disabled = false; return errEl.innerText = "Неверный пароль"; }
             if (newKey === oldKey) { hideLoading(); btn.disabled = false; return errEl.innerText = "Это ваш текущий ник"; }
-
             const collision = await findNickCollision(newNickRaw, oldKey);
             if (collision) { hideLoading(); btn.disabled = false; return errEl.innerText = "Ник занят"; }
-
             const { password, salt: oldSalt, realName } = userData;
-            await dbPut('users/' + encodeURIComponent(newKey), {
-                password, salt: oldSalt, displayName: newNickRaw,
-                ...(realName ? { realName } : {})
-            }, 15000);
+            await dbPut('users/' + encodeURIComponent(newKey), { password, salt: oldSalt, displayName: newNickRaw, ...(realName ? { realName } : {}) }, 15000);
             await dbDelete('users/' + encodeURIComponent(oldKey), 15000);
-
-            // Обновить старые сообщения: username, replyTo.user, readBy, reactions
-            const chatData = await dbGet('chat_messages', 20000);
-            if (chatData) {
-                const patches = {};
-                for (const [mid, m] of Object.entries(chatData)) {
-                    if (m.username === currentUser) patches[`${mid}/username`] = newNickRaw;
-                    if (m.replyTo && m.replyTo.user === currentUser) patches[`${mid}/replyTo/user`] = newNickRaw;
-                    if (m.readBy && m.readBy[currentUser] !== undefined) {
-                        patches[`${mid}/readBy/${newNickRaw}`] = m.readBy[currentUser];
-                        patches[`${mid}/readBy/${currentUser}`] = null;
-                    }
-                    if (m.reactions) {
-                        for (const [emoji, users] of Object.entries(m.reactions)) {
-                            if (users && users[currentUser] !== undefined) {
-                                patches[`${mid}/reactions/${emoji}/${newNickRaw}`] = users[currentUser];
-                                patches[`${mid}/reactions/${emoji}/${currentUser}`] = null;
-                            }
+            // Обновление старых сообщений (username / replyTo.user / readBy / reactions)
+            const ids = Object.keys(allMessages);
+            for (const id of ids) {
+                const m = allMessages[id];
+                if (!m) continue;
+                const patch = {};
+                if (m.username === currentUser) patch.username = newNickRaw;
+                if (m.replyTo && m.replyTo.user === currentUser) patch['replyTo/user'] = newNickRaw;
+                if (m.readBy && m.readBy[currentUser] !== undefined) {
+                    patch[`readBy/${newNickRaw}`] = m.readBy[currentUser];
+                    patch[`readBy/${currentUser}`] = null;
+                }
+                if (m.reactions) {
+                    for (const [emoji, users] of Object.entries(m.reactions)) {
+                        if (users && users[currentUser] !== undefined) {
+                            patch[`reactions/${emoji}/${newNickRaw}`] = users[currentUser];
+                            patch[`reactions/${emoji}/${currentUser}`] = null;
                         }
                     }
                 }
-                if (Object.keys(patches).length) {
-                    await dbPatch('chat_messages', patches, 25000);
+                if (Object.keys(patch).length) {
+                    const v = (m.version || 1) + 1;
+                    patch.version = v;
+                    await dbPatch('chat_messages/' + id, patch, 15000);
+                    await dbPut('versions/' + id, v, 8000);
                 }
             }
-
-            currentUser = newNickRaw;
-            currentUserKey = newKey;
+            currentUser = newNickRaw; currentUserKey = newKey;
             localStorage.setItem('chat_user', newNickRaw);
             localStorage.setItem('chat_user_key', newKey);
             document.getElementById('user-display').innerText = "@" + newNickRaw;
-
-            // Перерисовать всё, т.к. сменился currentUser
-            renderedMsgIds.clear();
+            allMessages = {}; renderedMsgIds.clear();
             document.getElementById('chat-container').innerHTML = '';
-            allMessages = {};
             hideLoading();
             errEl.style.color = "var(--read)";
             errEl.innerText = "Ник успешно изменен";
             document.getElementById('settings-new-nick').value = '';
             document.getElementById('settings-nick-pass').value = '';
             btn.disabled = false;
-            // Перезагрузить сообщения
             startChat();
         } catch (err) {
-            setNetStatus(false);
-            hideLoading();
-            btn.disabled = false;
+            setNetStatus(false); hideLoading(); btn.disabled = false;
             errEl.innerText = "Ошибка: " + (err.message || err);
         }
     };
@@ -1168,12 +1068,10 @@
         const newPConf = document.getElementById('settings-new-pass-confirm').value.trim();
         const errEl = document.getElementById('change-pass-error');
         errEl.style.color = "var(--error)";
-
         if (!oldP || !newP || !newPConf) return errEl.innerText = "Заполните все поля";
         if (newP !== newPConf) return errEl.innerText = "Новые пароли не совпадают";
         const passErr = checkPassSecurity(newP);
         if (passErr) return errEl.innerText = passErr;
-
         const uKey = currentUserKey || nickKey(currentUser);
         showLoading("Смена пароля…", { warnAfterMs: 6000 });
         try {
@@ -1182,12 +1080,8 @@
             const oldSalt = userData.salt || '';
             const oldHash = await hashPass(oldP + oldSalt);
             if (userData.password !== oldHash) { hideLoading(); return errEl.innerText = "Неверный старый пароль"; }
-
-            const newSalt = (typeof crypto.randomUUID === 'function')
-                ? crypto.randomUUID()
-                : Math.random().toString(36).substring(2);
+            const newSalt = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
             const newHash = await hashPass(newP + newSalt);
-
             await dbPatch('users/' + encodeURIComponent(uKey), { password: newHash, salt: newSalt }, 15000);
             hideLoading();
             errEl.style.color = "var(--read)";
@@ -1196,8 +1090,7 @@
             document.getElementById('settings-new-pass').value = '';
             document.getElementById('settings-new-pass-confirm').value = '';
         } catch (e) {
-            setNetStatus(false);
-            hideLoading();
+            setNetStatus(false); hideLoading();
             errEl.innerText = "Ошибка: " + (e.message || e);
         }
     };
@@ -1205,26 +1098,26 @@
     // ---------- UI wiring ----------
     document.getElementById('open-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
     document.getElementById('close-settings-btn').onclick = () => document.getElementById('settings-modal').style.display = 'none';
-
     document.getElementById('open-change-nick-btn').onclick = () => {
         document.getElementById('settings-modal').style.display = 'none';
         document.getElementById('change-nick-error').innerText = '';
         document.getElementById('change-nick-modal').style.display = 'flex';
     };
     document.getElementById('close-change-nick-btn').onclick = () => document.getElementById('change-nick-modal').style.display = 'none';
-
     document.getElementById('open-change-pass-btn').onclick = () => {
         document.getElementById('settings-modal').style.display = 'none';
         document.getElementById('change-pass-error').innerText = '';
         document.getElementById('change-pass-modal').style.display = 'flex';
     };
     document.getElementById('close-change-pass-btn').onclick = () => document.getElementById('change-pass-modal').style.display = 'none';
-
-    document.getElementById('clear-cache-btn').onclick = () => { localStorage.removeItem('hidden_msgs'); location.reload(); };
+    document.getElementById('clear-cache-btn').onclick = () => {
+        localStorage.removeItem(HIDDEN_KEY);
+        localStorage.removeItem(CACHE_KEY);
+        location.reload();
+    };
     document.getElementById('global-logout-btn').onclick = () => {
         if (pollTimer) clearInterval(pollTimer);
-        localStorage.clear();
-        location.reload();
+        localStorage.clear(); location.reload();
     };
 
     window.onclick = (e) => {
@@ -1235,8 +1128,12 @@
         if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
     };
 
-    // Показываем индикатор сети
     netInd.classList.add('online');
+
+    // Регистрация Service Worker для оффлайн-доступа
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
 </script>
 </body>
 </html>
