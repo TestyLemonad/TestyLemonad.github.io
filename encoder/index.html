@@ -6,7 +6,6 @@
     <title>Encoder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Шрифт для интерфейса */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
         :root {
@@ -29,7 +28,7 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Убираем стандартные стили для инпутов, делаем "по-своему" */
+        /* Убираем стандартные стили для инпутов, делаем по-своему */
         .custom-input {
             background: #29292e;
             border: 1px solid #323238;
@@ -126,7 +125,7 @@
                     <label id="resultLabel" class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Результат</label>
                     <button onclick="copyToClipboard('outputText', 'copyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012 2h2a2 2 0 012-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         Копировать
                     </button>
@@ -164,6 +163,7 @@
                         <select id="convFrom" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
                             <option value="dec">Десятичная (DEC)</option>
                             <option value="bin">Двоичная (BIN)</option>
+                            <option value="oct">Восьмеричная (OCT)</option>
                             <option value="hex">16-ричная (HEX)</option>
                             <option value="roman">Римская (ROMAN)</option>
                             <option value="text">Текст</option>
@@ -175,6 +175,7 @@
                         <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">В:</span>
                         <select id="convTo" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
                             <option value="bin">Двоичная (BIN)</option>
+                            <option value="oct">Восьмеричная (OCT)</option>
                             <option value="dec">Десятичная (DEC)</option>
                             <option value="hex" selected>16-ричная (HEX)</option>
                             <option value="roman">Римская (ROMAN)</option>
@@ -191,7 +192,7 @@
                     <label class="text-xs font-bold text-amber-400 uppercase tracking-widest">Результат</label>
                     <button onclick="copyToClipboard('convOutput', 'convCopyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         Копировать
                     </button>
@@ -213,6 +214,7 @@
             layout: { name: "Смена раскладки", hasParam: false },
             rot13: { name: "ROT13", hasParam: false },
             hex: { name: "HEX (16-ричный)", hasParam: false },
+            octal: { name: "Восьмеричный код", hasParam: false },
             binary: { name: "Двоичный код", hasParam: false },
             reverse: { name: "Переворот", hasParam: false },
             sha256: { name: "SHA-256 (Хеш)", hasParam: false, oneWay: true }
@@ -393,6 +395,15 @@
                             const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
                             return new TextDecoder().decode(bytes);
                         }
+                    case 'octal':
+                        if (isEnc) {
+                            const bytes = new TextEncoder().encode(text);
+                            return Array.from(bytes).map(b => b.toString(8).padStart(3, '0')).join(' ');
+                        } else {
+                            const octs = text.trim().split(/\s+/).filter(Boolean);
+                            const bytes = new Uint8Array(octs.map(o => parseInt(o, 8)));
+                            return new TextDecoder().decode(bytes);
+                        }
                     case 'binary':
                         if (isEnc) {
                             const bytes = new TextEncoder().encode(text);
@@ -517,7 +528,6 @@
             return roman;
         }
 
-        /* --- Логика конвертации систем счисления --- */
         function swapSystems() {
             const fromEl = document.getElementById('convFrom');
             const toEl = document.getElementById('convTo');
@@ -554,6 +564,12 @@
                         if (!/^[01]+$/.test(t)) throw new Error('Некорректный двоичный код');
                         return parseInt(t, 2);
                     });
+                } else if (from === 'oct') {
+                    const tokens = rawVal.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => {
+                        if (!/^[0-7]+$/.test(t)) throw new Error('Некорректное восьмеричное число');
+                        return parseInt(t, 8);
+                    });
                 } else if (from === 'hex') {
                     const cleanHex = rawVal.replace(/0x/g, '');
                     const tokens = cleanHex.split(/\s+/).filter(Boolean);
@@ -584,6 +600,8 @@
                     result = bytes.join(' ');
                 } else if (to === 'bin') {
                     result = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
+                } else if (to === 'oct') {
+                    result = bytes.map(b => b.toString(8).padStart(3, '0')).join(' ');
                 } else if (to === 'hex') {
                     result = bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
                 } else if (to === 'roman') {
