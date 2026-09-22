@@ -171,17 +171,30 @@
                         </select>
                     </div>
 
-                    <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex items-center justify-between gap-3">
-                        <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">В:</span>
-                        <select id="convTo" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
-                            <option value="bin">Двоичная (BIN)</option>
-                            <option value="oct">Восьмеричная (OCT)</option>
-                            <option value="dec">Десятичная (DEC)</option>
-                            <option value="hex" selected>16-ричная (HEX)</option>
-                            <option value="roman">Римская (ROMAN)</option>
-                            <option value="text">Текст</option>
-                            <option value="unicode">Unicode (Коды U+XXXX)</option>
-                        </select>
+                    <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex flex-col justify-between gap-3">
+                        <div class="flex items-center justify-between gap-3 w-full">
+                            <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">В:</span>
+                            <select id="convTo" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
+                                <option value="bin">Двоичная (BIN)</option>
+                                <option value="oct">Восьмеричная (OCT)</option>
+                                <option value="dec">Десятичная (DEC)</option>
+                                <option value="hex" selected>16-ричная (HEX)</option>
+                                <option value="roman">Римская (ROMAN)</option>
+                                <option value="text">Текст</option>
+                                <option value="unicode">Unicode (Коды U+XXXX)</option>
+                            </select>
+                        </div>
+                        <div id="binGroupWrapper" class="hidden border-t border-[#323238] pt-2.5 flex items-center justify-center gap-2 text-xs">
+                            <span class="text-zinc-400 font-medium">Разбивать на:</span>
+                            <select id="binGroup" onchange="runConvert()" class="bg-[#1c1c1f] text-xs font-medium text-amber-400 rounded-lg px-2.5 py-1 border border-[#323238] focus:outline-none cursor-pointer">
+                                <option value="none">Не разбивать</option>
+                                <option value="3">Триады (3 бита)</option>
+                                <option value="4">Тетрады (4 бита)</option>
+                                <option value="8" selected>Байты (8 бит)</option>
+                                <option value="16">16 бит (Word)</option>
+                                <option value="32">32 бита (DWord)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -543,6 +556,15 @@
             const to = document.getElementById('convTo').value;
             const outputEl = document.getElementById('convOutput');
 
+            const binGroupWrapper = document.getElementById('binGroupWrapper');
+            if (binGroupWrapper) {
+                if (to === 'bin') {
+                    binGroupWrapper.classList.remove('hidden');
+                } else {
+                    binGroupWrapper.classList.add('hidden');
+                }
+            }
+
             if (!rawVal) {
                 outputEl.value = '';
                 return;
@@ -599,7 +621,23 @@
                 if (to === 'dec') {
                     result = bytes.join(' ');
                 } else if (to === 'bin') {
-                    result = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
+                    const groupVal = document.getElementById('binGroup').value;
+                    if (groupVal === 'none') {
+                        result = bytes.map(b => b.toString(2).padStart(8, '0')).join('');
+                    } else {
+                        const sz = parseInt(groupVal, 10);
+                        const rawBits = bytes.map(b => {
+                            let s = b.toString(2);
+                            const targetLen = Math.ceil(s.length / sz) * sz || sz;
+                            return s.padStart(targetLen, '0');
+                        }).join('');
+
+                        const chunks = [];
+                        for (let i = 0; i < rawBits.length; i += sz) {
+                            chunks.push(rawBits.slice(i, i + sz));
+                        }
+                        result = chunks.join(' ');
+                    }
                 } else if (to === 'oct') {
                     result = bytes.map(b => b.toString(8).padStart(3, '0')).join(' ');
                 } else if (to === 'hex') {
