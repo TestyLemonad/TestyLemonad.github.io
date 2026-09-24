@@ -3,32 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="google-site-verification" content="KRZ90IgwnHZJ0NoI5obiDu0KmztDm6h4dwAbTx5t9Ww" />
+    <meta name="google-site-verification" content="KRZ90IgwnHZJ0NoI5obiDu0KmztDm6h4dwAbTx5t9Ww">
+    <meta name="theme-color" content="#050200">
+
     <link rel="canonical" href="https://testylemonad.github.io/">
     <title>TestyLemonad</title>
     <link rel="icon" type="image/png" href="TestyLemonad.png">
+
     <meta name="description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon. Создаю веб-приколюхи и хардвейр проекты. А это мой официальный сайт!">
     <meta property="og:title" content="TestyLemonad">
     <meta property="og:description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon. Создаю веб-приколюхи и хардвейр проекты. А это мой официальный сайт!">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://testylemonad.github.io/">
+    <meta property="og:image" content="https://testylemonad.github.io/TestyLemonad.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TestyLemonad">
+    <meta name="twitter:description" content="Привет, я TestyLemonad — девелопер и сооснователь OpenLemon.">
+    <meta name="twitter:image" content="https://testylemonad.github.io/TestyLemonad.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "TestyLemonad",
+        "url": "https://testylemonad.github.io/",
+        "sameAs": ["https://github.com/testylemonad"],
+        "description": "Девелопер и сооснователь OpenLemon. Веб-приколюхи и хардвейр проекты."
+    }
+    </script>
+
     <style>
         :root {
-            --bg-blur: 2px;
             --lemon-yellow: #ffd700;
             --deep-orange: #ff8c00;
-            --dark-bg: #050200; 
+            --dark-bg: #050200;
             --card-bg: rgba(20, 10, 5, 0.4);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
         }
 
-        /* Прячем стандартный курсор на десктопах */
-        @media (min-width: 1024px) {
-            * { cursor: none !important; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
         }
 
         body {
@@ -44,93 +70,133 @@
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* ЭФФЕКТ ПУЛЬСАЦИИ (RIPPLE) - теперь глобальный */
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            * { cursor: none !important; }
+        }
+
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+        .bg-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+        }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
+        }
+
+        /* ============ Ripple ============ */
         .ripple-obj {
-            position: fixed; /* Используем fixed для глобального эффекта */
-            background: rgba(250, 204, 21, 0.3); 
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
             border-radius: 50%;
             transform: scale(0);
             animation: ripple-anim 0.8s ease-out forwards;
             pointer-events: none;
-            z-index: 5; /* Поверх фона, но под контентом если нужно (или выше) */
+            z-index: 20;
         }
-
         @keyframes ripple-anim {
-            to {
-                transform: scale(8); /* Увеличил масштаб для глобальности */
-                opacity: 0;
-            }
+            to { transform: scale(8); opacity: 0; }
         }
 
-        /* Стили кастомного курсора */
+        /* ============ Кастомный курсор ============ */
         #custom-cursor {
             position: fixed;
             top: 0;
             left: 0;
             width: 20px;
             height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
             background: rgba(250, 204, 21, 0.3);
             border: 1px solid var(--lemon-yellow);
             border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transition: transform 0.15s ease-out, background 0.3s ease, border 0.3s ease, width 0.3s ease, height 0.3s ease;
-            transform: translate(-50%, -50%);
-            display: none;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
         }
-
-        .cursor-hover #custom-cursor {
-            transform: translate(-50%, -50%) scale(2.5);
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
             background: rgba(250, 204, 21, 0.1);
             border-color: #fff;
         }
 
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            filter: blur(var(--bg-blur)); 
-            transition: filter 0.4s ease-out;
-            will-change: filter, transform;
-        }
-
+        /* ============ Виньетка и noise ============ */
         .vignette {
             position: fixed;
             inset: 0;
-            z-index: 1;
+            z-index: 2;
             pointer-events: none;
-            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.9) 100%);
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
         }
 
         .noise::before {
             content: "";
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.03;
-            z-index: 2;
+            inset: 0;
+            opacity: 0.025;
+            z-index: 3;
             pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: #050200;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #ff9900;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            font-size: 10px;
-            text-align: center;
-            padding: 20px;
+        /* ============ Liquid Glass Nav ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.45);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            .glass-nav { background: rgba(8, 4, 2, 0.9); }
         }
 
         .content-wrapper {
@@ -141,8 +207,8 @@
         .gradient-text {
             background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .glass-card {
@@ -150,9 +216,20 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(251, 191, 36, 0.08);
-            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.5s ease,
+                        background 0.5s ease,
+                        box-shadow 0.5s ease;
             position: relative;
             overflow: hidden;
+        }
+
+        @media (max-width: 1023px) {
+            .glass-card {
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                background: rgba(20, 10, 5, 0.72);
+            }
         }
 
         @media (min-width: 1024px) {
@@ -166,63 +243,73 @@
 
         .scroll-progress {
             position: fixed;
-            top: 0; left: 0; width: 0%; height: 3px;
+            top: 0; left: 0;
+            width: 0%;
+            height: 3px;
             background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
-            z-index: 110;
+            z-index: 90;
         }
 
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .animate-fade-in {
             animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
+        .project-item { transition: opacity 0.3s ease; }
+        .project-item.is-hidden { display: none; }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--dark-bg); }
-        ::-webkit-scrollbar-thumb { 
-            background: #2d1a05; 
-            border-radius: 10px;
-        }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
 
-        .btn-glow:hover {
-            box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
-        }
+        .btn-glow:hover { box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); }
 
         .filter-btn.active {
             background: var(--lemon-yellow);
             color: #000;
             border-color: var(--lemon-yellow);
         }
-
-        .project-item {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
     </style>
 </head>
 <body class="noise">
-    <script src="https://keepandroidopen.org/banner.js?size=minimal&animation=off"></script>
-    <div id="custom-cursor"></div>
-    <div id="cursor-dot"></div>
+    <noscript>
+        <div style="position:fixed;inset:0;background:#050200;color:#fff7ed;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;z-index:9999;">
+            <div>
+                <h1 style="margin:0 0 16px;font-size:28px;">TestyLemonad</h1>
+                <p style="margin:0 0 12px;opacity:.7;">Для полноценной работы сайта нужен JavaScript.</p>
+                <p style="margin:0;">
+                    <a href="https://github.com/testylemonad" style="color:#ffd700;">github.com/testylemonad</a>
+                </p>
+            </div>
+        </div>
+    </noscript>
 
-    <div id="loader">Загрузочка... Подожди немного, бро!</div>
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true">
+        <div class="cursor-inner"></div>
+    </div>
+
+    <!-- ФОН: сетка + пиксели -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
     <div class="scroll-progress" id="scroll-bar"></div>
-    <div class="vignette"></div>
-    <div id="canvas-container"></div>
 
     <div class="content-wrapper min-h-screen flex flex-col">
-        <!-- Навигация -->
-        <nav class="sticky top-0 z-50 w-full px-4 sm:px-6 py-4 backdrop-blur-xl border-b border-white/5">
+        <!-- Liquid Glass Nav -->
+        <nav class="glass-nav w-full px-4 sm:px-6 py-4">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="hidden sm:block text-xl font-bold mono gradient-text tracking-tighter">
                     testylemonad.github.io
                 </div>
                 <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
-                    <a href="#" class="cursor-trigger text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</a>
-                    <a href="#projects" class="cursor-trigger text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
-                    <a href="https://github.com/testylemonad" target="_blank" class="cursor-trigger text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+                    <button type="button" data-scroll-top class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</button>
+                    <a href="#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+                    <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
                 </div>
             </div>
         </nav>
@@ -233,14 +320,14 @@
                 <h1 class="text-4xl sm:text-6xl md:text-8xl font-extrabold mb-8 tracking-tighter text-white leading-tight">
                     Привет, я <br class="sm:hidden"> <span class="gradient-text">TestyLemonad</span>
                 </h1>
-                <p class="text-orange-100/60 text-lg sm:text-2xl max-w-2xl mx-auto mb-12 font-light">
+                <p class="text-orange-100/70 text-lg sm:text-2xl max-w-2xl mx-auto mb-6 font-light">
                     — девелопер и сооснователь OpenLemon. Создаю прикольные веб-штуки и хардвейр проекты.
                 </p>
-                <p class="text-orange-100/60 text-lg sm:text-2xl max-w-2xl mx-auto mb-12 font-light">
+                <p class="text-orange-100/70 text-lg sm:text-2xl max-w-2xl mx-auto mb-12 font-light">
                     Добро пожаловать на мой сайт!
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="#projects" class="cursor-trigger btn-glow inline-block bg-yellow-400 hover:bg-yellow-300 text-orange-950 px-10 py-4 rounded-2xl font-bold transition-all transform hover:scale-105">
+                    <a href="#projects" class="btn-glow inline-block bg-yellow-400 hover:bg-yellow-300 text-orange-950 px-10 py-4 rounded-2xl font-bold transition-all transform hover:scale-105">
                         Посмотреть проекты
                     </a>
                 </div>
@@ -254,17 +341,17 @@
                     <h2 class="text-2xl sm:text-4xl font-black text-white whitespace-nowrap">Мои проекты</h2>
                     <div class="h-px bg-gradient-to-r from-orange-500/50 to-transparent flex-grow hidden sm:block"></div>
 
-                    <div class="flex flex-wrap gap-2">
-                        <button class="cursor-trigger filter-btn active text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="all">Все</button>
-                        <button class="cursor-trigger filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="html">HTML</button>
-                        <button class="cursor-trigger filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="python">Python</button>
-                        <button class="cursor-trigger filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="collab">Совместные</button>
+                    <div class="flex flex-wrap gap-2" role="group" aria-label="Фильтр проектов">
+                        <button type="button" aria-pressed="true"  class="filter-btn active text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="all">Все</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="html">HTML</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="python">Python</button>
+                        <button type="button" aria-pressed="false" class="filter-btn text-[10px] sm:text-xs font-bold uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all" data-filter="collab">Совместные</button>
                     </div>
                 </div>
 
                 <div id="projects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Encoder -->
-                    <div class="project-item cursor-trigger glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
+                    <div class="project-item glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
                         <div class="p-4 flex flex-col h-full relative z-10">
                             <div class="w-full aspect-video bg-gradient-to-br from-yellow-500 to-orange-600 rounded-[1.5rem] mb-6 flex items-center justify-center overflow-hidden relative border border-white/5">
                                 <span class="relative text-3xl font-black text-white drop-shadow-2xl">Encoder</span>
@@ -274,14 +361,14 @@
                                     <h3 class="text-2xl font-bold text-white">Encoder</h3>
                                     <span class="text-[10px] bg-yellow-400/10 text-yellow-400 px-2 py-1 rounded border border-yellow-400/20 uppercase font-bold">HTML</span>
                                 </div>
-                                <p class="text-orange-100/50 text-base mb-6 flex-grow">Самый полезный мой проект. Шифратор, позволяющий с лёгкостью шифровать и дешифровать текст, а также переводить различные значения в различные системы счисления.</p>
+                                <p class="text-orange-100/65 text-base mb-6 flex-grow">Самый полезный мой проект. Шифратор, позволяющий с лёгкостью шифровать и дешифровать текст, а также переводить различные значения в различные системы счисления.</p>
                                 <a href="/encoder" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center bg-white text-black py-3 rounded-xl font-bold hover:bg-yellow-400 transition-all">Перейти</a>
                             </div>
                         </div>
                     </div>
 
                     <!-- TestyColor -->
-                    <div class="project-item cursor-trigger glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
+                    <div class="project-item glass-card p-2 rounded-[2rem] group" data-category="html" data-type="real">
                         <div class="p-4 flex flex-col h-full relative z-10">
                             <div class="w-full aspect-video bg-gradient-to-br from-orange-400 to-yellow-500 rounded-[1.5rem] mb-6 flex items-center justify-center overflow-hidden relative border border-white/5">
                                 <span class="relative text-3xl font-black text-white drop-shadow-2xl">TestyColor</span>
@@ -291,185 +378,239 @@
                                     <h3 class="text-2xl font-bold text-white">TestyColor</h3>
                                     <span class="text-[10px] bg-yellow-400/10 text-yellow-400 px-2 py-1 rounded border border-yellow-400/20 uppercase font-bold">HTML</span>
                                 </div>
-                                <p class="text-orange-100/50 text-base mb-6 flex-grow">Простенькая палитра, с возможностью подбирать цвета на удобной палитре, копировать цвет в различных видах (RGB, HEX и CMYK), смотреть подходящие цвета, а также сохранять цвета в избранное.</p>
+                                <p class="text-orange-100/65 text-base mb-6 flex-grow">Простенькая палитра, с возможностью подбирать цвета на удобной палитре, копировать цвет в различных видах (RGB, HEX и CMYK), смотреть подходящие цвета, а также сохранять цвета в избранное.</p>
                                 <a href="/TestyColor" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center bg-white text-black py-3 rounded-xl font-bold hover:bg-yellow-400 transition-all">Перейти</a>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Заглушки -->
-                    <div class="project-item border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="python" data-type="placeholder">
+                    <!-- Заглушка Python (скрыта по умолчанию) -->
+                    <div class="project-item is-hidden border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="python" data-type="placeholder">
                         <div class="flex flex-col items-center justify-center">
                             <div class="w-16 h-16 bg-orange-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                 </svg>
                             </div>
-                            <p class="text-orange-400/80 font-medium text-sm">Здесь скоро появятся Python проекты...</p>
+                            <p class="text-orange-400/90 font-medium text-sm">Здесь скоро появятся Python проекты...</p>
                         </div>
                     </div>
 
-                    <div class="project-item border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="collab" data-type="placeholder">
+                    <!-- Заглушка Совместные (скрыта по умолчанию) -->
+                    <div class="project-item is-hidden border-2 border-dashed border-orange-900/30 p-8 rounded-[2rem] flex flex-col justify-center items-center text-center opacity-40 min-h-[400px] hover:opacity-100 transition-all" data-category="collab" data-type="placeholder">
                         <div class="flex flex-col items-center justify-center">
                             <div class="w-16 h-16 bg-orange-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" class="h-8 w-8 text-orange-400">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
-                            <p class="text-orange-400/80 font-medium text-sm">Здесь скоро появится Ф.Е.Д.Я. 😉</p>
-                            <p class="text-orange-400/80 font-medium text-sm">Или не очень скоро...</p>
+                            <p class="text-orange-400/90 font-medium text-sm">Здесь скоро появится Ф.Е.Д.Я. 😉</p>
+                            <p class="text-orange-400/90 font-medium text-sm">Или не очень скоро...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Твой Футер -->
+        <!-- Футер -->
         <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
             <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
-                <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2"></div>
-                <p class="mono text-[10px] sm:text-xs text-orange-100/40 tracking-widest uppercase px-4">
+                <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+                <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
                     &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
                 </p>
             </div>
         </footer>
     </div>
 
-    <script>
-        // Глобальный эффект пульсации
-        window.addEventListener('mousedown', (e) => {
-            const ripple = document.createElement('div');
-            ripple.classList.add('ripple-obj');
-            
-            // Размер пульсации (100px начальный)
-            const size = 100;
-            ripple.style.width = ripple.style.height = `${size}px`;
-            
-            // Позиционирование по центру клика
-            ripple.style.left = `${e.clientX - size/2}px`;
-            ripple.style.top = `${e.clientY - size/2}px`;
-            
-            document.body.appendChild(ripple);
-            
-            // Удаление после анимации
-            setTimeout(() => {
-                ripple.remove();
-            }, 800);
-        });
+    <script type="module">
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
 
-        // Курсор
-        const cursor = document.getElementById('custom-cursor');
-        const dot = document.getElementById('cursor-dot');
-        const triggers = document.querySelectorAll('.cursor-trigger, a, button, .project-item');
-        let cursorX = 0, cursorY = 0;
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
 
-        document.addEventListener('mousemove', (e) => {
-            if (cursor.style.display === 'none' || cursor.style.display === '') {
-                cursor.style.display = 'block';
-                dot.style.display = 'block';
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+
+                if (reduceMotion) {
+                    p.style.animation = 'none';
+                }
+
+                frag.appendChild(p);
             }
-            cursorX = e.clientX;
-            cursorY = e.clientY;
-            dot.style.left = cursorX + 'px';
-            dot.style.top = cursorY + 'px';
-        });
+            container.appendChild(frag);
+        })();
 
-      function animateCursor() {
-        cursor.style.left = cursorX + "px";
-        cursor.style.top = cursorY + "px";
-        requestAnimationFrame(animateCursor);
-      }
-        animateCursor();
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
 
-        triggers.forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-        });
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
 
-        // Фильтры
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+                if (reduceMotion) {
+                    cursor.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
+                }
+            }, { passive: true });
+
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+                    requestAnimationFrame(loop);
+                })();
+            }
+
+            const HOVER_SEL = 'a, button, .cursor-trigger, .project-item';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.add('cursor-hover');
+                }
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.remove('cursor-hover');
+                }
+            }, { passive: true });
+        }
+
+        // ===== Плавный скролл наверх =====
+        const scrollTopBtn = document.querySelector('[data-scroll-top]');
+        if (scrollTopBtn) {
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+            });
+        }
+
+        // ===== Фильтры проектов =====
         const filterButtons = document.querySelectorAll('.filter-btn');
-        const projectItems = document.querySelectorAll('.project-item');
+        const projectItems  = document.querySelectorAll('.project-item');
 
-        const filterProjects = (filter) => {
+        function filterProjects(filter) {
             projectItems.forEach(item => {
                 const category = item.getAttribute('data-category');
-                const type = item.getAttribute('data-type');
-                if (filter === 'all') {
-                    if (type === 'real') {
-                        item.style.display = 'flex';
-                        setTimeout(() => item.style.opacity = '1', 10);
-                    } else {
-                        item.style.display = 'none';
-                        item.style.opacity = '0';
-                    }
-                } else {
-                    if (category === filter) {
-                        item.style.display = 'flex';
-                        setTimeout(() => item.style.opacity = '1', 10);
-                    } else {
-                        item.style.display = 'none';
-                        item.style.opacity = '0';
-                    }
-                }
+                const type     = item.getAttribute('data-type');
+                const show = (filter === 'all')
+                    ? type === 'real'
+                    : category === filter;
+                item.classList.toggle('is-hidden', !show);
             });
-        };
+        }
 
         filterProjects('all');
         filterButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                filterButtons.forEach(b => b.classList.remove('active'));
+                filterButtons.forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
                 btn.classList.add('active');
+                btn.setAttribute('aria-pressed', 'true');
                 filterProjects(btn.getAttribute('data-filter'));
             });
         });
 
-        // Background & Loader
-        const canvasContainer = document.getElementById('canvas-container');
-        const loader = document.getElementById('loader');
-        const scrollBar = document.getElementById("scroll-bar");
-        let scene, camera, renderer, mesh, particles;
-
-        function initThree() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 8;
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            canvasContainer.appendChild(renderer.domElement);
-            mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5, 12), new THREE.MeshBasicMaterial({ color: 0xff9900, wireframe: true, transparent: true, opacity: 0.15 }));
-            scene.add(mesh);
-            const pCount = 4000;
-            const posArray = new Float32Array(pCount * 3);
-            for(let i=0; i<pCount*3; i++) posArray[i] = (Math.random()-0.5)*20;
-            const pGeom = new THREE.BufferGeometry();
-            pGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            particles = new THREE.Points(pGeom, new THREE.PointsMaterial({ size: 0.02, color: 0xff9900, transparent: true, opacity: 0.3 }));
-            scene.add(particles);
-            animate();
-            setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => loader.remove(), 1000); }, 800);
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
         }
+        window.addEventListener('scroll', updateScroll, { passive: true });
+        updateScroll();
+    </script>
 
-        function animate() {
-            requestAnimationFrame(animate);
-            mesh.rotation.y += 0.001;
-            particles.rotation.y -= 0.0005;
-            renderer.render(scene, camera);
-        }
+    <script>
+        // ============================================================
+        // АНТИ-DEVTOOLS (косметика, не защита)
+        // ============================================================
 
-        window.onload = initThree;
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // 1. Блокируем контекстное меню (правый клик мыши)
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // 2. Блокируем горячие клавиши вызова DevTools
+        document.addEventListener('keydown', (e) => {
+            // F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+            }
+            // Ctrl+Shift+I / Cmd+Option+I (Инспектировать)
+            // Ctrl+Shift+J / Cmd+Option+J (Консоль)
+            // Ctrl+Shift+C / Cmd+Option+C (Выбор элемента)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key)) {
+                e.preventDefault();
+            }
+            // Ctrl+U / Cmd+Option+U (Исходный код страницы)
+            if ((e.ctrlKey || e.metaKey) && ['U', 'u'].includes(e.key)) {
+                e.preventDefault();
+            }
+            // Ctrl+S (Сохранение страницы)
+            if ((e.ctrlKey || e.metaKey) && ['S', 's'].includes(e.key)) {
+                e.preventDefault();
+            }
         });
 
-        window.onscroll = () => {
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = (winScroll / height) * 100;
-            scrollBar.style.width = scrolled + "%";
-        };
+        // 3. Защита через ловушку debugger
+        setInterval(() => {
+            const startTime = performance.now();
+            debugger;
+            const endTime = performance.now();
+
+            if (endTime - startTime > 100) {
+                if (document.body) {
+                    document.body.innerHTML = '<h1>Доступ к DevTools запрещён</h1>';
+                }
+            }
+        }, 1000);
     </script>
 </body>
 </html>
