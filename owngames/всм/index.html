@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <script>
+      (function () {
+        const secretPass = "3197"; // Укажи свой пароль
+        const saved = sessionStorage.getItem("game_auth");
+
+        if (saved !== secretPass) {
+          const pass = prompt("Введи пароль для доступа к игре:");
+          if (pass === secretPass) {
+            sessionStorage.setItem("game_auth", secretPass);
+          } else {
+            alert("Неверный пароль!");
+            window.stop();
+            document.documentElement.innerHTML =
+              "<body style='background:#111;color:#ff4444;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;'><h1>Доступ запрещён</h1></body>";
+          }
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <title>Вероятность и статистика - Множества</title>
+
+    <!-- KaTeX для рендеринга LaTeX (mathbb{Q}, формулы и т.д.) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    ></script>
+
+    <style>
+      :root {
+        --dark-bg: #121212;
+        --grid-line: rgba(255, 204, 0, 0.07);
+        --grid-size: 32px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+      html,
+      body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background-color: var(--dark-bg);
+        color: #ffffff;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 1.5vh 2vw 2vh 2vw;
+        position: relative;
+      }
+
+      h1,
+      .board,
+      .modal,
+      .timer-banner {
+        position: relative;
+        z-index: 2;
+      }
+
+      /* ============ ФОН: сетка ============ */
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-color: var(--dark-bg);
+        background-image:
+          linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+        background-size: var(--grid-size) var(--grid-size);
+        background-position: -1px -1px;
+        -webkit-mask-image: radial-gradient(
+          circle at 50% 50%,
+          #000 30%,
+          transparent 92%
+        );
+        mask-image: radial-gradient(
+          circle at 50% 50%,
+          #000 30%,
+          transparent 92%
+        );
+      }
+      .bg-grid::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            circle at 50% 35%,
+            rgba(255, 170, 40, 0.06) 0%,
+            transparent 55%
+          ),
+          radial-gradient(
+            circle at 50% 50%,
+            transparent 35%,
+            rgba(0, 0, 0, 0.85) 100%
+          );
+        pointer-events: none;
+      }
+
+      /* ============ ФОН: плавающие пиксели ============ */
+      .bg-particles {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .pixel {
+        position: absolute;
+        display: block;
+        background: rgba(255, 210, 90, 0.9);
+        border-radius: 1px;
+        box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+        animation: pixel-drift ease-in-out infinite alternate;
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
+      }
+      @keyframes pixel-drift {
+        0% {
+          transform: translate3d(0, 0, 0);
+        }
+        100% {
+          transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0);
+        }
+      }
+
+      h1 {
+        text-align: center;
+        font-size: min(2.5vh, 1.8vw);
+        margin-bottom: 1vh;
+        flex-shrink: 0;
+        letter-spacing: 1px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+      .board {
+        display: grid;
+        flex-grow: 1;
+        width: 100%;
+        height: calc(100vh - 6vh);
+        gap: 10px;
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(7, 1fr);
+      }
+      .cell {
+        background-color: #1e1e1e;
+        border: 2px solid #333333;
+        border-radius: 10px;
+        padding: 4px;
+        text-align: center;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: min(1.5vw, 2vh);
+        overflow: hidden;
+        word-break: break-word;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transition:
+          transform 0.15s ease,
+          background-color 0.2s,
+          opacity 0.4s ease,
+          visibility 0.4s;
+      }
+      .category-cell {
+        background-color: #181818;
+        color: #ffffff;
+        font-size: min(1.4vw, 1.8vh);
+        border-color: #444444;
+      }
+      .question-btn {
+        background-color: #2a2a2a;
+        color: #ffcc00;
+        cursor: pointer;
+        font-size: min(2.2vw, 3vh);
+      }
+      .question-btn:active {
+        transform: scale(0.96);
+        background-color: #383838;
+        border-color: #ffcc00;
+      }
+      .question-btn.used {
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.8);
+        pointer-events: none;
+      }
+
+      /* ============ ТАЙМЕР ============ */
+      .timer-banner {
+        position: fixed;
+        top: -80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #222222;
+        border: 2px solid #ffcc00;
+        border-top: none;
+        border-radius: 0 0 16px 16px;
+        padding: 10px 30px;
+        font-size: min(2.5vw, 3.5vh);
+        font-weight: bold;
+        color: #ffcc00;
+        box-shadow:
+          0 10px 25px rgba(0, 0, 0, 0.7),
+          0 0 15px rgba(255, 204, 0, 0.2);
+        z-index: 101;
+        transition:
+          top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          color 0.3s,
+          border-color 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .timer-banner.active {
+        top: 0;
+      }
+      .timer-banner.warning {
+        color: #ff3333;
+        border-color: #ff3333;
+        box-shadow:
+          0 10px 25px rgba(0, 0, 0, 0.7),
+          0 0 15px rgba(255, 51, 51, 0.4);
+        animation: pulse-warning 1s infinite alternate;
+      }
+      @keyframes pulse-warning {
+        0% {
+          transform: translateX(-50%) scale(1);
+        }
+        100% {
+          transform: translateX(-50%) scale(1.05);
+        }
+      }
+
+      /* Модальное окно */
+      .modal {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 20px;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .modal.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .modal-content {
+        background: #222222;
+        padding: 25px;
+        border-radius: 16px;
+        width: 85vw;
+        max-width: 900px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.9),
+          0 0 15px rgba(255, 204, 0, 0.1);
+        border: 1px solid #444444;
+        transform: scale(0.85) translateY(20px);
+        transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .modal.active .modal-content {
+        transform: scale(1) translateY(0);
+      }
+      .modal-text {
+        font-size: min(2.5vw, 3vh);
+        margin-bottom: 15px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-y: auto;
+        max-height: 55vh;
+        width: 100%;
+        text-align: center;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      #modal-answer {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      #modal-answer.visible {
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+      }
+
+      .controls {
+        display: flex;
+        gap: 15px;
+      }
+      .btn {
+        background: #ffcc00;
+        color: #000000;
+        border: none;
+        padding: 12px 28px;
+        font-size: min(1.8vw, 2vh);
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+        transition:
+          transform 0.1s,
+          background-color 0.2s;
+      }
+      .btn:active {
+        transform: scale(0.95);
+        background-color: #ffe066;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-particles" id="particles"></div>
+
+    <div id="timer-banner" class="timer-banner">
+      ⏱️ <span id="timer-text">01:00</span>
+    </div>
+
+    <h1>Вероятность и статистика - Множества</h1>
+
+    <div class="board">
+      <div class="cell category-cell">Числовые множества</div>
+
+      <div class="cell category-cell">Операции над множествами</div>
+
+      <div class="cell category-cell">Символика</div>
+
+      <div class="cell category-cell">Задачи с подвохом</div>
+
+      <div class="cell category-cell">Войти в IT</div>
+
+      <div class="cell category-cell">Парадоксы</div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-0"
+        onclick="
+          openModal(
+            'Как называется множество, состоящее из чисел, используемых при счёте предметов?',
+            'Натуральные числа (обозначается $\\mathbb{N}$).',
+            'btn-0-0',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-1"
+        onclick="
+          openModal(
+            'Какая операция над множествами $A$ и $B$ соответствует союзу «ИЛИ»?',
+            'Объединение ($A \\cup B$).',
+            'btn-0-1',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-2"
+        onclick="
+          openModal(
+            'Каким специальным математическим знаком обозначается пустое множество?',
+            'Перечёркнутым кругом — $\\varnothing$.',
+            'btn-0-2',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-3"
+        onclick="
+          openModal(
+            'Сколько элементов содержит множество букв слова «КОЛОБОК»?',
+            '$4$ элемента (буквы {К, О, Л, Б}, так как повторяющиеся элементы не учитываются).',
+            'btn-0-3',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-4"
+        onclick="
+          openModal(
+            'В программировании есть логический тип данных, который принимает всего два значения: True и False. Как он называется? *В чью честь он назван?',
+            'Булевый тип (Boolean / bool). *В честь Джорджа Буля.',
+            'btn-0-4',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-0-5"
+        onclick="
+          openModal(
+            'Древнегреческий парадокс: если постепенно убирать из кучи по одной песчинке, в какой именно момент куча перестанет быть кучей? Как называется этот парадокс?',
+            'Парадокс Кучи (парадокс Сорита).',
+            'btn-0-5',
+          )
+        "
+      >
+        10
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-0"
+        onclick="
+          openModal(
+            'Принадлежит ли число 0 множеству целых чисел? А множеству натуральных?',
+            'Целым ($\\mathbb{Z}$) — да, натуральным ($\\mathbb{N}$) — нет.',
+            'btn-1-0',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-1"
+        onclick="
+          openModal(
+            'Даны множества $A = \\{1, 2, 3, 4\\}$ и $B = \\{3, 4, 5, 6\\}$. Чему равно их пересечение $A \\cap B$?',
+            '$\\{3, 4\\}$.',
+            'btn-1-1',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-2"
+        onclick="
+          openModal(
+            'Что означают знаки $\\in$ и $\\notin$?',
+            '«Принадлежит» и «не принадлежит» (связь элемента и множества).',
+            'btn-1-2',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-3"
+        onclick="
+          openModal(
+            'Является ли множество $\\{0\\}$ пустым множеством?',
+            'Нет, это одноэлементное множество, содержащее число 0. Пустое множество не содержит элементов.',
+            'btn-1-3',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-4"
+        onclick="
+          openModal(
+            'Какой оператор в базах данных (SQL) или языках программирования соответствует объединению множеств без дубликатов?',
+            'UNION (или OR / || в логике).',
+            'btn-1-4',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-1-5"
+        onclick="
+          openModal(
+            '«Сельскому парикмахеру приказано брить всех тех и только тех мужчин деревни, которые не бреются сами. Должен ли парикмахер брить самого себя?» Назовите этот парадокс.',
+            'Парадокс Рассела (парадокс парикмахера).',
+            'btn-1-5',
+          )
+        "
+      >
+        20
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-0"
+        onclick="
+          openModal(
+            'Чем принципиально отличается рациональное число от иррационального по своей записи в виде десятичной дроби?',
+            'Рациональное переводится в бесконечную периодическую дробь (или конечную), а иррациональное — в бесконечную непериодическую.',
+            'btn-2-0',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-1"
+        onclick="
+          openModal(
+            'Из множества $A = \\{a, b, c, d, e\\}$ вычли множество $B = \\{b, d, f\\}$. Запишите разность $A \\setminus B$.',
+            '$\\{a, c, e\\}$.',
+            'btn-2-1',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-2"
+        onclick="
+          openModal(
+            'Расшифруйте математическую запись: $A \\subseteq B$.',
+            'Множество $A$ является подмножеством множества $B$ (все элементы $A$ содержатся в $B$, при этом $A$ может совпадать с $B$).',
+            'btn-2-2',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-3"
+        onclick="
+          openModal(
+            'Сколько элементов содержит множество $\\{\\varnothing\\}$?',
+            '$1$ элемент (оно содержит пустое множество как один элемент).',
+            'btn-2-3',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-4"
+        onclick="
+          openModal(
+            'Назовите структуру данных в программировании (например, в языке Python), которая хранит только уникальные элементы и автоматически удаляет дубликаты.',
+            'Множество (set).',
+            'btn-2-4',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-2-5"
+        onclick="
+          openModal(
+            'В чём суть Парадокса Рассела на языке множеств?',
+            'Рассматривается «множество всех множеств, не содержащих себя в качестве своего элемента». Оно не может ни содержать себя, ни не содержать.',
+            'btn-2-5',
+          )
+        "
+      >
+        30
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-0"
+        onclick="
+          openModal(
+            'Какому множеству равно пересечение множества рациональных ($\\mathbb{Q}$) и иррациональных ($\\mathbb{I}$) чисел?',
+            'Пустому множеству $\\varnothing$.',
+            'btn-3-0',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-1"
+        onclick="
+          openModal(
+            'Множество всех учащихся школы — универсальное множество $U$. Множество $A$ — 8-классники. Что представляет собой дополнение $\\bar{A}$ (или $U \\setminus A$)?',
+            'Все ученики школы, которые НЕ учатся в 8 классе.',
+            'btn-3-1',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-2"
+        onclick="
+          openModal(
+            'Объясните различия в использовании знаков $\\in$ и $\\subset$ на примере числа $5$ и множества $\\{5\\}$.',
+            'Знак $\\in$ связывает элемент с множеством ($5 \\in A$), а знак $\\subset$ связывает подмножество с множеством ($\\{5\\} \\subset A$).',
+            'btn-3-2',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-3"
+        onclick="
+          openModal(
+            'Множество $A$ состоит из 3 элементов. Какое минимальное и максимальное количество элементов может быть в объединении $A \\cup B$, если в $B$ тоже 3 элемента?',
+            'Минимум — $3$ (если множества совпадают), максимум — $6$ (если у них нет общих элементов).',
+            'btn-3-3',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-4"
+        onclick="
+          openModal(
+            'Если в поисковой строке ввести запрос Яндекс AND Гугл, что вернёт поиск с точки зрения теории множеств?',
+            'Пересечение результатов — только те страницы, где встречаются оба слова одновременно.',
+            'btn-3-4',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-3-5"
+        onclick="
+          openModal(
+            'Парадокс «Гранд-Отель» с бесконечным числом номеров показывает, что в полностью заселённый отель можно поселить ещё одного гостя. Чьим именем назван этот парадокс?',
+            'Парадокс Гранд-Отеля Гильберта (Давид Гильберт).',
+            'btn-3-5',
+          )
+        "
+      >
+        40
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-0"
+        onclick="
+          openModal(
+            'Даны два интервала на числовой прямой: $A = (-3; 5]$ и $B = [2; 8)$. Запишите их пересечение $A \\cap B$.',
+            '$[2; 5]$.',
+            'btn-4-0',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-1"
+        onclick="
+          openModal(
+            'Известно, что $A \\subset B$ ($A$ является подмножеством $B$). Чему равны $A \\cap B$ и $A \\cup B$?',
+            '$A \\cap B = A$, а $A \\cup B = B$.',
+            'btn-4-1',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-2"
+        onclick="
+          openModal(
+            'Дано верное равенство $A \\cap B = A$. Запишите соотношение между множествами $A$ и $B$, используя знаки включения ($\\subset$ или $\\subseteq$).',
+            '$A \\subseteq B$ (так как все элементы $A$ также содержатся в $B$).',
+            'btn-4-2',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-3"
+        onclick="
+          openModal(
+            'В классе 25 человек. Все они увлекаются либо математикой, либо физикой, либо обоими предметами. Математику любят 20 человек, физику — 15. Сколько человек любят и математику, и физику?',
+            '$10$ человек ($20 + 15 - 25 = 10$).',
+            'btn-4-3',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-4"
+        onclick="
+          openModal(
+            'Что делает операция set(list) над списком в программировании, если в нём были повторяющиеся значения?',
+            'Преобразует список в множество, удаляя все повторяющиеся элементы.',
+            'btn-4-4',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-4-5"
+        onclick="
+          openModal(
+            'Вероятность встретить на улице динозавра по шуточной логике «либо встречу, либо нет» — 50%. В чём математическая ошибка объединения этих событий?',
+            'Эти события образуют полное множество, но они не являются равновероятными.',
+            'btn-4-5',
+          )
+        "
+      >
+        50
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-0"
+        onclick="
+          openModal(
+            'Скольким элементам равно пересечение множества простых чисел и множества чётных чисел? Назовите эти элементы.',
+            'Одному элементу (число $2$).',
+            'btn-5-0',
+          )
+        "
+      >
+        60
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-1"
+        onclick="
+          openModal(
+            'Как называется операция над множествами $A$ и $B$, результат которой содержит элементы, принадлежащие $A$ или $B$, но НЕ обоим одновременно?',
+            'Симметрическая разность (обозначается $\\Delta$ или $\\oplus$).',
+            'btn-5-1',
+          )
+        "
+      >
+        60
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-2"
+        onclick="
+          openModal(
+            'Запишите с помощью математических символов утверждение: «Множество натуральных чисел является строгим подмножеством множества целых чисел, а множество целых чисел — строгим подмножеством рациональных чисел».',
+            '$\\mathbb{N} \\subset \\mathbb{Z} \\subset \\mathbb{Q}$.',
+            'btn-5-2',
+          )
+        "
+      >
+        60
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-3"
+        onclick="
+          openModal(
+            'Множество $A$ состоит из двух элементов: $\\{1, 2\\}$. Перечислите абсолютно все подмножества данного множества и укажите их количество.',
+            '$4$ подмножества: $\\varnothing$, $\\{1\\}$, $\\{2\\}$, $\\{1, 2\\}$.',
+            'btn-5-3',
+          )
+        "
+      >
+        60
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-4"
+        onclick="
+          openModal(
+            'Как в базах данных (SQL) называется операция объединения таблиц, при которой в итоговый результат попадают только строки с совпадениями в обеих таблицах (аналог пересечения $A \\cap B$)?',
+            'INNER JOIN.',
+            'btn-5-4',
+          )
+        "
+      >
+        60
+      </div>
+
+      <div
+        class="cell question-btn"
+        id="btn-5-5"
+        onclick="
+          openModal(
+            'Удивительный математический парадокс утверждающий, что трёхмерный шар можно распилить на конечное число частей и сложить из них два точно таких же шара. Назовите его.',
+            'Парадокс Банаха — Тарского (Парадокс удвоения шара).',
+            'btn-5-5',
+          )
+        "
+      >
+        60
+      </div>
+    </div>
+
+    <div id="modal" class="modal">
+      <div class="modal-content">
+        <div id="modal-question" class="modal-text"></div>
+        <div id="modal-answer" class="modal-text" style="color: #00ff66"></div>
+        <div class="controls">
+          <button class="btn" onclick="showAnswer()">Показать ответ</button>
+          <button class="btn" onclick="closeModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function initParticles() {
+        const container = document.getElementById("particles");
+        const particleCount = 25;
+
+        for (let i = 0; i < particleCount; i++) {
+          const pixel = document.createElement("div");
+          pixel.className = "pixel";
+
+          const size = Math.floor(Math.random() * 3) + 2;
+          const posX = Math.random() * 100;
+          const posY = Math.random() * 100;
+          const dx = (Math.random() - 0.5) * 60;
+          const dy = -(Math.random() * 40 + 10);
+          const duration = Math.random() * 4 + 3;
+          const delay = Math.random() * 5;
+
+          pixel.style.width = size + "px";
+          pixel.style.height = size + "px";
+          pixel.style.left = posX + "%";
+          pixel.style.top = posY + "%";
+          pixel.style.setProperty("--dx", dx + "px");
+          pixel.style.setProperty("--dy", dy + "px");
+          pixel.style.animationDuration = duration + "s";
+          pixel.style.animationDelay = delay + "s";
+
+          container.appendChild(pixel);
+        }
+      }
+
+      initParticles();
+
+      let currentBtnId = null;
+      let timerInterval = null;
+      let timeLeft = 60;
+
+      function renderMathIn(element) {
+        if (window.renderMathInElement) {
+          renderMathInElement(element, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false },
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true },
+            ],
+            throwOnError: false,
+          });
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        timeLeft = 60;
+
+        const timerBanner = document.getElementById("timer-banner");
+        const timerText = document.getElementById("timer-text");
+
+        timerBanner.classList.remove("warning");
+        timerBanner.classList.add("active");
+        timerText.innerText = "01:00";
+
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const seconds = timeLeft < 10 ? "0" + timeLeft : timeLeft;
+          timerText.innerText = `00:${seconds}`;
+
+          if (timeLeft <= 10 && timeLeft > 0) {
+            timerBanner.classList.add("warning");
+          }
+
+          if (timeLeft <= 0) {
+            stopTimer();
+            timerText.innerText = "00:00";
+          }
+        }, 1000);
+      }
+
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        const timerBanner = document.getElementById("timer-banner");
+        timerBanner.classList.remove("active", "warning");
+      }
+
+      function openModal(question, answer, btnId) {
+        currentBtnId = btnId;
+
+        const answerElem = document.getElementById("modal-answer");
+        const questionElem = document.getElementById("modal-question");
+
+        answerElem.classList.remove("visible");
+        answerElem.innerText = "";
+
+        questionElem.innerText = question;
+        answerElem.innerText = "Ответ: " + answer;
+
+        // Рендерим LaTeX в вопросе
+        renderMathIn(questionElem);
+
+        document.getElementById("modal").classList.add("active");
+        startTimer();
+      }
+
+      function showAnswer() {
+        const answerElem = document.getElementById("modal-answer");
+        answerElem.classList.add("visible");
+        // Рендерим LaTeX в ответе
+        renderMathIn(answerElem);
+      }
+
+      function closeModal() {
+        document.getElementById("modal").classList.remove("active");
+        stopTimer();
+
+        if (currentBtnId) {
+          document.getElementById(currentBtnId).classList.add("used");
+        }
+      }
+    </script>
+  </body>
+</html>
