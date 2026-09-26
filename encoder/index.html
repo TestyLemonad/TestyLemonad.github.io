@@ -125,7 +125,7 @@
                     <label id="resultLabel" class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Результат</label>
                     <button onclick="copyToClipboard('outputText', 'copyToast')" class="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012 2h2a2 2 0 012-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012-2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                         Копировать
                     </button>
@@ -160,29 +160,37 @@
                 <div class="space-y-3">
                     <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex items-center justify-between gap-3">
                         <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Из:</span>
-                        <select id="convFrom" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
-                            <option value="dec">Десятичная (DEC)</option>
-                            <option value="bin">Двоичная (BIN)</option>
-                            <option value="oct">Восьмеричная (OCT)</option>
-                            <option value="hex">16-ричная (HEX)</option>
-                            <option value="roman">Римская (ROMAN)</option>
-                            <option value="text">Текст</option>
-                            <option value="unicode">Unicode (Коды U+XXXX)</option>
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select id="convFrom" onchange="handleSystemChange('from')" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
+                                <option value="dec">Десятичная (DEC)</option>
+                                <option value="bin">Двоичная (BIN)</option>
+                                <option value="oct">Восьмеричная (OCT)</option>
+                                <option value="hex">16-ричная (HEX)</option>
+                                <option value="custom">x-я (CASTOM)</option>
+                                <option value="roman">Римская (ROMAN)</option>
+                                <option value="text">Текст</option>
+                                <option value="unicode">Unicode (Коды U+XXXX)</option>
+                            </select>
+                            <input type="number" id="baseFrom" value="5" min="2" max="36" oninput="runConvert()" class="custom-input hidden w-16 px-2 py-1 text-xs text-center param-enter" placeholder="x">
+                        </div>
                     </div>
 
                     <div class="bg-[#232327] p-3 rounded-xl border border-[#323238] flex flex-col justify-between gap-3">
                         <div class="flex items-center justify-between gap-3 w-full">
                             <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">В:</span>
-                            <select id="convTo" onchange="runConvert()" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
-                                <option value="bin">Двоичная (BIN)</option>
-                                <option value="oct">Восьмеричная (OCT)</option>
-                                <option value="dec">Десятичная (DEC)</option>
-                                <option value="hex" selected>16-ричная (HEX)</option>
-                                <option value="roman">Римская (ROMAN)</option>
-                                <option value="text">Текст</option>
-                                <option value="unicode">Unicode (Коды U+XXXX)</option>
-                            </select>
+                            <div class="flex items-center gap-2">
+                                <select id="convTo" onchange="handleSystemChange('to')" class="bg-[#1c1c1f] text-sm font-medium text-amber-400 rounded-lg px-3 py-1.5 border border-[#323238] focus:outline-none cursor-pointer">
+                                    <option value="bin">Двоичная (BIN)</option>
+                                    <option value="oct">Восьмеричная (OCT)</option>
+                                    <option value="dec">Десятичная (DEC)</option>
+                                    <option value="hex" selected>16-ричная (HEX)</option>
+                                    <option value="custom">x-я (CASTOM)</option>
+                                    <option value="roman">Римская (ROMAN)</option>
+                                    <option value="text">Текст</option>
+                                    <option value="unicode">Unicode (Коды U+XXXX)</option>
+                                </select>
+                                <input type="number" id="baseTo" value="5" min="2" max="36" oninput="runConvert()" class="custom-input hidden w-16 px-2 py-1 text-xs text-center param-enter" placeholder="x">
+                            </div>
                         </div>
                         <div id="binGroupWrapper" class="hidden border-t border-[#323238] pt-2.5 flex items-center justify-center gap-2 text-xs">
                             <span class="text-zinc-400 font-medium">Разбивать на:</span>
@@ -541,13 +549,42 @@
             return roman;
         }
 
+        function handleSystemChange(dir) {
+            if (dir === 'from') {
+                const fromVal = document.getElementById('convFrom').value;
+                const baseEl = document.getElementById('baseFrom');
+                if (fromVal === 'custom') {
+                    baseEl.classList.remove('hidden');
+                } else {
+                    baseEl.classList.add('hidden');
+                }
+            } else if (dir === 'to') {
+                const toVal = document.getElementById('convTo').value;
+                const baseEl = document.getElementById('baseTo');
+                if (toVal === 'custom') {
+                    baseEl.classList.remove('hidden');
+                } else {
+                    baseEl.classList.add('hidden');
+                }
+            }
+            runConvert();
+        }
+
         function swapSystems() {
             const fromEl = document.getElementById('convFrom');
             const toEl = document.getElementById('convTo');
             const temp = fromEl.value;
             fromEl.value = toEl.value;
             toEl.value = temp;
-            runConvert();
+
+            const baseFromEl = document.getElementById('baseFrom');
+            const baseToEl = document.getElementById('baseTo');
+            const tempBase = baseFromEl.value;
+            baseFromEl.value = baseToEl.value;
+            baseToEl.value = tempBase;
+
+            handleSystemChange('from');
+            handleSystemChange('to');
         }
 
         function runConvert() {
@@ -599,6 +636,15 @@
                         if (!/^[0-9a-fA-F]+$/.test(t)) throw new Error('Некорректное 16-ричное число');
                         return parseInt(t, 16);
                     });
+                } else if (from === 'custom') {
+                    const base = parseInt(document.getElementById('baseFrom').value, 10);
+                    if (isNaN(base) || base < 2 || base > 36) throw new Error('Некорректное основание');
+                    const tokens = rawVal.split(/\s+/).filter(Boolean);
+                    bytes = tokens.map(t => {
+                        const n = parseInt(t, base);
+                        if (isNaN(n)) throw new Error('Некорректное число');
+                        return n;
+                    });
                 } else if (from === 'roman') {
                     const tokens = rawVal.split(/\s+/).filter(Boolean);
                     bytes = tokens.map(t => romanToDec(t));
@@ -642,6 +688,10 @@
                     result = bytes.map(b => b.toString(8).padStart(3, '0')).join(' ');
                 } else if (to === 'hex') {
                     result = bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+                } else if (to === 'custom') {
+                    const base = parseInt(document.getElementById('baseTo').value, 10);
+                    if (isNaN(base) || base < 2 || base > 36) throw new Error('Некорректное основание');
+                    result = bytes.map(b => b.toString(base).toUpperCase()).join(' ');
                 } else if (to === 'roman') {
                     result = bytes.map(b => decToRoman(b)).join(' ');
                 } else if (to === 'text') {
