@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Miheytale</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #crosshair { 
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; 
+            border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+        #stats {
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6);
+            color: #00ff00; padding: 10px 14px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 14px; pointer-events: auto;
+            line-height: 1.4;
+        }
+        #hotbar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 12px; pointer-events: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .slot {
+            width: 50px; height: 50px; border: 3px solid #444; border-radius: 8px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background-size: cover; image-rendering: pixelated;
+            transition: all 0.1s ease;
+        }
+        .slot.active { border-color: #fff; transform: scale(1.1) translateY(-5px); }
+        #loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; color: #ffcc00; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px; letter-spacing: 8px;">MIHEYTALE</div>
+        <div id="load-status">Генерация ландшафта...</div>
+    </div>
+
+    <div id="ui">
+        <div id="crosshair"></div>
+        <div id="stats">
+            FPS: <span id="fps">0</span><br>
+            XYZ: <span id="coords">0 / 0 / 0</span><br>
+            CHUNK: <span id="chunk-coord">0, 0</span>
+        </div>
+        <div id="hotbar">
+            <div class="slot active" id="slot-0" title="Трава"></div>
+            <div class="slot" id="slot-1" title="Земля"></div>
+            <div class="slot" id="slot-2" title="Камень"></div>
+            <div class="slot" id="slot-3" title="Булыжник"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Аудио Движок ---
+        let audioCtx = null;
+        let noiseBuffer = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const bufferSize = audioCtx.sampleRate * 1.0;
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            if (type === 'step') {
+                const osc = audioCtx.createOscillator();
+                const oscGain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(120 + Math.random() * 20, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                oscGain.gain.setValueAtTime(0.1, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.connect(oscGain);
+                oscGain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                const noiseFilter = audioCtx.createBiquadFilter();
+                const noiseGain = audioCtx.createGain();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(800 + Math.random() * 400, now);
+                noiseFilter.Q.setValueAtTime(1, now);
+                noiseGain.gain.setValueAtTime(0.04, now);
+                noiseGain.gain.linearRampToValueAtTime(0, now + 0.08);
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noiseSource.start(now, Math.random() * 0.9);
+                noiseSource.stop(now + 0.08);
+                return;
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            switch(type) {
+                case 'jump':
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(350, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                    osc.start();
+                    osc.stop(now + 0.15);
+                    break;
+                case 'break':
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(20, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.start();
+                    osc.stop(now + 0.1);
+                    break;
+                case 'place':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.07);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.07);
+                    osc.start();
+                    osc.stop(now + 0.07);
+                    break;
+            }
+        }
+
+        // --- Константы и переменные мира ---
+        const MAX_FPS = 60; 
+        const FRAME_DURATION = 1000 / MAX_FPS; // ~16.66ms
+        let lastFrameTime = performance.now();
+
+        const CHUNK_SIZE = 16;
+        const RENDER_DISTANCE = 3; 
+        const PLAYER_HEIGHT = 1.7;
+        const PLAYER_RADIUS = 0.3;
+        const SPEED = 0.12;
+        const GRAVITY = 0.01;
+        const JUMP_FORCE = 0.18;
+
+        let scene, camera, renderer, simplex;
+        let chunks = new Map(); 
+        let chunkCache = new Map(); 
+        let textures = {};
+        let player = { pos: new THREE.Vector3(8, 25, 8), vel: new THREE.Vector3(), onGround: false };
+        let controls = { yaw: 0, pitch: 0 };
+        let keys = {};
+        let currentType = 'grass';
+        const blockTypes = ['grass', 'dirt', 'stone', 'cobblestone'];
+        let materials = {};
+        let lastStepTime = 0;
+        const stepInterval = 350;
+
+        function createTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const fill = (x, y, r, g, b) => {
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(x, y, 1, 1);
+            };
+            for(let x=0; x<16; x++) {
+                for(let y=0; y<16; y++) {
+                    let r, g, b;
+                    const noise = Math.random() * 20;
+                    if (type === 'grass') { r = 80 + noise; g = 150 + noise; b = 40 + noise; }
+                    else if (type === 'dirt') { r = 100 + noise; g = 70 + noise; b = 40 + noise; }
+                    else if (type === 'stone') { const v = 120 + noise; r = g = b = v; }
+                    else if (type === 'cobblestone') { const v = 100 + noise; r = g = b = v; if((x+y)%5===0) {r-=30; g-=30; b-=30;}}
+                    else if (type === 'grass_side') {
+                        if (y < 4) { r = 80 + noise; g = 150 + noise; b = 40 + noise; }
+                        else { r = 100 + noise; g = 70 + noise; b = 40 + noise; }
+                    }
+                    fill(x, y, r, g, b);
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.NearestFilter;
+            return { tex, dataUrl: canvas.toDataURL() };
+        }
+
+        class Chunk {
+            constructor(cx, cz) {
+                this.cx = cx;
+                this.cz = cz;
+                this.data = new Map();
+                this.meshes = {};
+                this.group = new THREE.Group();
+                this.group.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
+                const cacheKey = `${cx},${cz}`;
+                if (chunkCache.has(cacheKey)) {
+                    this.data = chunkCache.get(cacheKey);
+                } else {
+                    this.generate();
+                    chunkCache.set(cacheKey, this.data);
+                }
+                this.updateVisuals();
+            }
+            generate() {
+                for(let x = 0; x < CHUNK_SIZE; x++) {
+                    for(let z = 0; z < CHUNK_SIZE; z++) {
+                        const gx = this.cx * CHUNK_SIZE + x;
+                        const gz = this.cz * CHUNK_SIZE + z;
+                        const n = simplex.noise2D(gx * 0.03, gz * 0.03) * 8;
+                        const h = Math.floor(n + 15);
+                        this.setBlock(x, h, z, 'grass');
+                        for(let y = h - 1; y > h - 4; y--) this.setBlock(x, y, z, 'dirt');
+                        for(let y = h - 4; y > 0; y--) this.setBlock(x, y, z, 'stone');
+                    }
+                }
+            }
+            setBlock(x, y, z, type) {
+                if (type) this.data.set(`${x},${y},${z}`, type);
+                else this.data.delete(`${x},${y},${z}`);
+            }
+            getBlock(x, y, z) {
+                return this.data.get(`${x},${y},${z}`);
+            }
+            updateVisuals() {
+                Object.values(this.meshes).forEach(m => this.group.remove(m));
+                this.meshes = {};
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const buckets = {};
+                this.data.forEach((type, key) => {
+                    if (!buckets[type]) buckets[type] = [];
+                    buckets[type].push(key.split(',').map(Number));
+                });
+                blockTypes.forEach(type => {
+                    const posArr = buckets[type];
+                    if(!posArr || posArr.length === 0) return;
+                    const imesh = new THREE.InstancedMesh(geometry, materials[type], posArr.length);
+                    const dummy = new THREE.Object3D();
+                    posArr.forEach((p, i) => {
+                        dummy.position.set(p[0], p[1], p[2]);
+                        dummy.updateMatrix();
+                        imesh.setMatrixAt(i, dummy.matrix);
+                    });
+                    this.meshes[type] = imesh;
+                    this.group.add(imesh);
+                });
+                if (!this.group.parent) scene.add(this.group);
+            }
+            dispose() {
+                scene.remove(this.group);
+                Object.values(this.meshes).forEach(m => {
+                    m.geometry.dispose();
+                });
+            }
+        }
+
+        function init() {
+            simplex = new SimplexNoise();
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 30, RENDER_DISTANCE * CHUNK_SIZE * 1.5);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
+            document.body.appendChild(renderer.domElement);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+            sun.position.set(10, 20, 10);
+            scene.add(sun);
+            blockTypes.forEach(t => {
+                textures[t] = createTexture(t);
+                if (t === 'grass') textures['grass_side'] = createTexture('grass_side');
+            });
+            blockTypes.forEach(type => {
+                if (type === 'grass') {
+                    const side = new THREE.MeshLambertMaterial({ map: textures['grass_side'].tex });
+                    const top = new THREE.MeshLambertMaterial({ map: textures['grass'].tex });
+                    const bottom = new THREE.MeshLambertMaterial({ map: textures['dirt'].tex });
+                    materials[type] = [side, side, top, bottom, side, side];
+                } else {
+                    materials[type] = new THREE.MeshLambertMaterial({ map: textures[type].tex });
+                }
+            });
+            blockTypes.forEach((t, i) => {
+                const slot = document.getElementById(`slot-${i}`);
+                slot.style.backgroundImage = `url(${textures[t].dataUrl})`;
+                slot.onclick = () => selectSlot(i);
+            });
+            updateWorldChunks();
+            setupControls();
+            document.getElementById('loading').style.display = 'none';
+
+            // Начинаем игровой цикл
+            animate(performance.now());
+        }
+
+        function updateWorldChunks() {
+            const playerCX = Math.floor(player.pos.x / CHUNK_SIZE);
+            const playerCZ = Math.floor(player.pos.z / CHUNK_SIZE);
+            for(let x = playerCX - RENDER_DISTANCE; x <= playerCX + RENDER_DISTANCE; x++) {
+                for(let z = playerCZ - RENDER_DISTANCE; z <= playerCZ + RENDER_DISTANCE; z++) {
+                    const key = `${x},${z}`;
+                    if (!chunks.has(key)) {
+                        chunks.set(key, new Chunk(x, z));
+                    }
+                }
+            }
+            chunks.forEach((chunk, key) => {
+                const [cx, cz] = key.split(',').map(Number);
+                if (Math.abs(cx - playerCX) > RENDER_DISTANCE || Math.abs(cz - playerCZ) > RENDER_DISTANCE) {
+                    chunk.dispose();
+                    chunks.delete(key);
+                }
+            });
+            document.getElementById('chunk-coord').innerText = `${playerCX}, ${playerCZ}`;
+        }
+
+        function getBlockAt(gx, gy, gz) {
+            const cx = Math.floor(gx / CHUNK_SIZE);
+            const cz = Math.floor(gz / CHUNK_SIZE);
+            const chunk = chunks.get(`${cx},${cz}`);
+            if (!chunk) return null;
+            const lx = ((gx % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            const lz = ((gz % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+            return { chunk, lx, ly: Math.round(gy), lz };
+        }
+
+        function checkCollision(x, y, z) {
+            const checkPoints = [
+                [x - PLAYER_RADIUS, y - PLAYER_HEIGHT, z - PLAYER_RADIUS],
+                [x + PLAYER_RADIUS, y - PLAYER_HEIGHT, z - PLAYER_RADIUS],
+                [x - PLAYER_RADIUS, y - PLAYER_HEIGHT, z + PLAYER_RADIUS],
+                [x + PLAYER_RADIUS, y - PLAYER_HEIGHT, z + PLAYER_RADIUS],
+                [x, y, z], 
+                [x, y - PLAYER_HEIGHT/2, z]
+            ];
+            for (let p of checkPoints) {
+                const b = getBlockAt(Math.round(p[0]), Math.round(p[1]), Math.round(p[2]));
+                if (b && b.chunk.getBlock(b.lx, b.ly, b.lz)) return true;
+            }
+            return false;
+        }
+
+        function handleInteraction(action) {
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(0,0), camera);
+            const allMeshes = [];
+            chunks.forEach(c => {
+                Object.values(c.meshes).forEach(m => allMeshes.push(m));
+            });
+            const hits = ray.intersectObjects(allMeshes);
+            if (hits.length > 0 && hits[0].distance < 6) {
+                const hit = hits[0];
+                const matrix = new THREE.Matrix4();
+                hit.object.getMatrixAt(hit.instanceId, matrix);
+                const worldPos = new THREE.Vector3().setFromMatrixPosition(matrix);
+                worldPos.add(hit.object.parent.position);
+                if (action === 'remove') {
+                    const b = getBlockAt(worldPos.x, worldPos.y, worldPos.z);
+                    if (b) {
+                        b.chunk.setBlock(b.lx, b.ly, b.lz, null);
+                        b.chunk.updateVisuals();
+                        playSound('break');
+                    }
+                } else {
+                    const n = hit.face.normal.clone();
+                    const placePos = worldPos.clone().add(n);
+                    if (placePos.distanceTo(player.pos) > 1.0) {
+                        const b = getBlockAt(placePos.x, placePos.y, placePos.z);
+                        if (b) {
+                            b.chunk.setBlock(b.lx, b.ly, b.lz, currentType);
+                            b.chunk.updateVisuals();
+                            playSound('place');
+                        }
+                    }
+                }
+            }
+        }
+
+        function selectSlot(i) {
+            currentType = blockTypes[i];
+            document.querySelectorAll('.slot').forEach((s, idx) => s.classList.toggle('active', idx === i));
+            playSound('place');
+        }
+
+        function setupControls() {
+            const onInteraction = () => {
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            };
+            document.addEventListener('mousedown', (e) => {
+                onInteraction();
+                if (document.pointerLockElement !== renderer.domElement) {
+                    renderer.domElement.requestPointerLock();
+                } else {
+                    handleInteraction(e.button === 0 ? 'remove' : 'add');
+                }
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === renderer.domElement) {
+                    controls.yaw -= e.movementX * 0.002;
+                    controls.pitch -= e.movementY * 0.002;
+                    controls.pitch = Math.max(-1.5, Math.min(1.5, controls.pitch));
+                    camera.rotation.order = 'YXZ';
+                    camera.rotation.set(controls.pitch, controls.yaw, 0);
+                }
+            });
+            window.addEventListener('keydown', e => { 
+                onInteraction();
+                keys[e.code] = true; 
+                if(e.key >= 1 && e.key <= 4) selectSlot(e.key-1); 
+            });
+            window.addEventListener('keyup', e => keys[e.code] = false);
+        }
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            // Реальное ограничение FPS
+            const elapsed = timestamp - lastFrameTime;
+            if (elapsed < FRAME_DURATION) return; // Если времени прошло меньше чем 1/60 сек, пропускаем кадр
+
+            // Регулируем время последнего кадра так, чтобы оно было кратно FRAME_DURATION
+            // Это обеспечивает более стабильный фреймрейт даже если requestAnimationFrame плавает
+            lastFrameTime = timestamp - (elapsed % FRAME_DURATION);
+
+            // Физика и логика (выполняется 60 раз в секунду)
+            player.vel.y -= GRAVITY;
+            let nextY = player.pos.y + player.vel.y;
+            player.onGround = false;
+
+            if (checkCollision(player.pos.x, nextY, player.pos.z)) {
+                if (player.vel.y < 0) {
+                    player.onGround = true;
+                    player.pos.y = Math.floor(nextY - PLAYER_HEIGHT) + PLAYER_HEIGHT + 0.51;
+                }
+                player.vel.y = 0;
+            } else {
+                player.pos.y = nextY;
+            }
+
+            const move = new THREE.Vector3();
+            if (keys['KeyW']) move.z -= 1;
+            if (keys['KeyS']) move.z += 1;
+            if (keys['KeyA']) move.x -= 1;
+            if (keys['KeyD']) move.x += 1;
+
+            let isMoving = false;
+            if (move.length() > 0) {
+                move.normalize().applyEuler(new THREE.Euler(0, controls.yaw, 0)).multiplyScalar(SPEED);
+                const canMoveX = !checkCollision(player.pos.x + move.x, player.pos.y, player.pos.z);
+                const canMoveZ = !checkCollision(player.pos.x, player.pos.y, player.pos.z + move.z);
+                if (canMoveX) player.pos.x += move.x;
+                if (canMoveZ) player.pos.z += move.z;
+                if (canMoveX || canMoveZ) {
+                    isMoving = true;
+                    updateWorldChunks();
+                }
+            }
+
+            if (isMoving && player.onGround) {
+                const now = performance.now();
+                if (now - lastStepTime > stepInterval) {
+                    playSound('step');
+                    lastStepTime = now;
+                }
+            }
+
+            if (keys['Space'] && player.onGround) {
+                player.vel.y = JUMP_FORCE;
+                playSound('jump');
+            }
+            camera.position.copy(player.pos);
+
+            // Отрисовка
+            renderer.render(scene, camera);
+            updateStats();
+        }
+
+        let frameCount = 0, lastFpsUpdate = 0;
+        function updateStats() {
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsUpdate > 1000) {
+                document.getElementById('fps').innerText = frameCount;
+                frameCount = 0;
+                lastFpsUpdate = now;
+            }
+            const px = player.pos.x.toFixed(1);
+            const py = player.pos.y.toFixed(1);
+            const pz = player.pos.z.toFixed(1);
+            document.getElementById('coords').innerText = `${px} / ${py} / ${pz}`;
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
