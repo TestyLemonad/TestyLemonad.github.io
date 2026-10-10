@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="robots" content="index, follow">
     <meta name="google-site-verification" content="KRZ90IgwnHZJ0NoI5obiDu0KmztDm6h4dwAbTx5t9Ww">
     <meta name="theme-color" content="#050200">
 
@@ -25,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
 
     <script type="application/ld+json">
     {
@@ -569,48 +572,5 @@
         updateScroll();
     </script>
 
-    <script>
-        // ============================================================
-        // АНТИ-DEVTOOLS (косметика, не защита)
-        // ============================================================
-
-        // 1. Блокируем контекстное меню (правый клик мыши)
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // 2. Блокируем горячие клавиши вызова DevTools
-        document.addEventListener('keydown', (e) => {
-            // F12
-            if (e.key === 'F12') {
-                e.preventDefault();
-            }
-            // Ctrl+Shift+I / Cmd+Option+I (Инспектировать)
-            // Ctrl+Shift+J / Cmd+Option+J (Консоль)
-            // Ctrl+Shift+C / Cmd+Option+C (Выбор элемента)
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key)) {
-                e.preventDefault();
-            }
-            // Ctrl+U / Cmd+Option+U (Исходный код страницы)
-            if ((e.ctrlKey || e.metaKey) && ['U', 'u'].includes(e.key)) {
-                e.preventDefault();
-            }
-            // Ctrl+S (Сохранение страницы)
-            if ((e.ctrlKey || e.metaKey) && ['S', 's'].includes(e.key)) {
-                e.preventDefault();
-            }
-        });
-
-        // 3. Защита через ловушку debugger
-        setInterval(() => {
-            const startTime = performance.now();
-            debugger;
-            const endTime = performance.now();
-
-            if (endTime - startTime > 100) {
-                if (document.body) {
-                    document.body.innerHTML = '<h1>Доступ к DevTools запрещён</h1>';
-                }
-            }
-        }, 1000);
-    </script>
 </body>
 </html>
