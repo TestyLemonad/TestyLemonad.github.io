@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крестики-Нолики</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #00a2e8;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --cell: #e2eefe;
+            --btn-toggle-bg: #ffffff;
+            --btn-toggle-border: #cbd5e1;
+            --btn-toggle-text: #64748b;
+            --modal-bg: #ffffff;
+            --ability-bg: #bae6fd;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --cell: #334155;
+            --btn-toggle-bg: #334155;
+            --btn-toggle-border: #475569;
+            --btn-toggle-text: #94a3b8;
+            --modal-bg: #1e293b;
+            --ability-bg: #0c4a6e;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            70% { transform: scale(1.03); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes knifeCut {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            25% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+            75% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+            100% { transform: scale(0) rotate(45deg); opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .animate-pop { animation: popIn 0.3s cubic-bezier(0.34, 1.3, 0.64, 1); }
+        .animate-knife { animation: knifeCut 0.5s ease-in-out forwards; }
+        .animate-shake { animation: shake 0.2s ease-in-out infinite; }
+        .animate-spin-once { animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .effect-layer {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .app-container {
+            background: var(--card);
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .btn-toggle {
+            background: var(--btn-toggle-bg);
+            border: 2px solid var(--btn-toggle-border);
+            color: var(--btn-toggle-text);
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .btn-toggle.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 162, 232, 0.1);
+        }
+
+        .btn-main {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 20px;
+            padding: 16px;
+            font-weight: 800;
+            font-size: 16px;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.1s;
+        }
+        .btn-main:active { transform: scale(0.96); }
+
+        .board-wrapper {
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .grid-board {
+            display: grid;
+            gap: 6px;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease;
+        }
+
+        .cell {
+            background: var(--cell);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            aspect-ratio: 1/1;
+        }
+        .cell .key-hint {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 9px;
+            opacity: 0.3;
+            color: var(--text);
+        }
+
+        .cell.x { color: #f43f5e; }
+        .cell.o { color: var(--primary); }
+        
+        .ability-panel {
+            width: 100px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(0,0,0,0.02);
+            border-radius: 20px;
+            height: fit-content;
+        }
+
+        .ability-card {
+            background: var(--ability-bg);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            padding: 6px 2px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .ability-card .key-hint {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            opacity: 0.8;
+            font-weight: 900;
+        }
+        .ability-card.used { filter: grayscale(1); opacity: 0.2; pointer-events: none; }
+        
+        .ability-card.selected { 
+            transform: scale(1.1); 
+            border-color: #ffffff; 
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 4px 10px rgba(0, 162, 232, 0.3); 
+        }
+
+        #roulette-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 7000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            backdrop-filter: blur(8px);
+        }
+
+        .roulette-wheel {
+            width: 120px;
+            height: 120px;
+            border-radius: 30px;
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            transition: 0.1s ease-in-out;
+            color: var(--text);
+        }
+
+        #msg-box {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: #1e293b;
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 6000;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none;
+        }
+
+        .reroll-btn {
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            padding: 4px;
+            font-size: 10px;
+            font-weight: 900;
+            text-align: center;
+            margin-top: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .reroll-btn:hover { background: #fee2e2; color: #f43f5e; }
+
+        .shield-active {
+            box-shadow: 0 0 15px #fbbf24;
+            border: 2px solid #fbbf24;
+        }
+        .virus-active {
+            animation: pulse-green 1.5s infinite;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div id="msg-box"></div>
+
+    <div id="roulette-overlay">
+        <p class="text-xs font-black uppercase tracking-[0.2em] mb-4 opacity-60">Жеребьевка первого хода</p>
+        <div id="roulette-box" class="roulette-wheel">?</div>
+        <p id="roulette-result" class="text-lg font-black uppercase h-8"></p>
+    </div>
+
+    <div id="guide-modal" class="fixed inset-0 z-[8000] hidden items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target === this) this.style.display='none'">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl max-w-sm w-full m-4 shadow-2xl">
+            <h3 class="text-xl font-black mb-4 text-center uppercase tracking-tight">Справочник сил</h3>
+            <div id="guide-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2"></div>
+            <button onclick="document.getElementById('guide-modal').style.display='none'" class="btn-main mt-4 py-3">Понял</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div class="p-4 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
+            <h1 class="text-xl font-black italic text-sky-500">SUPER X-O (made by Егор)</h1>
+            <div class="flex gap-2 items-center">
+                <button id="header-back-btn" onclick="exitToMenu()" class="hidden w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-lg shadow-sm">🏠</button>
+                <button onclick="toggleTheme()" id="theme-btn" class="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full text-lg shadow-sm">☀️</button>
+                <div id="score-header" class="hidden bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-black text-xs">
+                    <span id="sx" class="text-rose-500">0</span> : <span id="so" class="text-sky-500">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="lobby" class="flex-1 px-8 flex flex-col justify-center max-w-md mx-auto w-full">
+            <div id="auth-status" class="text-[10px] font-black opacity-40 mb-4 uppercase tracking-widest text-center">Подключение...</div>
+            
+            <div class="mb-6">
+                <p class="text-[10px] font-black opacity-40 mb-2 uppercase tracking-widest text-center">Режим</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="mode-bot" onclick="setMode('bot')" class="btn-toggle active">БОТ</button>
+                    <button id="mode-player" onclick="setMode('player')" class="btn-toggle">ОНЛАЙН</button>
+                </div>
+            </div>
+
+            <div id="online-block" class="hidden mb-6">
+                <p class="text-[10px] font-black opacity-40 mb-2 uppercase tracking-widest text-center">ID Комнаты</p>
+                <input id="room-input" type="text" placeholder="Введите ID..." class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-sky-500 text-center font-bold outline-none">
+            </div>
+
+            <div id="diff-block" class="mb-8">
+                <p class="text-[10px] font-black opacity-40 mb-2 uppercase tracking-widest text-center">Сложность</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="d-easy" onclick="setDiff('easy')" class="btn-toggle active">ЛЕГКО</button>
+                    <button id="d-mid" onclick="setDiff('mid')" class="btn-toggle">НОРМ</button>
+                    <button id="d-hard" onclick="setDiff('hard')" class="btn-toggle">АД</button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="start-btn" onclick="startGame(3)" disabled class="btn-main shadow-lg shadow-sky-500/30 opacity-50">ИГРАТЬ</button>
+                <button onclick="openGuide()" class="w-full text-[10px] font-black opacity-50 uppercase tracking-widest py-2">Справочник сил</button>
+            </div>
+        </div>
+
+        <div id="game" class="hidden flex-1 flex flex-col relative">
+            <div class="px-5 py-3 flex justify-center items-center">
+                <div class="flex items-center gap-2">
+                    <div id="turn-indicator" class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center text-xl font-black shadow-md">X</div>
+                    <span class="font-black text-[10px] uppercase opacity-40" id="turn-text">Ход <span id="turn-label">Игрока 1</span></span>
+                </div>
+            </div>
+
+            <div class="flex-1 flex items-center justify-around px-2">
+                <div class="flex flex-col items-center">
+                    <span class="text-[8px] font-black opacity-40 uppercase mb-2">Игрок 1 (X)</span>
+                    <div id="skills-x" class="ability-panel"></div>
+                    <div onclick="rerollAndSkip('X')" class="reroll-btn">🎲 СБРОС</div>
+                </div>
+
+                <div class="board-wrapper">
+                    <div id="board" class="grid-board"></div>
+                    <div id="fx-layer" class="effect-layer inset-0"></div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <span class="text-[8px] font-black opacity-40 uppercase mb-2">Игрок 2 (O)</span>
+                    <div id="skills-o" class="ability-panel"></div>
+                    <div onclick="rerollAndSkip('O')" class="reroll-btn">🎲 СБРОС</div>
+                </div>
+            </div>
+
+            <div class="p-4 text-center">
+                <p class="text-[8px] font-black opacity-20 uppercase tracking-[0.2em]">Клавиши: 1-9 (ход), Ctrl + 1-5 (силы)</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIGhEhZkSAssATbM6l5vMfemwn2_zvRU8",
+            authDomain: "testy-xo-online.firebaseapp.com",
+            databaseURL: "https://testy-xo-online-default-rtdb.firebaseio.com",
+            projectId: "testy-xo-online",
+            storageBucket: "testy-xo-online.firebasestorage.app",
+            messagingSenderId: "936157001796",
+            appId: "1:936157001796:web:be2446bc94a4934507a411"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'super-xo-evo-v1';
+        const instanceId = rawAppId.replace(/[.#$\[\]]/g, '_');
+
+        const SKILLS_DB = [
+            { id: 'virus', icon: '🦠', name: 'Вирус', d: 'Заражает: через 3с один сосед врага станет вашим.' },
+            { id: 'shield', icon: '🛡️', name: 'Щит', d: 'Клетка неуязвима на 1 следующий ход.' },
+            { id: 'cannon', icon: '💣', name: 'Пушка', d: 'Очищает горизонтальную линию.' },
+            { id: 'expand', icon: '🏗️', name: 'Поле+', d: 'Расширяет поле на 1 ряд/столбец.' },
+            { id: 'swap', icon: '🔄', name: 'Обмен', d: 'Меняет вражеский символ на ваш.' },
+            { id: 'ghost', icon: '👻', name: 'Призрак', d: 'Ваш следующий знак полностью прозрачен.' },
+            { id: 'stun', icon: '⚡', name: 'Стан', d: 'Враг пропускает ход.' },
+            { id: 'saw', icon: '🪚', name: 'Резня', d: 'Очищает все угловые клетки.' },
+            { id: 'hypno', icon: '🌀', name: 'Гипноз', d: 'Случайный символ врага переходит к вам.' },
+            { id: 'portal', icon: '🚪', name: 'Портал', d: 'Меняет местами ВСЕ X и O.' }
+        ];
+
+        // Тёмная тема по умолчанию
+        let savedTheme = localStorage.getItem('ttt_theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        
+        let state = {
+            size: 3,
+            board: [],
+            turn: 'X',
+            mode: 'bot',
+            diff: 'easy',
+            theme: savedTheme,
+            scores: {X:0, O:0},
+            skillsX: [],
+            skillsO: [],
+            activeSkill: null,
+            maxRounds: 3,
+            isLocked: true,
+            isStunned: false,
+            players: [],
+            currentRoom: null,
+            mySymbol: null,
+            user: null
+        };
+
+        // UI Helpers
+        document.getElementById('theme-btn').innerText = state.theme === 'light' ? '🌙' : '☀️';
+
+        // Auth
+        signInAnonymously(auth);
+        onAuthStateChanged(auth, (u) => {
+            state.user = u;
+            if (u) {
+                document.getElementById('auth-status').innerText = "Готов к игре";
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('start-btn').style.opacity = "1";
+            }
+        });
+
+        window.setMode = (m) => {
+            state.mode = m;
+            document.getElementById('mode-bot').classList.toggle('active', m === 'bot');
+            document.getElementById('mode-player').classList.toggle('active', m === 'player');
+            document.getElementById('diff-block').style.display = m === 'bot' ? 'block' : 'none';
+            document.getElementById('online-block').style.display = m === 'player' ? 'block' : 'none';
+        };
+
+        window.setDiff = (d) => {
+            state.diff = d;
+            ['easy', 'mid', 'hard'].forEach(i => document.getElementById('d-'+i).classList.toggle('active', d === i));
+        };
+
+        window.toggleTheme = () => {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('ttt_theme', state.theme);
+            document.body.setAttribute('data-theme', state.theme);
+            document.getElementById('theme-btn').innerText = state.theme === 'light' ? '🌙' : '☀️';
+        };
+
+        window.exitToMenu = () => location.reload();
+
+        window.startGame = async (rounds) => {
+            if (state.mode === 'player') {
+                const rid = document.getElementById('room-input').value.trim().replace(/[.#$\[\]]/g, '_');
+                if (!rid) { showMsg("Введите ID комнаты!"); return; }
+                state.currentRoom = rid;
+                await enterRoom(rid);
+            } else {
+                state.maxRounds = rounds;
+                state.scores = {X:0, O:0};
+                document.getElementById('sx').innerText = 0;
+                document.getElementById('so').innerText = 0;
+                document.getElementById('lobby').classList.add('hidden');
+                document.getElementById('game').classList.remove('hidden');
+                document.getElementById('score-header').classList.remove('hidden');
+                document.getElementById('header-back-btn').classList.remove('hidden');
+                
+                runRoulette(() => {
+                    initBoard(3);
+                    refreshSkills();
+                    state.isLocked = false;
+                });
+            }
+        };
+
+        async function enterRoom(roomId) {
+            const roomPath = `rooms/${instanceId}/${roomId}`;
+            const roomRef = ref(db, roomPath);
+            const snapshot = await get(roomRef);
+
+            if (!snapshot.exists()) {
+                state.mySymbol = 'X';
+                const initialData = {
+                    board: Array(9).fill(null).map(() => ({v: "", protected: false, type: 'normal'})),
+                    turn: 'X',
+                    players: [state.user.uid],
+                    scores: {X:0, O:0},
+                    skillsX: generateRandomSkills(),
+                    skillsO: generateRandomSkills(),
+                    size: 3,
+                    isStunned: false,
+                    isLocked: true,
+                    lastActive: serverTimestamp()
+                };
+                await set(roomRef, initialData);
+                
+                // Автоматическое удаление комнаты при выходе создателя до начала игры
+                // Или если комната осталась пустой
+                onDisconnect(roomRef).remove();
+            } else {
+                const data = snapshot.val();
+                if (data.players.includes(state.user.uid)) {
+                    state.mySymbol = data.players[0] === state.user.uid ? 'X' : 'O';
+                } else if (data.players.length < 2) {
+                    state.mySymbol = 'O';
+                    data.players.push(state.user.uid);
+                    await update(roomRef, { 
+                        players: data.players, 
+                        isLocked: false,
+                        lastActive: serverTimestamp()
+                    });
+                    
+                    // Если второй игрок зашел, удаление на дисконнект нужно отменить или изменить логику
+                    // В данном случае мы просто оставляем авто-удаление, если база станет пустой.
+                    onDisconnect(roomRef).remove();
+                } else {
+                    alert("Комната полная!"); return;
+                }
+            }
+
+            document.getElementById('lobby').classList.add('hidden');
+            document.getElementById('game').classList.remove('hidden');
+            document.getElementById('score-header').classList.remove('hidden');
+            document.getElementById('header-back-btn').classList.remove('hidden');
+
+            onValue(roomRef, (snap) => {
+                const data = snap.val();
+                if (data) syncGame(data);
+                else {
+                    // Если комната удалена в процессе игры (соперник вышел)
+                    showMsg("СОПЕРНИК ВЫШЕЛ");
+                    setTimeout(() => location.reload(), 2000);
+                }
+            });
+        }
+
+        function generateRandomSkills() {
+            return [...SKILLS_DB].sort(() => 0.5 - Math.random()).slice(0, 5).map(s => ({...s, used: false}));
+        }
+
+        function syncGame(data) {
+            state.board = data.board;
+            state.turn = data.turn;
+            state.players = data.players;
+            state.scores = data.scores;
+            state.skillsX = data.skillsX;
+            state.skillsO = data.skillsO;
+            state.size = data.size;
+            state.isStunned = data.isStunned;
+            state.isLocked = data.isLocked || data.players.length < 2;
+
+            document.getElementById('sx').innerText = state.scores.X;
+            document.getElementById('so').innerText = state.scores.O;
+            
+            if (state.players.length < 2) {
+                document.getElementById('turn-text').innerText = "Ожидание игрока...";
+            } else {
+                document.getElementById('turn-text').innerHTML = `Ход <span id="turn-label">${state.turn === 'X' ? 'Игрока 1' : 'Игрока 2'}</span>`;
+            }
+
+            renderBoard();
+            renderSkills();
+            updateTurnIndicator();
+        }
+
+        function runRoulette(callback) {
+            const overlay = document.getElementById('roulette-overlay');
+            const box = document.getElementById('roulette-box');
+            const resultTxt = document.getElementById('roulette-result');
+            overlay.style.display = 'flex';
+            
+            let counter = 0;
+            const symbols = ['X', 'O'];
+            const interval = setInterval(() => {
+                box.innerText = symbols[counter % 2];
+                box.style.color = symbols[counter % 2] === 'X' ? '#f43f5e' : '#00a2e8';
+                counter++;
+            }, 80);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                state.turn = Math.random() > 0.5 ? 'X' : 'O';
+                box.innerText = state.turn;
+                box.style.color = state.turn === 'X' ? '#f43f5e' : '#00a2e8';
+                resultTxt.innerText = state.turn === 'X' ? "Начинают КРЕСТИКИ" : "Начинают НОЛИКИ";
+                
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    updateTurnIndicator();
+                    callback();
+                }, 1500);
+            }, 1800);
+        }
+
+        function initBoard(s) {
+            state.size = s;
+            state.board = Array(s * s).fill(null).map(() => ({v: "", protected: false, type: 'normal'}));
+            renderBoard();
+        }
+
+        function refreshSkills() {
+            state.skillsX = generateRandomSkills();
+            state.skillsO = generateRandomSkills();
+            renderSkills();
+        }
+
+        window.rerollAndSkip = async (p) => {
+            if(state.isLocked || state.turn !== p) return;
+            if(state.mode === 'player' && state.turn !== state.mySymbol) return;
+
+            const newSkills = generateRandomSkills();
+            if (state.mode === 'player') {
+                const roomRef = ref(db, `rooms/${instanceId}/${state.currentRoom}`);
+                const field = state.turn === 'X' ? 'skillsX' : 'skillsO';
+                await update(roomRef, { [field]: newSkills, lastActive: serverTimestamp() });
+                showMsg("НАВЫКИ СБРОШЕНЫ!");
+                endTurn();
+            } else {
+                if(p === 'X') state.skillsX = newSkills;
+                else state.skillsO = newSkills;
+                showMsg("НАВЫКИ СБРОШЕНЫ!");
+                endTurn();
+            }
+        };
+
+        function renderBoard() {
+            const b = document.getElementById('board');
+            b.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
+            b.style.gridTemplateRows = `repeat(${state.size}, 1fr)`;
+            b.innerHTML = '';
+            
+            state.board.forEach((cell, i) => {
+                const div = document.createElement('div');
+                div.className = `cell ${cell.v.toLowerCase()} animate-pop ${cell.protected ? 'shield-active' : ''}`;
+                if(cell.type === 'ghost' && cell.v !== "") div.style.opacity = "0.15";
+                
+                const keyHint = document.createElement('span');
+                keyHint.className = 'key-hint';
+                keyHint.innerText = i + 1;
+                div.appendChild(keyHint);
+
+                const content = document.createElement('span');
+                content.innerText = cell.v;
+                div.appendChild(content);
+
+                div.onclick = () => handleCellClick(i);
+                b.appendChild(div);
+            });
+        }
+
+        function renderSkills() {
+            const renderSet = (container, list, side) => {
+                if(!container) return;
+                container.innerHTML = '';
+                list.forEach((sk, idx) => {
+                    const div = document.createElement('div');
+                    const isSelected = state.turn === side && state.activeSkill === sk.id;
+                    div.className = `ability-card ${sk.used ? 'used' : ''} ${isSelected ? 'selected' : ''}`;
+                    div.innerHTML = `
+                        <span class="key-hint">^${idx+1}</span>
+                        <span class="text-lg">${sk.icon}</span>
+                        <b class="text-[7px] mt-1 font-black uppercase text-center leading-none">${sk.name}</b>
+                    `;
+                    div.onclick = () => { 
+                        if(state.mode === 'player' && state.mySymbol !== side) return;
+                        if(state.turn === side) selectSkill(sk); 
+                    };
+                    container.appendChild(div);
+                });
+            };
+            renderSet(document.getElementById('skills-x'), state.skillsX, 'X');
+            renderSet(document.getElementById('skills-o'), state.skillsO, 'O');
+        }
+
+        function selectSkill(sk) {
+            if(sk.used || state.isLocked) return;
+            if(state.mode === 'player' && state.turn !== state.mySymbol) return;
+            
+            if(state.activeSkill === sk.id) {
+                state.activeSkill = null;
+                showMsg("СПОСОБНОСТЬ ОТМЕНЕНА");
+            } else {
+                state.activeSkill = sk.id;
+                
+                if(['expand', 'saw', 'hypno', 'portal'].includes(sk.id)) {
+                    if(sk.id === 'expand') executeExpand();
+                    if(sk.id === 'saw') executeSaw();
+                    if(sk.id === 'hypno') executeHypno();
+                    if(sk.id === 'portal') executePortal();
+                    markSkillUsed(sk.id);
+                    state.activeSkill = null;
+                    checkGameState();
+                } else if(sk.id === 'stun') {
+                    spawnEffect('stun', document.getElementById('turn-indicator'));
+                    state.isStunned = true;
+                    markSkillUsed(sk.id);
+                    state.activeSkill = null;
+                    endTurn();
+                } else {
+                    showMsg(`ВЫБРАНО: ${sk.name.toUpperCase()}. ВЫБЕРИ КЛЕТКУ`);
+                }
+            }
+            renderSkills();
+        }
+
+        async function handleCellClick(i) {
+            if(state.isLocked) return;
+            if(state.mode === 'player' && state.turn !== state.mySymbol && state.activeSkill !== 'bomb') {
+                 return;
+            }
+
+            const cell = state.board[i];
+            const cellEl = document.querySelectorAll('.cell')[i];
+
+            if(state.activeSkill) {
+                if(state.activeSkill === 'virus') {
+                    if(cell.v !== state.turn) return showMsg("ВЫБЕРИ СВОЙ ЗНАК!");
+                    executeVirus(i);
+                } else if(state.activeSkill === 'shield') {
+                    if(cell.v !== state.turn) return showMsg("ВЫБЕРИ СВОЙ ЗНАК!");
+                    spawnEffect('shield', cellEl);
+                    cell.protected = true;
+                    useSkillEffect('shield');
+                } else if(state.activeSkill === 'cannon') {
+                    executeCannon(i);
+                } else if(state.activeSkill === 'swap') {
+                    if(cell.v !== "" && cell.v !== state.turn && !cell.protected) {
+                        spawnEffect('swap', cellEl);
+                        cell.v = state.turn;
+                        useSkillEffect('swap');
+                    } else showMsg("ВЫБЕРИ ЗНАК ВРАГА!");
+                } else if(state.activeSkill === 'ghost') {
+                    if(cell.v !== "") return showMsg("КЛЕТКА ЗАНЯТА!");
+                    cell.v = state.turn;
+                    cell.type = 'ghost';
+                    useSkillEffect('ghost');
+                }
+                return;
+            }
+
+            if(cell.v !== "" || (state.mode === 'player' && state.turn !== state.mySymbol)) return;
+            cell.v = state.turn;
+            checkGameState();
+        }
+
+        function markSkillUsed(id) {
+            const list = state.turn === 'X' ? state.skillsX : state.skillsO;
+            const sk = list.find(s => s.id === id);
+            if(sk) sk.used = true;
+        }
+
+        async function useSkillEffect(id) {
+            markSkillUsed(id);
+            state.activeSkill = null;
+            await checkGameState();
+        }
+
+        // Skill Executions
+        function executeExpand() {
+            state.size += 1;
+            const oldBoard = [...state.board], oldSize = state.size - 1;
+            state.board = Array(state.size * state.size).fill(null).map(() => ({v: "", protected: false, type: 'normal'}));
+            oldBoard.forEach((cell, idx) => {
+                const r = Math.floor(idx / oldSize), c = idx % oldSize;
+                state.board[r * state.size + c] = cell;
+            });
+            renderBoard();
+        }
+
+        function executeSaw() {
+            const cells = document.querySelectorAll('.cell');
+            [0, state.size-1, state.board.length-state.size, state.board.length-1].forEach(idx => {
+                spawnEffect('knife', cells[idx]);
+                if(!state.board[idx].protected) state.board[idx].v = "";
+            });
+        }
+
+        function executeHypno() {
+            const enemy = state.board.map((c,i)=>(c.v!=="" && c.v!==state.turn && !c.protected)?i:null).filter(v=>v!==null);
+            if(enemy.length) {
+                const target = enemy[Math.floor(Math.random()*enemy.length)];
+                spawnEffect('swap', document.querySelectorAll('.cell')[target]);
+                state.board[target].v = state.turn;
+            }
+        }
+
+        function executePortal() {
+            state.board = state.board.map(c => ({...c, v: c.v === 'X' ? 'O' : (c.v === 'O' ? 'X' : "")}));
+        }
+
+        function executeCannon(i) {
+            const r = Math.floor(i / state.size);
+            for(let j=0; j<state.size; j++) {
+                let idx = r * state.size + j;
+                if(!state.board[idx].protected) state.board[idx].v = "";
+            }
+            useSkillEffect('cannon');
+        }
+
+        function executeVirus(i) {
+            const targets = [];
+            const r = Math.floor(i / state.size), c = i % state.size;
+            for(let dr=-1; dr<=1; dr++){
+                for(let dc=-1; dc<=1; dc++){
+                    let nr = r+dr, nc = c+dc;
+                    if(nr>=0 && nr<state.size && nc>=0 && nc<state.size){
+                        let idx = nr*state.size+nc;
+                        if(state.board[idx].v !== "" && state.board[idx].v !== state.turn && !state.board[idx].protected) targets.push(idx);
+                    }
+                }
+            }
+            if(targets.length) {
+                const targetIdx = targets[Math.floor(Math.random()*targets.length)];
+                state.board[targetIdx].v = state.turn;
+            }
+            useSkillEffect('virus');
+        }
+
+        async function checkGameState() {
+            const winLines = getWinLines();
+            let roundWinner = null;
+            for(let line of winLines) {
+                const first = state.board[line[0]].v;
+                if(first && line.every(idx => state.board[idx].v === first)) {
+                    roundWinner = first; break;
+                }
+            }
+            if(!roundWinner && state.board.every(c => c.v !== "")) roundWinner = 'Draw';
+            
+            if (roundWinner) {
+                await finishRound(roundWinner);
+            } else {
+                await endTurn();
+            }
+        }
+
+        function getWinLines() {
+            const lines = [], s = state.size;
+            for(let i=0; i<s; i++) {
+                let row = [], col = [];
+                for(let j=0; j<s; j++) { row.push(i * s + j); col.push(j * s + i); }
+                lines.push(row, col);
+            }
+            let d1 = [], d2 = [];
+            for(let i=0; i<s; i++) { d1.push(i * s + i); d2.push(i * s + (s - 1 - i)); }
+            lines.push(d1, d2);
+            return lines;
+        }
+
+        async function endTurn() {
+            if(state.isStunned) {
+                state.isStunned = false;
+                showMsg("СТАН!");
+            } else {
+                state.turn = state.turn === 'X' ? 'O' : 'X';
+                state.board.forEach(c => { if(c.v !== state.turn) c.protected = false; });
+            }
+            
+            if (state.mode === 'player') {
+                const roomRef = ref(db, `rooms/${instanceId}/${state.currentRoom}`);
+                await update(roomRef, {
+                    board: state.board,
+                    turn: state.turn,
+                    isStunned: state.isStunned,
+                    skillsX: state.skillsX,
+                    skillsO: state.skillsO,
+                    size: state.size,
+                    lastActive: serverTimestamp()
+                });
+            } else {
+                renderBoard();
+                renderSkills();
+                updateTurnIndicator();
+                if(state.turn === 'O') setTimeout(botMove, 800);
+            }
+        }
+
+        function botMove() {
+            const empty = state.board.map((c,i)=>c.v===""?i:null).filter(v=>v!==null);
+            if(empty.length) handleCellClick(empty[Math.floor(Math.random()*empty.length)]);
+        }
+
+        async function finishRound(winner) {
+            state.isLocked = true;
+            if(winner !== 'Draw') {
+                state.scores[winner]++;
+                showMsg(`ПОБЕДА: ${winner}!`);
+            } else showMsg("НИЧЬЯ!");
+
+            if (state.mode === 'player') {
+                const roomRef = ref(db, `rooms/${instanceId}/${state.currentRoom}`);
+                await update(roomRef, {
+                    scores: state.scores,
+                    board: state.board,
+                    isLocked: true,
+                    lastActive: serverTimestamp()
+                });
+                setTimeout(async () => {
+                    if (state.scores.X >= state.maxRounds || state.scores.O >= state.maxRounds) {
+                        // При завершении всей серии игр комната удаляется
+                        await set(roomRef, null);
+                        location.reload();
+                    } else {
+                        await update(roomRef, {
+                            board: Array(state.size * state.size).fill(null).map(() => ({v: "", protected: false, type: 'normal'})),
+                            isLocked: false,
+                            lastActive: serverTimestamp()
+                        });
+                    }
+                }, 2000);
+            } else {
+                document.getElementById('sx').innerText = state.scores.X;
+                document.getElementById('so').innerText = state.scores.O;
+                setTimeout(() => {
+                    if(state.scores.X >= state.maxRounds || state.scores.O >= state.maxRounds) {
+                        location.reload();
+                    } else {
+                        state.isLocked = false;
+                        initBoard(3);
+                    }
+                }, 1500);
+            }
+        }
+
+        function updateTurnIndicator() {
+            const ind = document.getElementById('turn-indicator');
+            ind.innerText = state.turn;
+            ind.style.backgroundColor = state.turn === 'X' ? '#f43f5e' : '#00a2e8';
+        }
+
+        function showMsg(txt) {
+            const b = document.getElementById('msg-box');
+            b.innerText = txt;
+            b.style.opacity = '1';
+            setTimeout(() => b.style.opacity = '0', 2000);
+        }
+
+        function spawnEffect(type, element, duration = 1000) {
+            if (!element) return;
+            const rect = element.getBoundingClientRect();
+            const wrapper = document.getElementById('board').getBoundingClientRect();
+            const fxLayer = document.getElementById('fx-layer');
+            const fx = document.createElement('div');
+            fx.style.left = (rect.left - wrapper.left) + 'px';
+            fx.style.top = (rect.top - wrapper.top) + 'px';
+            fx.style.width = rect.width + 'px';
+            fx.style.height = rect.height + 'px';
+            fx.className = 'absolute flex items-center justify-center pointer-events-none z-[100]';
+            fx.innerHTML = type === 'explosion' ? '<span class="text-4xl animate-pop">💥</span>' : 
+                          type === 'knife' ? '<span class="text-4xl animate-knife">🔪</span>' : 
+                          type === 'shield' ? '<div class="w-full h-full border-4 border-yellow-400 rounded-xl opacity-50 animate-pop"></div>' :
+                          '<span class="text-4xl animate-shake">⚡</span>';
+            fxLayer.appendChild(fx);
+            setTimeout(() => fx.remove(), duration);
+        }
+
+        window.openGuide = () => {
+            const l = document.getElementById('guide-list');
+            l.innerHTML = SKILLS_DB.map(s => `
+                <div class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                    <span class="text-2xl">${s.icon}</span>
+                    <div class="flex-1">
+                        <h4 class="font-black text-[10px] uppercase text-sky-500">${s.name}</h4>
+                        <p class="text-[10px] font-bold leading-tight opacity-70">${s.d}</p>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('guide-modal').style.display = 'flex';
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if(state.isLocked) return;
+            const num = parseInt(e.key);
+            if(!isNaN(num) && num >= 1 && num <= 9) {
+                if(e.ctrlKey) {
+                    const list = state.turn === 'X' ? state.skillsX : state.skillsO;
+                    if(list[num-1]) selectSkill(list[num-1]);
+                } else {
+                    handleCellClick(num - 1);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

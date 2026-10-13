@@ -1,6 +1,6 @@
 Привет :)
 
-Переходи на [Мой сайт](https://TestyLemonad.github.io/)
+Заходи на [Мой сайт](https://TestyLemonad.ru/)
 
 
 
