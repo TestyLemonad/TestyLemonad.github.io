@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Kit / Template — Lemon Style</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --lemon-yellow: #ffd700;
+            --deep-orange: #ff8c00;
+            --dark-bg: #050200;
+            --card-bg: rgba(20, 10, 5, 0.45);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: #fff7ed;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            * { cursor: none !important; }
+        }
+
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+        .bg-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+        }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
+        }
+
+        /* ============ Ripple ============ */
+        .ripple-obj {
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(8); opacity: 0; }
+        }
+
+        /* ============ Кастомный курсор ============ */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 204, 21, 0.3);
+            border: 1px solid var(--lemon-yellow);
+            border-radius: 50%;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+        }
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
+            background: rgba(250, 204, 21, 0.1);
+            border-color: #fff;
+        }
+
+        /* ============ Виньетка и noise ============ */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
+        }
+
+        .noise::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            z-index: 3;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* ============ Liquid Glass ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.55);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(251, 191, 36, 0.08);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.4s ease,
+                        background 0.4s ease,
+                        box-shadow 0.4s ease;
+            position: relative;
+        }
+
+        .glass-card-hover:hover {
+            transform: translateY(-4px);
+            border-color: rgba(251, 191, 36, 0.3);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+            background: rgba(30, 15, 5, 0.55);
+        }
+
+        .glass-input {
+            background: rgba(15, 8, 3, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--lemon-yellow);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+            background: rgba(25, 12, 5, 0.8);
+        }
+
+        .content-wrapper { position: relative; z-index: 10; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
+            z-index: 90;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--deep-orange); }
+
+        .btn-glow:hover { box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); }
+
+        /* Custom toggle switch */
+        .toggle-checkbox:checked { right: 0; border-color: #ffd700; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #ff8c00; }
+    </style>
+</head>
+<body class="noise">
+
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true"><div class="cursor-inner"></div></div>
+
+    <!-- ФОН: сетка + пиксели + виньетка -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- Индикатор скролла -->
+    <div class="scroll-progress" id="scroll-bar"></div>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="glass-nav w-full px-6 py-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="text-xl font-bold mono gradient-text tracking-tighter flex items-center gap-2">
+                    <span class="inline-block w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></span>
+                    Lemon UI Kit
+                </div>
+                <div class="flex items-center space-x-6 text-white/80">
+                    <a href="#typography" class="text-xs sm:text-sm font-medium hover:text-yellow-400 transition-colors">Типографика</a>
+                    <a href="#buttons" class="text-xs sm:text-sm font-medium hover:text-yellow-400 transition-colors">Кнопки</a>
+                    <a href="#forms" class="text-xs sm:text-sm font-medium hover:text-yellow-400 transition-colors">Формы</a>
+                    <a href="#cards" class="text-xs sm:text-sm font-medium hover:text-yellow-400 transition-colors">Карточки</a>
+                    <a href="#components" class="text-xs sm:text-sm font-medium hover:text-yellow-400 transition-colors">Компоненты</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Шапка страницы -->
+        <header class="max-w-7xl mx-auto px-6 pt-16 pb-10 w-full text-center sm:text-left">
+            <h1 class="text-4xl sm:text-6xl font-extrabold mb-4 tracking-tight text-white">
+                Единая страница <span class="gradient-text">элементов стилистики</span>
+            </h1>
+            <p class="text-orange-100/70 text-lg max-w-2xl font-light">
+                Готовый набор UI-компонентов, интерактивных элементов, форм и карточек в фирменном неоново-лимонадном стеклянном стиле.
+            </p>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6 py-8 flex flex-col gap-16 w-full flex-grow">
+
+            <!-- 1. ТИПОГРАФИКА И ИКОНКИ -->
+            <section id="typography" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">01. Typography & Text</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl space-y-6">
+                    <div>
+                        <h1 class="text-4xl sm:text-5xl font-black text-white mb-2">Heading 1 — Display Style</h1>
+                        <h2 class="text-3xl font-bold text-white/90 mb-2">Heading 2 — Section Header</h2>
+                        <h3 class="text-2xl font-semibold text-yellow-400 mb-2">Heading 3 — Accent Header</h3>
+                        <h4 class="text-xl font-medium text-orange-200 mb-2">Heading 4 — Subheader</h4>
+                    </div>
+
+                    <hr class="border-white/10">
+
+                    <div class="space-y-4 text-orange-100/80">
+                        <p class="text-base leading-relaxed">
+                            Обычный параграф текста. Вёрстка оптимизирована под чтение. Использованы шрифты <span class="text-yellow-400 font-semibold">Inter</span> и <span class="mono text-yellow-400">JetBrains Mono</span>. Вы можете легко сочетать текст с <a href="#" class="text-yellow-400 underline underline-offset-4 hover:text-orange-400 transition-colors">интерактивными ссылками</a>.
+                        </p>
+                        <p class="text-sm text-orange-100/60">
+                            Уменьшенный текст (Small) — отлично подходит для подписей, метаинформации, подсказок и футеров.
+                        </p>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-yellow-400/5 border-l-4 border-yellow-400 text-orange-100/90 italic">
+                        «Цитата или важный акцентный блок текста с выделением левой боковой полосой и тёплым полупрозрачным фоном.»
+                    </div>
+
+                    <div>
+                        <span class="text-xs uppercase tracking-widest text-orange-400 font-mono block mb-2">Код / Mono block:</span>
+                        <pre class="bg-black/60 p-4 rounded-xl text-yellow-300/90 mono text-sm overflow-x-auto border border-white/5"><code>const lemonStyle = {
+    theme: 'Dark Liquid Glass',
+    colors: ['#ffd700', '#ff8c00', '#050200'],
+    animated: true
+};</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. КНОПКИ И ПЕРЕКЛЮЧАТЕЛИ -->
+            <section id="buttons" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">02. Buttons & Actions</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl space-y-8">
+                    <!-- Размеры и варианты -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button class="btn-glow bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-3 rounded-xl font-bold transition-all">
+                            Primary Button
+                        </button>
+                        <button class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/20">
+                            Gradient Button
+                        </button>
+                        <button class="bg-white/10 hover:bg-white/20 text-white border border-white/10 px-6 py-3 rounded-xl font-medium transition-all">
+                            Secondary
+                        </button>
+                        <button class="border border-yellow-400/50 hover:border-yellow-400 text-yellow-400 px-6 py-3 rounded-xl font-medium transition-all hover:bg-yellow-400/10">
+                            Outline Yellow
+                        </button>
+                        <button class="text-orange-200 hover:text-white hover:bg-white/5 px-6 py-3 rounded-xl font-medium transition-all">
+                            Ghost Button
+                        </button>
+                        <button class="bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30 px-6 py-3 rounded-xl font-medium transition-all">
+                            Danger
+                        </button>
+                    </div>
+
+                    <!-- Кнопки с иконками и состояния -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button class="bg-yellow-400 text-black px-5 py-2.5 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-yellow-300 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Добавить
+                        </button>
+                        <button class="bg-white/5 border border-white/10 text-white px-5 py-2.5 rounded-xl font-medium inline-flex items-center gap-2 hover:bg-white/10 transition-all">
+                            <span>Загрузить</span>
+                            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </button>
+                        <button disabled class="bg-white/5 border border-white/5 text-white/30 px-6 py-3 rounded-xl font-medium cursor-not-allowed">
+                            Disabled Button
+                        </button>
+                        <div class="flex gap-2">
+                            <button class="p-3 bg-white/5 border border-white/10 rounded-xl text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                            </button>
+                            <button class="p-3 bg-white/5 border border-white/10 rounded-xl text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Переключатели фильтрации (Табы) -->
+                    <div>
+                        <span class="text-xs uppercase tracking-widest text-orange-400 font-mono block mb-3">Группа фильтров / Табы:</span>
+                        <div class="inline-flex p-1.5 bg-black/40 border border-white/10 rounded-2xl gap-1">
+                            <button class="bg-yellow-400 text-black px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider">Все</button>
+                            <button class="text-white/70 hover:text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-all">Активные</button>
+                            <button class="text-white/70 hover:text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-all">Архив</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. ФОРМЫ И ИНПУТЫ -->
+            <section id="forms" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">03. Form Elements</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Текстовый ввод -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-orange-200">Текстовое поле</label>
+                        <input type="text" placeholder="Введите имя..." class="glass-input w-full px-4 py-3 rounded-xl text-sm">
+                    </div>
+
+                    <!-- Ввод пароля -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-orange-200">Пароль</label>
+                        <input type="password" value="secretpassword" class="glass-input w-full px-4 py-3 rounded-xl text-sm">
+                    </div>
+
+                    <!-- Выпадающий список (Select) -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-orange-200">Селект / Выбор</label>
+                        <select class="glass-input w-full px-4 py-3 rounded-xl text-sm border border-white/10 bg-black">
+                            <option>Вариант 1 — Lemonade</option>
+                            <option>Вариант 2 — Orange Juice</option>
+                            <option>Вариант 3 — Lime Soda</option>
+                        </select>
+                    </div>
+
+                    <!-- Инпут с иконкой поиска -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-orange-200">Поиск</label>
+                        <div class="relative">
+                            <input type="text" placeholder="Поиск по сайту..." class="glass-input w-full pl-10 pr-4 py-3 rounded-xl text-sm">
+                            <svg class="w-5 h-5 absolute left-3 top-3.5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                    </div>
+
+                    <!-- Текстовое область (Textarea) -->
+                    <div class="space-y-2 md:col-span-2">
+                        <label class="text-sm font-medium text-orange-200">Сообщение (Textarea)</label>
+                        <textarea rows="3" placeholder="Ваше сообщение..." class="glass-input w-full p-4 rounded-xl text-sm resize-none"></textarea>
+                    </div>
+
+                    <!-- Checkboxes & Radio -->
+                    <div class="space-y-3">
+                        <span class="text-sm font-medium text-orange-200 block">Чекбоксы</span>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked class="w-5 h-5 accent-yellow-400 rounded bg-black border-white/20">
+                            <span class="text-sm text-white/80">Выбранная опция</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" class="w-5 h-5 accent-yellow-400 rounded bg-black border-white/20">
+                            <span class="text-sm text-white/80">Неактивная опция</span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-3">
+                        <span class="text-sm font-medium text-orange-200 block">Радиокнопки</span>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="radio-group" checked class="w-5 h-5 accent-yellow-400">
+                                <span class="text-sm text-white/80">Режим A</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="radio-group" class="w-5 h-5 accent-yellow-400">
+                                <span class="text-sm text-white/80">Режим B</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Toggle Swtich & Range Slider -->
+                    <div class="space-y-3">
+                        <span class="text-sm font-medium text-orange-200 block">Переключатели (Toggle)</span>
+                        <label class="flex items-center justify-between cursor-pointer p-3 bg-black/30 rounded-xl border border-white/5">
+                            <span class="text-sm text-white/80">Включить уведомления</span>
+                            <input type="checkbox" checked class="w-6 h-6 accent-yellow-400">
+                        </label>
+                    </div>
+
+                    <div class="space-y-3">
+                        <span class="text-sm font-medium text-orange-200 block">Ползунок (Range Slider)</span>
+                        <input type="range" min="0" max="100" value="70" class="w-full accent-yellow-400 bg-white/10 h-2 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. КАРТОЧКИ И КОНТЕНТ БЛОКИ -->
+            <section id="cards" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">04. Cards & Grid Layout</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Стандартная карточка проекта -->
+                    <div class="glass-card glass-card-hover p-5 rounded-3xl flex flex-col justify-between">
+                        <div>
+                            <div class="w-full h-40 bg-gradient-to-br from-yellow-500/80 to-orange-600/80 rounded-2xl mb-4 flex items-center justify-center font-black text-2xl text-white shadow-inner">
+                                Card #1
+                            </div>
+                            <span class="text-[10px] bg-yellow-400/10 text-yellow-400 px-2 py-0.5 rounded border border-yellow-400/20 uppercase font-bold mono">Featured</span>
+                            <h3 class="text-xl font-bold text-white mt-2 mb-1">Заголовок карточки</h3>
+                            <p class="text-sm text-orange-100/70 mb-4">Описание проекта или контента с краткой информацией в едином стеклянном стиле.</p>
+                        </div>
+                        <button class="w-full bg-white/10 hover:bg-yellow-400 hover:text-black py-2.5 rounded-xl font-medium text-sm transition-all">Открыть</button>
+                    </div>
+
+                    <!-- Профиль / Юзер карточка -->
+                    <div class="glass-card glass-card-hover p-6 rounded-3xl flex flex-col items-center text-center">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 p-1 mb-4">
+                            <div class="w-full h-full bg-black rounded-full flex items-center justify-center text-2xl font-bold text-yellow-400">
+                                TL
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">TestyLemonad</h3>
+                        <p class="text-xs text-orange-200/60 mono mb-4">Developer & Founder</p>
+                        <div class="flex gap-2 w-full mt-auto">
+                            <button class="flex-1 bg-yellow-400 text-black font-bold py-2 rounded-xl text-xs hover:bg-yellow-300 transition">Follow</button>
+                            <button class="flex-1 bg-white/5 border border-white/10 text-white py-2 rounded-xl text-xs hover:bg-white/10 transition">Message</button>
+                        </div>
+                    </div>
+
+                    <!-- Статистика / Метрика -->
+                    <div class="glass-card glass-card-hover p-6 rounded-3xl flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-mono uppercase text-orange-300/70">Total Requests</span>
+                            <span class="p-2 bg-yellow-400/10 rounded-lg text-yellow-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            </span>
+                        </div>
+                        <div class="my-4">
+                            <div class="text-4xl font-extrabold text-white tracking-tight">128.4K</div>
+                            <div class="text-xs text-green-400 font-medium mt-1">↑ +14.2% за прошлую неделю</div>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-yellow-400 to-orange-500 h-full w-3/4"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. УВЕДОМЛЕНИЯ, БЕДЖИ И СТАТУСЫ -->
+            <section id="components" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">05. Alerts, Badges & UI Statuses</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl space-y-6">
+                    <!-- Badges / Теги -->
+                    <div>
+                        <span class="text-xs uppercase tracking-widest text-orange-400 font-mono block mb-3">Значки / Badges:</span>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 px-3 py-1 rounded-full text-xs font-bold">Yellow Lemon</span>
+                            <span class="bg-orange-500/10 text-orange-400 border border-orange-500/30 px-3 py-1 rounded-full text-xs font-bold">Orange Alert</span>
+                            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold">Success Status</span>
+                            <span class="bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1 rounded-full text-xs font-bold">Error Badge</span>
+                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-bold">Info Tag</span>
+                        </div>
+                    </div>
+
+                    <!-- Alerts / Уведомления -->
+                    <div class="space-y-3">
+                        <span class="text-xs uppercase tracking-widest text-orange-400 font-mono block mb-1">Уведомления / Alerts:</span>
+
+                        <div class="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between text-yellow-200">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <span class="text-sm">Внимание! Это стандартное предупредительное сообщение.</span>
+                            </div>
+                            <button class="text-yellow-400/60 hover:text-yellow-400">✕</button>
+                        </div>
+
+                        <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-emerald-200">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span class="text-sm">Успех! Действие успешно выполнено.</span>
+                            </div>
+                            <button class="text-emerald-400/60 hover:text-emerald-400">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Spinners / Loaders -->
+                    <div>
+                        <span class="text-xs uppercase tracking-widest text-orange-400 font-mono block mb-3">Индикаторы загрузки / Loaders:</span>
+                        <div class="flex items-center gap-6">
+                            <div class="w-8 h-8 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin"></div>
+                            <div class="w-8 h-8 border-4 border-orange-500/20 border-b-orange-500 rounded-full animate-spin"></div>
+                            <div class="flex gap-1">
+                                <span class="w-3 h-3 bg-yellow-400 rounded-full animate-bounce"></span>
+                                <span class="w-3 h-3 bg-yellow-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                <span class="w-3 h-3 bg-yellow-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. ТАБЛИЦА -->
+            <section id="table" class="scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">06. Data Table</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card rounded-3xl overflow-hidden border border-white/10">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-orange-100/80">
+                            <thead class="bg-black/60 text-yellow-400 mono text-xs uppercase border-b border-white/10">
+                                <tr>
+                                    <th class="p-4">Название</th>
+                                    <th class="p-4">Категория</th>
+                                    <th class="p-4">Статус</th>
+                                    <th class="p-4 text-right">Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="p-4 font-bold text-white">Encoder Project</td>
+                                    <td class="p-4">HTML / JS</td>
+                                    <td class="p-4"><span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-bold">Online</span></td>
+                                    <td class="p-4 text-right"><button class="text-xs text-yellow-400 hover:underline">Открыть</button></td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="p-4 font-bold text-white">TestyColor Palette</td>
+                                    <td class="p-4">HTML / CSS</td>
+                                    <td class="p-4"><span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-bold">Online</span></td>
+                                    <td class="p-4 text-right"><button class="text-xs text-yellow-400 hover:underline">Открыть</button></td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="p-4 font-bold text-white">Python Bot Core</td>
+                                    <td class="p-4">Python</td>
+                                    <td class="p-4"><span class="text-xs bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded-full font-bold">In Dev</span></td>
+                                    <td class="p-4 text-right"><button class="text-xs text-yellow-400 hover:underline">Изменить</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. МОДАЛЬНОЕ ОКНО И ИНТЕРАКТИВ -->
+            <section id="modal-demo" class="scroll-mt-24 mb-12">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-2xl font-bold text-white mono">07. Modal Window Trigger</h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/40 to-transparent flex-grow"></div>
+                </div>
+
+                <div class="glass-card p-8 rounded-3xl text-center">
+                    <h3 class="text-xl font-bold mb-2">Проверка диалогового окна</h3>
+                    <p class="text-orange-100/60 mb-6 text-sm">Нажмите кнопку ниже, чтобы открыть стилизованное всплывающее модальное окно.</p>
+                    <button id="open-modal-btn" class="btn-glow bg-yellow-400 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-300 transition-all">
+                        Открыть Modal Window
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Модальное окно (скрыто по умолчанию) -->
+        <div id="modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+            <div class="glass-card max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-yellow-400/30 shadow-2xl relative animate-fade-in">
+                <button id="close-modal-btn" class="absolute top-4 right-4 text-white/50 hover:text-white text-xl">✕</button>
+                <h3 class="text-2xl font-bold text-white mb-2">Модальное окно</h3>
+                <p class="text-orange-100/70 text-sm mb-6">Это всплывающее окно выполнено с размытием и в общей полупрозрачной стилистике проекта.</p>
+                <div class="flex justify-end gap-3">
+                    <button id="close-modal-btn-2" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition">Закрыть</button>
+                    <button class="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition">Подтвердить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Футер -->
+        <footer class="w-full px-6 py-8 border-t border-white/5 text-center bg-black/80 backdrop-blur-xl">
+            <p class="mono text-xs text-orange-100/60 tracking-widest uppercase">
+                &copy; 2026 TestyLemonad. Единый шаблон элементов.
+            </p>
+        </footer>
+    </div>
+
+    <!-- Скрипты взаимодействия -->
+    <script type="module">
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
+
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+
+                if (reduceMotion) p.style.animation = 'none';
+
+                frag.appendChild(p);
+            }
+            container.appendChild(frag);
+        })();
+
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
+
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
+
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+            }, { passive: true });
+
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+                    requestAnimationFrame(loop);
+                })();
+            }
+
+            const HOVER_SEL = 'a, button, input, select, textarea, .glass-card-hover';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.add('cursor-hover');
+                }
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) {
+                    document.body.classList.remove('cursor-hover');
+                }
+            }, { passive: true });
+        }
+
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScroll, { passive: true });
+
+        // ===== Модальное окно =====
+        const modal = document.getElementById('modal-overlay');
+        const openBtn = document.getElementById('open-modal-btn');
+        const closeBtn = document.getElementById('close-modal-btn');
+        const closeBtn2 = document.getElementById('close-modal-btn-2');
+
+        const toggleModal = (show) => {
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        };
+
+        openBtn?.addEventListener('click', () => toggleModal(true));
+        closeBtn?.addEventListener('click', () => toggleModal(false));
+        closeBtn2?.addEventListener('click', () => toggleModal(false));
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) toggleModal(false);
+        });
+    </script>
+</body>
+</html>
