@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Билдер своих игр</title>
+        <style>
+            :root {
+                --bg-color: #121212;
+                --panel-bg: #1e1e1e;
+                --border-color: #333;
+                --accent: #ffcc00;
+                --accent-hover: #ffe066;
+                --text-color: #ffffff;
+                --text-secondary: #aaaaaa;
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; }
+            .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 25px; }
+            h1 { text-align: center; font-size: 2.2rem; color: var(--accent); text-shadow: 0 2px 10px rgba(255, 204, 0, 0.2); }
+            .card { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+            .card h2 { font-size: 1.3rem; margin-bottom: 15px; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+            .drop-zone { border: 2px dashed #555; border-radius: 10px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.01); }
+            .drop-zone.dragover { border-color: var(--accent); background: rgba(255, 204, 0, 0.05); }
+            .drop-zone p { color: var(--text-secondary); font-size: 1rem; margin-top: 10px; }
+            .drop-zone input { display: none; }
+            .file-info { margin-top: 10px; color: #00ff66; font-weight: bold; font-size: 0.95rem; }
+            .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+            .setting-group { display: flex; flex-direction: column; gap: 8px; }
+            .setting-group label { font-size: 0.9rem; color: var(--text-secondary); }
+            .setting-group input[type='text'], .setting-group input[type='password'], .setting-group input[type='number'], .setting-group select {
+                background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 10px 14px; color: var(--text-color); font-size: 1rem; outline: none; transition: border-color 0.2s;
+            }
+            .setting-group input:focus, .setting-group select:focus { border-color: var(--accent); }
+            .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 0.95rem; }
+            .checkbox-label input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+            .btn-action { background-color: var(--accent); color: #000; border: none; border-radius: 8px; padding: 16px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, background-color 0.2s; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); text-align: center; display: block; width: 100%; }
+            .btn-action:hover { background-color: var(--accent-hover); }
+            .btn-action:active { transform: scale(0.98); }
+            .btn-action:disabled { background-color: #444; color: #777; cursor: not-allowed; box-shadow: none; }
+            .preview-box { background: #151515; border-radius: 8px; padding: 15px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; color: #ccc; border: 1px solid #222; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Билдер своих игр</h1>
+            <div class="card">
+                <h2>Загрузите таблицу с вопросами</h2>
+                <div id="drop-zone" class="drop-zone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <p>Перетащи CSV-файл сюда или <strong>кликни для выбора</strong></p>
+                    <input type="file" id="file-input" accept=".csv" />
+                    <div id="file-info" class="file-info"></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Настройки игры</h2>
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <label for="game-title">Название игры (предмет)</label>
+                        <input type="text" id="game-title" value="Тест" placeholder="Например: Физика" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="pincode">ПИН-код при входе (необязательно)</label>
+                        <input type="password" id="pincode" placeholder="Оставь пустым, если не нужен" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="timer-seconds">Таймер на вопрос (сек)</label>
+                        <input type="number" id="timer-seconds" value="60" min="5" max="300" />
+                    </div>
+                    <div class="setting-group">
+                        <label for="bg-style">Фоновый стиль</label>
+                        <select id="bg-style">
+                            <option value="grid">Крутой</option>
+                            <option value="solid">Строгий минимализм (темный)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group" style="justify-content: center">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enable-katex" checked />
+                            Включить поддержку KaTeX (LaTeX формулы)
+                        </label>
+                    </div>
+                    <div class="setting-group" style="justify-content: center">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enable-animations" checked />
+                            Плавные анимации и частицы на фоне
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="preview-card" style="display: none">
+                <h2>Предпросмотр распарсенных данных</h2>
+                <div id="preview-content" class="preview-box"></div>
+            </div>
+            <button id="build-btn" class="btn-action" disabled>
+                Скачать готовую игру (.html)
+            </button>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+        <script>
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const fileInfo = document.getElementById('file-info');
+            const buildBtn = document.getElementById('build-btn');
+            const previewCard = document.getElementById('preview-card');
+            const previewContent = document.getElementById('preview-content');
+
+            let parsedCategories = null;
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFile(e.target.files[0]);
+            });
+
+            function handleFile(file) {
+                fileInfo.innerText = `Загружен файл: ${file.name}`;
+                Papa.parse(file, {
+                    header: true, skipEmptyLines: true, encoding: 'utf-8',
+                    complete: function (results) {
+                        try {
+                            const categories = {};
+                            results.data.forEach((row) => {
+                                const cat = row.category || row['категория'] || 'Разное';
+                                if (!categories[cat]) categories[cat] = [];
+                                categories[cat].push({
+                                    price: row.price || row['цена'] || '100',
+                                    question: row.question || row['вопрос'] || '',
+                                    answer: row.answer || row['ответ'] || '',
+                                });
+                            });
+                            parsedCategories = categories;
+                            buildBtn.disabled = false;
+                            previewCard.style.display = 'block';
+                            previewContent.innerText = JSON.stringify(categories, null, 2);
+                        } catch (err) { alert('Ошибка при разборе CSV: ' + err.message); }
+                    },
+                    error: function (err) { alert('Ошибка чтения файла: ' + err.message); },
+                });
+            }
+
+            buildBtn.addEventListener('click', () => {
+                if (!parsedCategories) return;
+                const gameTitle = document.getElementById('game-title').value.trim() || 'Без названия';
+                const pincode = document.getElementById('pincode').value.trim();
+                const timerSeconds = parseInt(document.getElementById('timer-seconds').value) || 60;
+                const bgStyle = document.getElementById('bg-style').value;
+                const enableKatex = document.getElementById('enable-katex').checked;
+                const enableAnimations = document.getElementById('enable-animations').checked;
+                const htmlContent = generateGameHtml({
+                    categories: parsedCategories, gameTitle, pincode, timerSeconds,
+                    bgStyle, enableKatex, enableAnimations,
+                });
+                const safeTitle = gameTitle.replace(/[\\/*?:"<>|]/g, '');
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Своя Игра - ${safeTitle}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            function generateGameHtml(config) {
+                let maxQuestions = 0;
+                Object.values(config.categories).forEach((list) => {
+                    if (list.length > maxQuestions) maxQuestions = list.length;
+                });
+                const catKeys = Object.keys(config.categories);
+
+                const categoryHeaders = catKeys
+                    .map((cat) => `<div class="cell category-cell">${escapeHtml(cat)}</div>`)
+                    .join('\n        ');
+
+                let gridCells = '';
+                for (let i = 0; i < maxQuestions; i++) {
+                    catKeys.forEach((cat, catIdx) => {
+                        const qList = config.categories[cat];
+                        if (i < qList.length) {
+                            const q = qList[i];
+                            const btnId = `btn-${catIdx}-${i}`;
+                            const qJson = JSON.stringify(q.question).replace(/'/g, '&#39;');
+                            const aJson = JSON.stringify(q.answer).replace(/'/g, '&#39;');
+                            gridCells += `<div class="cell question-btn" id="${btnId}" onclick='openModal(${qJson}, ${aJson}, "${btnId}")'>${escapeHtml(q.price)}</div>\n        `;
+                        } else {
+                            gridCells += `<div class="cell"></div>\n        `;
+                        }
+                    });
+                }
+
+                return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>${escapeHtml(config.gameTitle)} (Админка)</title>
+    ${
+        config.enableKatex
+            ? `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>`
+            : ''
+    }
+    <style>
+        :root { --dark-bg: #121212; --grid-line: rgba(255, 204, 0, 0.07); --grid-size: 32px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; flex-direction: column; align-items: stretch; padding: 1.5vh 2vw; position: relative; }
+        h1, .board, .modal, .timer-banner, .admin-top-bar { position: relative; z-index: 2; }
+        ${
+            config.bgStyle === 'grid'
+                ? `.bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--dark-bg);
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size); background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%); }
+        .bg-grid::after { content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%), radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none; }`
+                : ''
+        }
+        ${
+            config.enableAnimations
+                ? `.bg-particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .pixel { position: absolute; display: block; background: rgba(255, 210, 90, 0.9); border-radius: 1px; box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate; transform: translate3d(0, 0, 0); will-change: transform; }
+        @keyframes pixel-drift { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); } }`
+                : ''
+        }
+        .admin-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1vh; flex-shrink: 0; }
+        h1 { text-align: center; font-size: clamp(14px, 1.8vw, 28px); margin: 0; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .btn-presenter { background: #28a745; color: #fff; border: none; padding: 8px 16px; font-size: clamp(11px, 1.4vw, 16px); font-weight: bold; border-radius: 6px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(40,167,69,0.3); transition: transform 0.1s, background-color 0.2s; }
+        .btn-presenter:hover { background-color: #34ce57; }
+        .btn-presenter:active { transform: scale(0.95); }
+        .board { display: grid; width: 100%; flex-grow: 1; min-height: 0; gap: clamp(4px, 0.6vw, 10px);
+            grid-template-columns: repeat(${catKeys.length}, minmax(0, 1fr));
+            grid-template-rows: repeat(${maxQuestions + 1}, minmax(0, 1fr)); }
+        .cell { background-color: #1e1e1e; border: 2px solid #333333; border-radius: 10px; padding: 4px; text-align: center; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; font-size: clamp(12px, 1.6vw, 22px); overflow: hidden; word-break: break-word; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.4s ease, opacity 0.4s ease, visibility 0.4s, background-color 0.2s; min-width: 0; min-height: 0; }
+        .category-cell { background-color: #181818; color: #ffffff; font-size: clamp(11px, 1.3vw, 18px); border-color: #444444; }
+        .question-btn { background-color: #2a2a2a; color: #ffcc00; cursor: pointer; font-size: clamp(14px, 2vw, 30px); }
+        .question-btn:active { transform: scale(0.96); background-color: #383838; border-color: #ffcc00; }
+        .question-btn.used { opacity: 0; visibility: hidden; transform: scale(0.8); pointer-events: none; }
+        .timer-banner { position: fixed; top: -80px; left: 50%; transform: translateX(-50%); background: #222222; border: 2px solid #ffcc00; border-top: none;
+            border-radius: 0 0 16px 16px; padding: 10px 30px; font-size: clamp(16px, 2.5vw, 36px); font-weight: bold; color: #ffcc00;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,204,0,0.2); z-index: 101; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; }
+        .timer-banner.active { top: 0; }
+        .timer-banner.warning { color: #ff3333; border-color: #ff3333; box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,51,51,0.4); animation: pulse-warning 1s infinite alternate; }
+        @keyframes pulse-warning { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.05); } }
+        .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            justify-content: center; align-items: center; flex-direction: column; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #222222; padding: 25px; border-radius: 16px; width: 85vw; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; justify-content: space-between;
+            align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 15px rgba(255,204,0,0.1); border: 1px solid #444444; transform: scale(0.85) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.active .modal-content { transform: scale(1) translateY(0); }
+        .modal-text { font-size: clamp(14px, 2vw, 28px); margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; max-height: 55vh; width: 100%; text-align: center;
+            user-select: text; -webkit-user-select: text; }
+        #modal-answer { opacity: 1; transform: none; color: #00ff66; margin-bottom: 15px; }
+        .controls { display: flex; gap: 15px; }
+        .btn { background: #ffcc00; color: #000000; border: none; padding: 12px 28px; font-size: clamp(12px, 1.6vw, 20px); font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255,204,0,0.3); transition: transform 0.1s, background-color 0.2s; }
+        .btn:active { transform: scale(0.95); background-color: #ffe066; }
+        .btn-broadcast { background: #00bcd4; color: #000; }
+        .btn-broadcast:active { background: #26c6da; }
+        .gate-overlay { position: fixed; inset: 0; z-index: 1000; background: #121212; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 20px; text-align: center; padding: 20px; }
+        .gate-box { background: #1e1e1e; border: 1px solid #333; padding: 40px; border-radius: 16px; display: flex; flex-direction: column; gap: 20px;
+            align-items: center; box-shadow: 0 15px 40px rgba(0,0,0,0.9); max-width: 500px; width: 100%; }
+        .gate-box h2 { color: #ffcc00; font-size: 1.8rem; }
+        .gate-box p { color: #aaa; font-size: 1rem; line-height: 1.4; }
+        .pin-overlay { position: fixed; inset: 0; z-index: 999; background: #121212; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 20px; }
+        .pin-box { background: #1e1e1e; border: 1px solid #333; padding: 30px 40px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .pin-box h2 { color: #ffcc00; font-size: 1.5rem; }
+        .pin-box input { background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 12px; color: #fff; font-size: 1.2rem; text-align: center; outline: none; }
+        .pin-box input:focus { border-color: #ffcc00; }
+        .pin-error { color: #ff3333; font-size: 0.9rem; display: none; }
+    </style>
+</head>
+<body>
+    ${
+        config.pincode
+            ? `<div id="pin-overlay" class="pin-overlay">
+        <div class="pin-box">
+            <h2>🔒</h2>
+            <p style="color: #aaa; font-size: 0.9rem;">Введите ПИН-код:</p>
+            <input type="password" id="pin-input" placeholder="ПИН-код" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
+            <div id="pin-error" class="pin-error">Неверный ПИН-код!</div>
+            <button class="btn" onclick="verifyPin()">Войти</button>
+        </div>
+    </div>`
+            : ''
+    }
+    <div id="gate-overlay" class="gate-overlay">
+        <div class="gate-box">
+            <h2>🎬 Режим ведущего</h2>
+            <p>Для начала работы откройте окно проектора (клиентской презентации), которое вы выведете на второй монитор или экран для зрителей.</p>
+            <button class="btn" onclick="openPresenterWindow()">Открыть окно проектора</button>
+        </div>
+    </div>
+    ${config.bgStyle === 'grid' ? '<div class="bg-grid"></div>' : ''}
+    ${config.enableAnimations ? '<div class="bg-particles" id="particles"></div>' : ''}
+    <div id="timer-banner" class="timer-banner">⏱️ <span id="timer-text">${formatTime(config.timerSeconds)}</span></div>
+    <div class="admin-top-bar">
+        <button class="btn-presenter" onclick="openPresenterWindow()">🖥️ Открыть окно проектора</button>
+        <h1>${escapeHtml(config.gameTitle)} (Админка)</h1>
+        <div style="width: 170px;"></div>
+    </div>
+    <div class="board">
+        ${categoryHeaders}
+        ${gridCells}
+    </div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modal-question" class="modal-text"></div>
+            <div id="modal-answer" class="modal-text">Ответ: <span id="answer-text"></span></div>
+            <div class="controls">
+                <button class="btn btn-broadcast" onclick="broadcastAnswer()">Показать ответ всем</button>
+                <button class="btn" onclick="closeModal()">Закрыть вопрос</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const initialTime = ${config.timerSeconds};
+        const GAME_PIN = "${config.pincode ? escapeHtml(config.pincode) : ''}";
+        const gameTitle = "${escapeHtml(config.gameTitle)}";
+        const enableKatex = ${config.enableKatex ? 'true' : 'false'};
+        const bgStyle = "${config.bgStyle}";
+        const enableAnimations = ${config.enableAnimations ? 'true' : 'false'};
+
+        const BOARD_DATA = ${JSON.stringify(config.categories)};
+        const CAT_KEYS = ${JSON.stringify(catKeys)};
+        const MAX_QUESTIONS = ${maxQuestions};
+
+        let currentBtnId = null;
+        let timerInterval = null;
+        let timeLeft = initialTime;
+        let presenterWin = null;
+        let presenterUrl = null;
+
+        function sendToPresenter(msg) {
+            if (presenterWin && !presenterWin.closed) {
+                try { presenterWin.postMessage(msg, '*'); } catch (e) { console.warn(e); }
+            }
+        }
+
+        function verifyPin() {
+            const input = document.getElementById('pin-input');
+            const error = document.getElementById('pin-error');
+            if (input && input.value === GAME_PIN) {
+                document.getElementById('pin-overlay').style.display = 'none';
+            } else if (error) {
+                error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function buildPresenterHtml() {
+            return \`<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>\${gameTitle} - Презентация</title>
+    \${enableKatex ? \`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\\/script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\\/script>\` : ''}
+    <style>
+        :root { --dark-bg: #121212; --grid-line: rgba(255, 204, 0, 0.07); --grid-size: 32px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; flex-direction: column; align-items: stretch; padding: 1.5vh 2vw; position: relative; }
+        \${bgStyle === 'grid' ? \`.bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--dark-bg);
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size); background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%); }
+        .bg-grid::after { content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%), radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none; }\` : ''}
+        \${enableAnimations ? \`.bg-particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .pixel { position: absolute; display: block; background: rgba(255, 210, 90, 0.9); border-radius: 1px; box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate; transform: translate3d(0, 0, 0); will-change: transform; }
+        @keyframes pixel-drift { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); } }\` : ''}
+        h1, .board, .modal, .timer-banner { position: relative; z-index: 2; }
+        h1 { text-align: center; font-size: clamp(14px, 1.8vw, 28px); margin-bottom: 1vh; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
+        .board { display: grid; width: 100%; flex-grow: 1; min-height: 0; gap: clamp(4px, 0.6vw, 10px);
+            grid-template-columns: repeat(\${CAT_KEYS.length}, minmax(0, 1fr));
+            grid-template-rows: repeat(\${MAX_QUESTIONS + 1}, minmax(0, 1fr)); }
+        .cell { background-color: #1e1e1e; border: 2px solid #333333; border-radius: 10px; padding: 4px; text-align: center; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; font-size: clamp(12px, 1.6vw, 22px); overflow: hidden; word-break: break-word; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease, visibility 0.5s, background-color 0.2s; min-width: 0; min-height: 0; }
+        .category-cell { background-color: #181818; color: #ffffff; font-size: clamp(11px, 1.3vw, 18px); border-color: #444444; }
+        .question-btn { background-color: #2a2a2a; color: #ffcc00; font-size: clamp(14px, 2vw, 30px); }
+        .question-btn.used { opacity: 0; visibility: hidden; transform: scale(0.6) rotate(-8deg); pointer-events: none; }
+        .timer-banner { position: fixed; top: -80px; left: 50%; transform: translateX(-50%); background: #222222; border: 2px solid #ffcc00; border-top: none;
+            border-radius: 0 0 16px 16px; padding: 10px 30px; font-size: clamp(16px, 2.5vw, 36px); font-weight: bold; color: #ffcc00;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,204,0,0.2); z-index: 101; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; }
+        .timer-banner.active { top: 0; }
+        .timer-banner.warning { color: #ff3333; border-color: #ff3333; box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,51,51,0.4); animation: pulse-warning 1s infinite alternate; }
+        @keyframes pulse-warning { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.05); } }
+        .modal { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; flex-direction: column;
+            padding: 40px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #222222; padding: 40px; border-radius: 20px; width: 90vw; max-width: 1100px; max-height: 85vh; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(255,204,0,0.1); border: 1px solid #444444; transform: scale(0.85) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.active .modal-content { transform: scale(1) translateY(0); }
+        .modal-text { font-size: clamp(16px, 2.8vw, 40px); margin-bottom: 25px; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; max-height: 60vh; width: 100%; text-align: center; }
+        #modal-answer { opacity: 0; transform: translateY(10px); color: #00ff66; display: none; }
+        #modal-answer.visible { opacity: 1; transform: translateY(0); display: block; transition: opacity 0.4s ease, transform 0.4s ease; }
+    </style>
+</head>
+<body>
+    \${bgStyle === 'grid' ? '<div class="bg-grid"></div>' : ''}
+    \${enableAnimations ? '<div class="bg-particles" id="particles"></div>' : ''}
+    <div id="timer-banner" class="timer-banner">⏱️ <span id="timer-text">00:00</span></div>
+    <h1>\${gameTitle}</h1>
+    <div id="board" class="board"></div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modal-question" class="modal-text"></div>
+            <div id="modal-answer" class="modal-text"></div>
+        </div>
+    </div>
+    <script>
+        const BOARD_DATA = \${JSON.stringify(BOARD_DATA)};
+        const CAT_KEYS = \${JSON.stringify(CAT_KEYS)};
+        const MAX_QUESTIONS = \${MAX_QUESTIONS};
+        const ENABLE_KATEX = \${enableKatex};
+        const ENABLE_ANIMATIONS = \${enableAnimations};
+        let clientTimerInterval = null;
+
+        function renderMathIn(el) {
+            if (ENABLE_KATEX && window.renderMathInElement) {
+                renderMathInElement(el, {
+                    delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        if (ENABLE_ANIMATIONS) {
+            const container = document.getElementById('particles');
+            if (container) {
+                for (let i = 0; i < 25; i++) {
+                    const pixel = document.createElement('div');
+                    pixel.className = 'pixel';
+                    const size = Math.floor(Math.random() * 3) + 2;
+                    pixel.style.width = size + 'px';
+                    pixel.style.height = size + 'px';
+                    pixel.style.left = Math.random() * 100 + '%';
+                    pixel.style.top = Math.random() * 100 + '%';
+                    pixel.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
+                    pixel.style.setProperty('--dy', -(Math.random() * 40 + 10) + 'px');
+                    pixel.style.animationDuration = (Math.random() * 4 + 3) + 's';
+                    pixel.style.animationDelay = (Math.random() * 5) + 's';
+                    container.appendChild(pixel);
+                }
+            }
+        }
+
+        // Рисуем поле
+        (function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            CAT_KEYS.forEach((cat) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell category-cell';
+                cell.textContent = cat;
+                board.appendChild(cell);
+            });
+            for (let i = 0; i < MAX_QUESTIONS; i++) {
+                CAT_KEYS.forEach((cat, catIdx) => {
+                    const qList = BOARD_DATA[cat];
+                    const cell = document.createElement('div');
+                    if (i < qList.length) {
+                        const q = qList[i];
+                        cell.className = 'cell question-btn';
+                        cell.id = 'client-btn-' + catIdx + '-' + i;
+                        cell.textContent = q.price;
+                    } else {
+                        cell.className = 'cell';
+                    }
+                    board.appendChild(cell);
+                });
+            }
+        })();
+
+        // Слушаем сообщения от админки
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || !data.type) return;
+            if (data.type === 'OPEN_QUESTION') {
+                if (data.btnId) {
+                    const cell = document.getElementById('client-' + data.btnId);
+                    if (cell) {
+                        // Гарантируем, что transition сработает
+                        requestAnimationFrame(() => {
+                            cell.classList.add('used');
+                        });
+                    }
+                }
+                const qElem = document.getElementById('modal-question');
+                const aElem = document.getElementById('modal-answer');
+                aElem.classList.remove('visible');
+                aElem.innerText = "";
+                qElem.innerText = data.question;
+                renderMathIn(qElem);
+                document.getElementById('modal').classList.add('active');
+                startClientTimer(data.timerSeconds);
+            } else if (data.type === 'SHOW_ANSWER') {
+                const aElem = document.getElementById('modal-answer');
+                aElem.innerText = "Ответ: " + data.answer;
+                aElem.classList.add('visible');
+                renderMathIn(aElem);
+            } else if (data.type === 'CLOSE_MODAL') {
+                document.getElementById('modal').classList.remove('active');
+                stopClientTimer();
+            }
+        });
+
+        function startClientTimer(secs) {
+            stopClientTimer();
+            let left = secs;
+            const banner = document.getElementById('timer-banner');
+            const text = document.getElementById('timer-text');
+            banner.classList.remove('warning');
+            banner.classList.add('active');
+            text.innerText = formatTime(left);
+            clientTimerInterval = setInterval(() => {
+                left--;
+                text.innerText = formatTime(left);
+                if (left <= 10 && left > 0) banner.classList.add('warning');
+                if (left <= 0) { stopClientTimer(); text.innerText = "00:00"; }
+            }, 1000);
+        }
+        function stopClientTimer() {
+            if (clientTimerInterval) { clearInterval(clientTimerInterval); clientTimerInterval = null; }
+            document.getElementById('timer-banner').classList.remove('active', 'warning');
+        }
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return (m < 10 ? '0' + m : m) + ':' + (sec < 10 ? '0' + sec : sec);
+        }
+    <\\/script>
+</body>
+</html>\`;
+        }
+
+        function openPresenterWindow() {
+            const html = buildPresenterHtml();
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            if (presenterWin && !presenterWin.closed) {
+                if (presenterUrl) URL.revokeObjectURL(presenterUrl);
+                presenterUrl = url;
+                presenterWin.location.href = url;
+                presenterWin.focus();
+            } else {
+                presenterWin = window.open(url, 'PresenterWindow', 'width=1024,height=768');
+                if (!presenterWin) {
+                    alert('Не удалось открыть окно проектора. Разрешите всплывающие окна для этой страницы.');
+                    return;
+                }
+                presenterUrl = url;
+            }
+
+            const gate = document.getElementById('gate-overlay');
+            if (gate) gate.style.display = 'none';
+        }
+
+        ${
+            config.enableAnimations
+                ? `
+        function initParticles() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            for (let i = 0; i < 25; i++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                const size = Math.floor(Math.random() * 3) + 2;
+                pixel.style.width = size + 'px';
+                pixel.style.height = size + 'px';
+                pixel.style.left = Math.random() * 100 + '%';
+                pixel.style.top = Math.random() * 100 + '%';
+                pixel.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
+                pixel.style.setProperty('--dy', -(Math.random() * 40 + 10) + 'px');
+                pixel.style.animationDuration = (Math.random() * 4 + 3) + 's';
+                pixel.style.animationDelay = (Math.random() * 5) + 's';
+                container.appendChild(pixel);
+            }
+        }
+        initParticles();
+        `
+                : ''
+        }
+
+        function renderMathIn(element) {
+            ${
+                config.enableKatex
+                    ? `
+            if (window.renderMathInElement) {
+                renderMathInElement(element, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\\\\\\\(', right: '\\\\\\\\)', display: false},
+                        {left: '\\\\\\\\[', right: '\\\\\\\\\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            }
+            `
+                    : ''
+            }
+        }
+
+        function formatTimeDisplay(secs) {
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            const mm = m < 10 ? '0' + m : m;
+            const ss = s < 10 ? '0' + s : s;
+            return mm + ':' + ss;
+        }
+
+        function startTimer() {
+            stopTimer();
+            timeLeft = initialTime;
+            const timerBanner = document.getElementById('timer-banner');
+            const timerText = document.getElementById('timer-text');
+            timerBanner.classList.remove('warning');
+            timerBanner.classList.add('active');
+            timerText.innerText = formatTimeDisplay(timeLeft);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = formatTimeDisplay(timeLeft);
+                if (timeLeft <= 10 && timeLeft > 0) timerBanner.classList.add('warning');
+                if (timeLeft <= 0) { stopTimer(); timerText.innerText = "00:00"; }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            const timerBanner = document.getElementById('timer-banner');
+            if (timerBanner) timerBanner.classList.remove('active', 'warning');
+        }
+
+        function openModal(question, answer, btnId) {
+            currentBtnId = btnId;
+            const questionElem = document.getElementById('modal-question');
+            const answerTextElem = document.getElementById('answer-text');
+            questionElem.innerText = question;
+            answerTextElem.innerText = answer;
+            renderMathIn(questionElem);
+            renderMathIn(answerTextElem);
+            document.getElementById('modal').classList.add('active');
+            startTimer();
+            sendToPresenter({
+                type: 'OPEN_QUESTION',
+                question: question,
+                timerSeconds: initialTime,
+                btnId: btnId
+            });
+        }
+
+        function broadcastAnswer() {
+            const answerText = document.getElementById('answer-text').innerText;
+            sendToPresenter({ type: 'SHOW_ANSWER', answer: answerText });
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            stopTimer();
+            if (currentBtnId) {
+                const btn = document.getElementById(currentBtnId);
+                if (btn) btn.classList.add('used');
+            }
+            sendToPresenter({ type: 'CLOSE_MODAL' });
+        }
+    <\/script>
+</body>
+</html>`;
+            }
+
+            function formatTime(secs) {
+                const m = Math.floor(secs / 60);
+                const s = secs % 60;
+                return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+            }
+
+            function escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        </script>
+    </body>
+</html>
