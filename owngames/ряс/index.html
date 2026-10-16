@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Русский язык - Словосочетания (Админка)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root { --dark-bg: #121212; --grid-line: rgba(255, 204, 0, 0.07); --grid-size: 32px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; flex-direction: column; align-items: stretch; padding: 1.5vh 2vw; position: relative; }
+        h1, .board, .modal, .timer-banner, .admin-top-bar { position: relative; z-index: 2; }
+        .bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--dark-bg);
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size); background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%); }
+        .bg-grid::after { content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%), radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none; }
+        .bg-particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .pixel { position: absolute; display: block; background: rgba(255, 210, 90, 0.9); border-radius: 1px; box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate; transform: translate3d(0, 0, 0); will-change: transform; }
+        @keyframes pixel-drift { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); } }
+        .admin-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1vh; flex-shrink: 0; }
+        h1 { text-align: center; font-size: clamp(14px, 1.8vw, 28px); margin: 0; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .btn-presenter { background: #28a745; color: #fff; border: none; padding: 8px 16px; font-size: clamp(11px, 1.4vw, 16px); font-weight: bold; border-radius: 6px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(40,167,69,0.3); transition: transform 0.1s, background-color 0.2s; }
+        .btn-presenter:hover { background-color: #34ce57; }
+        .btn-presenter:active { transform: scale(0.95); }
+        .board { display: grid; width: 100%; flex-grow: 1; min-height: 0; gap: clamp(4px, 0.6vw, 10px);
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-rows: repeat(7, minmax(0, 1fr)); }
+        .cell { background-color: #1e1e1e; border: 2px solid #333333; border-radius: 10px; padding: 4px; text-align: center; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; font-size: clamp(12px, 1.6vw, 22px); overflow: hidden; word-break: break-word; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.4s ease, opacity 0.4s ease, visibility 0.4s, background-color 0.2s; min-width: 0; min-height: 0; }
+        .category-cell { background-color: #181818; color: #ffffff; font-size: clamp(11px, 1.3vw, 18px); border-color: #444444; }
+        .question-btn { background-color: #2a2a2a; color: #ffcc00; cursor: pointer; font-size: clamp(14px, 2vw, 30px); }
+        .question-btn:active { transform: scale(0.96); background-color: #383838; border-color: #ffcc00; }
+        .question-btn.used { opacity: 0; visibility: hidden; transform: scale(0.8); pointer-events: none; }
+        .timer-banner { position: fixed; top: -80px; left: 50%; transform: translateX(-50%); background: #222222; border: 2px solid #ffcc00; border-top: none;
+            border-radius: 0 0 16px 16px; padding: 10px 30px; font-size: clamp(16px, 2.5vw, 36px); font-weight: bold; color: #ffcc00;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,204,0,0.2); z-index: 101; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; }
+        .timer-banner.active { top: 0; }
+        .timer-banner.warning { color: #ff3333; border-color: #ff3333; box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,51,51,0.4); animation: pulse-warning 1s infinite alternate; }
+        @keyframes pulse-warning { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.05); } }
+        .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            justify-content: center; align-items: center; flex-direction: column; padding: 20px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #222222; padding: 25px; border-radius: 16px; width: 85vw; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; justify-content: space-between;
+            align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 15px rgba(255,204,0,0.1); border: 1px solid #444444; transform: scale(0.85) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.active .modal-content { transform: scale(1) translateY(0); }
+        .modal-text { font-size: clamp(14px, 2vw, 28px); margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; max-height: 55vh; width: 100%; text-align: center;
+            user-select: text; -webkit-user-select: text; }
+        #modal-answer { opacity: 1; transform: none; color: #00ff66; margin-bottom: 15px; }
+        .controls { display: flex; gap: 15px; }
+        .btn { background: #ffcc00; color: #000000; border: none; padding: 12px 28px; font-size: clamp(12px, 1.6vw, 20px); font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255,204,0,0.3); transition: transform 0.1s, background-color 0.2s; }
+        .btn:active { transform: scale(0.95); background-color: #ffe066; }
+        .btn-broadcast { background: #00bcd4; color: #000; }
+        .btn-broadcast:active { background: #26c6da; }
+        .gate-overlay { position: fixed; inset: 0; z-index: 1000; background: #121212; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 20px; text-align: center; padding: 20px; }
+        .gate-box { background: #1e1e1e; border: 1px solid #333; padding: 40px; border-radius: 16px; display: flex; flex-direction: column; gap: 20px;
+            align-items: center; box-shadow: 0 15px 40px rgba(0,0,0,0.9); max-width: 500px; width: 100%; }
+        .gate-box h2 { color: #ffcc00; font-size: 1.8rem; }
+        .gate-box p { color: #aaa; font-size: 1rem; line-height: 1.4; }
+        .pin-overlay { position: fixed; inset: 0; z-index: 999; background: #121212; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 20px; }
+        .pin-box { background: #1e1e1e; border: 1px solid #333; padding: 30px 40px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .pin-box h2 { color: #ffcc00; font-size: 1.5rem; }
+        .pin-box input { background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 12px; color: #fff; font-size: 1.2rem; text-align: center; outline: none; }
+        .pin-box input:focus { border-color: #ffcc00; }
+        .pin-error { color: #ff3333; font-size: 0.9rem; display: none; }
+    </style>
+</head>
+<body>
+    <div id="pin-overlay" class="pin-overlay">
+        <div class="pin-box">
+            <h2>🔒</h2>
+            <p style="color: #aaa; font-size: 0.9rem;">Введите ПИН-код:</p>
+            <input type="password" id="pin-input" placeholder="ПИН-код" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
+            <div id="pin-error" class="pin-error">Неверный ПИН-код!</div>
+            <button class="btn" onclick="verifyPin()">Войти</button>
+        </div>
+    </div>
+    <div id="gate-overlay" class="gate-overlay">
+        <div class="gate-box">
+            <h2>🎬 Режим ведущего</h2>
+            <p>Для начала работы откройте окно проектора (клиентской презентации), которое вы выведете на второй монитор или экран для зрителей.</p>
+            <button class="btn" onclick="openPresenterWindow()">Открыть окно проектора</button>
+        </div>
+    </div>
+    <div class="bg-grid"></div>
+    <div class="bg-particles" id="particles"></div>
+    <div id="timer-banner" class="timer-banner">⏱️ <span id="timer-text">01:00</span></div>
+    <div class="admin-top-bar">
+        <button class="btn-presenter" onclick="openPresenterWindow()">🖥️ Открыть окно проектора</button>
+        <h1>Русский язык - Словосочетания (Админка)</h1>
+        <div style="width: 170px;"></div>
+    </div>
+    <div class="board">
+        <div class="cell category-cell">Согласование</div>
+        <div class="cell category-cell">Примыкание</div>
+        <div class="cell category-cell">Управление</div>
+        <div class="cell category-cell">Согласование на примыкание</div>
+        <div class="cell category-cell">Примыкание на управление</div>
+        <div class="cell category-cell">Управление на согласование</div>
+        <div class="cell question-btn" id="btn-0-0" onclick='openModal("Каким способом подчинительной связи связано словосочетание «лесная поляна»?", "Согласование", "btn-0-0")'>10</div>
+        <div class="cell question-btn" id="btn-1-0" onclick='openModal("Какая часть речи выступает зависимым словом при примыкании: существительное, наречие или глагол?", "Наречие", "btn-1-0")'>10</div>
+        <div class="cell question-btn" id="btn-2-0" onclick='openModal("Какая часть речи всегда является зависимым словом при управлении согласно правилу из § 10?", "Имя существительное (и слова с признаками существительного)", "btn-2-0")'>10</div>
+        <div class="cell question-btn" id="btn-3-0" onclick='openModal("Измени вид связи с согласования на примыкание в словосочетании с опорным словом зима / зимний. Приведи пример.", "Приехать зимой / гулять зимой", "btn-3-0")'>10</div>
+        <div class="cell question-btn" id="btn-4-0" onclick='openModal("Переведи примыкание «говорить тихо» в управление (используя существительное с предлогом или без).", "Говорить шепотом", "btn-4-0")'>10</div>
+        <div class="cell question-btn" id="btn-5-0" onclick='openModal("Замени управление «воздух гор» на согласование.", "Горный воздух", "btn-5-0")'>10</div>
+        <div class="cell question-btn" id="btn-0-1" onclick='openModal("Из слов составь словосочетание со связью согласование: аллея, липовый.", "Липовая аллея", "btn-0-1")'>20</div>
+        <div class="cell question-btn" id="btn-1-1" onclick='openModal("Составь словосочетание со связью примыкание, используя глагол говорить и наречие громко.", "Говорить громко", "btn-1-1")'>20</div>
+        <div class="cell question-btn" id="btn-2-1" onclick='openModal("Определи падеж зависимого слова в словосочетании «читать книгу».", "Винительный падеж (В. п.) без предлога", "btn-2-1")'>20</div>
+        <div class="cell question-btn" id="btn-3-1" onclick='openModal("Преврати согласование «школьный двор» в примыкание, изменив зависимое слово.", "Сделать по-школьному / по-школьному просторно", "btn-3-1")'>20</div>
+        <div class="cell question-btn" id="btn-4-1" onclick='openModal("Измени вид связи с примыкания на управление: «поступить по-товарищески».", "Поступить как товарищ / поступить по совести", "btn-4-1")'>20</div>
+        <div class="cell question-btn" id="btn-5-1" onclick='openModal("Переведи управление «костюм из шёлка» в согласование.", "Шёлковый костюм", "btn-5-1")'>20</div>
+        <div class="cell question-btn" id="btn-0-2" onclick='openModal("Найди ошибку в согласовании определения с главным словом в предложении: «Из окна доносился громкий крики птиц». Как исправить?", "Ошибка в форме числа («громкие крики» или «громкий крик»)", "btn-0-2")'>30</div>
+        <div class="cell question-btn" id="btn-1-2" onclick='openModal("Найди и исправь ошибку: в словосочетании «его книга» слово «его» — это личное местоимение. Какой это вид связи?", "Это притяжательное местоимение, вид связи — примыкание", "btn-1-2")'>30</div>
+        <div class="cell question-btn" id="btn-2-2" onclick='openModal("Составь словосочетание с глаголом управлять, чтобы зависимое слово стояло в творительном падеже.", "Управлять кораблём / управлять коллективом", "btn-2-2")'>30</div>
+        <div class="cell question-btn" id="btn-3-2" onclick='openModal("Переделай согласование «настойчивая просьба» в примыкание.", "Настойчиво просить", "btn-3-2")'>30</div>
+        <div class="cell question-btn" id="btn-4-2" onclick='openModal("Было примыкание «читать лежа» (деепричастие). Преврати его в управление с существительным схожего смысла.", "Поступать с отвагой", "btn-4-2")'>30</div>
+        <div class="cell question-btn" id="btn-5-2" onclick='openModal("Измени вид связи с управления на согласование: «лампа на столе».", "Настольная лампа", "btn-5-2")'>30</div>
+        <div class="cell question-btn" id="btn-0-3" onclick='openModal("Какая часть речи не может выступать в роли зависимого слова при согласовании согласно учебнику?", "Имя существительное (существительное обычно выступает при управлении)", "btn-0-3")'>40</div>
+        <div class="cell question-btn" id="btn-1-3" onclick='openModal("Изменяется ли зависимое слово при примыкании, если изменить форму главного слова? Приведи пример из § 10.", "Нет, слова связываются только по смыслу; например: очень любить — очень любил", "btn-1-3")'>40</div>
+        <div class="cell question-btn" id="btn-2-3" onclick='openModal("Изменяется ли зависимое слово при управлении, если мы меняем форму главного слова? Сравни: встретил друга — встретишь друга.", "Форма зависимого слова не изменяется", "btn-2-3")'>40</div>
+        <div class="cell question-btn" id="btn-3-3" onclick='openModal("Преобразуй словосочетание со связью согласование «утренний заморозок» в примыкание.", "Заморозило утром / подморозило по-утреннему", "btn-3-3")'>40</div>
+        <div class="cell question-btn" id="btn-4-3" onclick='openModal("Замени примыкание «очень быстро» (наречие + наречие) на управление.", "Бежать с быстротой", "btn-4-3")'>40</div>
+        <div class="cell question-btn" id="btn-5-3" onclick='openModal("Было управление «лучи солнца». Сделай из него согласование.", "Солнечные лучи", "btn-5-3")'>40</div>
+        <div class="cell question-btn" id="btn-0-4" onclick='openModal("Измени форму главного слова в словосочетании «опустевшая липовая аллея» во множественное число в творительном падеже. Как изменятся зависимые слова?", "«опустевшими липовыми аллеями»; изменяются во всех формах вслед за главным", "btn-0-4")'>50</div>
+        <div class="cell question-btn" id="btn-1-4" onclick='openModal("Какие ещё неизменяемые слова (кроме наречий и деепричастий) могут быть зависимыми при примыкании? Назови их и приведи примеры из учебника.", "Неопределенная форма глагола («уехал учиться») и притяжательные местоимения его, её, их («его книга»)", "btn-1-4")'>50</div>
+        <div class="cell question-btn" id="btn-2-4" onclick='openModal("Объясни норму управления для глагола обидеться: можно ли сказать «обидеться на друга» или «обидеться по другу»? Какой падеж верный?", "Верно «обидеться на кого? на друга» — В. п. с предлогом на", "btn-2-4")'>50</div>
+        <div class="cell question-btn" id="btn-3-4" onclick='openModal("Измени вид связи с согласования на примыкание: «дружеская встреча».", "Встретиться по-дружески", "btn-3-4")'>50</div>
+        <div class="cell question-btn" id="btn-4-4" onclick='openModal("Переделай примыкание «поступить несправедливо» в управление.", "Поступить с несправедливостью / поступить без справедливости", "btn-4-4")'>50</div>
+        <div class="cell question-btn" id="btn-5-4" onclick='openModal("Переделай управление «памятник из мрамора» в согласование.", "Мраморный памятник", "btn-5-4")'>50</div>
+        <div class="cell question-btn" id="btn-0-5" onclick='openModal("Выпиши из § 10 определение согласования так, как оно дано в учебнике.", "Согласование — такая связь, при которой зависимое слово — имя прилагательное и все слова с грамматическими признаками прилагательного", "btn-0-5")'>60</div>
+        <div class="cell question-btn" id="btn-1-5" onclick='openModal("Докажи на примере словосочетания «по-весеннему свежий», почему здесь примыкание, а не согласование.", "Зависимое слово «по-весеннему» — неизменяемое наречие, оно не меняет форму при изменении главного слова", "btn-1-5")'>60</div>
+        <div class="cell question-btn" id="btn-2-5" onclick='openModal("Выпиши из параграфа 10 примеры на управление, где главное слово требует разных косвенных падежей: с предлогом и без предлога.", "Например: писать сочинение (В. п. без предлога), участвовать в соревновании (П. п. с предлогом), надеяться на победу (В. п. с предлогом)", "btn-2-5")'>60</div>
+        <div class="cell question-btn" id="btn-3-5" onclick='openModal("Было согласование «справедливое решение». Сделай из него примыкание, подобрав однокоренное зависимое слово-наречие.", "Поступить справедливо", "btn-3-5")'>60</div>
+        <div class="cell question-btn" id="btn-4-5" onclick='openModal("Замени примыкание «гордо заявить» на управление с тем же смыслом.", "Заявить с гордостью", "btn-4-5")'>60</div>
+        <div class="cell question-btn" id="btn-5-5" onclick='openModal("Преобразуй управление «века истории» в словосочетание со связью согласование.", "Исторические века / историческая эпоха", "btn-5-5")'>60</div>
+        
+    </div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modal-question" class="modal-text"></div>
+            <div id="modal-answer" class="modal-text">Ответ: <span id="answer-text"></span></div>
+            <div class="controls">
+                <button class="btn btn-broadcast" onclick="broadcastAnswer()">Показать ответ всем</button>
+                <button class="btn" onclick="closeModal()">Закрыть вопрос</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const initialTime = 60;
+        const GAME_PIN = "0912";
+        const gameTitle = "Русский язык - Словосочетания";
+        const enableKatex = true;
+        const bgStyle = "grid";
+        const enableAnimations = true;
+
+        const BOARD_DATA = {"Согласование":[{"price":"10","question":"Каким способом подчинительной связи связано словосочетание «лесная поляна»?","answer":"Согласование"},{"price":"20","question":"Из слов составь словосочетание со связью согласование: аллея, липовый.","answer":"Липовая аллея"},{"price":"30","question":"Найди ошибку в согласовании определения с главным словом в предложении: «Из окна доносился громкий крики птиц». Как исправить?","answer":"Ошибка в форме числа («громкие крики» или «громкий крик»)"},{"price":"40","question":"Какая часть речи не может выступать в роли зависимого слова при согласовании согласно учебнику?","answer":"Имя существительное (существительное обычно выступает при управлении)"},{"price":"50","question":"Измени форму главного слова в словосочетании «опустевшая липовая аллея» во множественное число в творительном падеже. Как изменятся зависимые слова?","answer":"«опустевшими липовыми аллеями»; изменяются во всех формах вслед за главным"},{"price":"60","question":"Выпиши из § 10 определение согласования так, как оно дано в учебнике.","answer":"Согласование — такая связь, при которой зависимое слово — имя прилагательное и все слова с грамматическими признаками прилагательного"}],"Примыкание":[{"price":"10","question":"Какая часть речи выступает зависимым словом при примыкании: существительное, наречие или глагол?","answer":"Наречие"},{"price":"20","question":"Составь словосочетание со связью примыкание, используя глагол говорить и наречие громко.","answer":"Говорить громко"},{"price":"30","question":"Найди и исправь ошибку: в словосочетании «его книга» слово «его» — это личное местоимение. Какой это вид связи?","answer":"Это притяжательное местоимение, вид связи — примыкание"},{"price":"40","question":"Изменяется ли зависимое слово при примыкании, если изменить форму главного слова? Приведи пример из § 10.","answer":"Нет, слова связываются только по смыслу; например: очень любить — очень любил"},{"price":"50","question":"Какие ещё неизменяемые слова (кроме наречий и деепричастий) могут быть зависимыми при примыкании? Назови их и приведи примеры из учебника.","answer":"Неопределенная форма глагола («уехал учиться») и притяжательные местоимения его, её, их («его книга»)"},{"price":"60","question":"Докажи на примере словосочетания «по-весеннему свежий», почему здесь примыкание, а не согласование.","answer":"Зависимое слово «по-весеннему» — неизменяемое наречие, оно не меняет форму при изменении главного слова"}],"Управление":[{"price":"10","question":"Какая часть речи всегда является зависимым словом при управлении согласно правилу из § 10?","answer":"Имя существительное (и слова с признаками существительного)"},{"price":"20","question":"Определи падеж зависимого слова в словосочетании «читать книгу».","answer":"Винительный падеж (В. п.) без предлога"},{"price":"30","question":"Составь словосочетание с глаголом управлять, чтобы зависимое слово стояло в творительном падеже.","answer":"Управлять кораблём / управлять коллективом"},{"price":"40","question":"Изменяется ли зависимое слово при управлении, если мы меняем форму главного слова? Сравни: встретил друга — встретишь друга.","answer":"Форма зависимого слова не изменяется"},{"price":"50","question":"Объясни норму управления для глагола обидеться: можно ли сказать «обидеться на друга» или «обидеться по другу»? Какой падеж верный?","answer":"Верно «обидеться на кого? на друга» — В. п. с предлогом на"},{"price":"60","question":"Выпиши из параграфа 10 примеры на управление, где главное слово требует разных косвенных падежей: с предлогом и без предлога.","answer":"Например: писать сочинение (В. п. без предлога), участвовать в соревновании (П. п. с предлогом), надеяться на победу (В. п. с предлогом)"}],"Согласование на примыкание":[{"price":"10","question":"Измени вид связи с согласования на примыкание в словосочетании с опорным словом зима / зимний. Приведи пример.","answer":"Приехать зимой / гулять зимой"},{"price":"20","question":"Преврати согласование «школьный двор» в примыкание, изменив зависимое слово.","answer":"Сделать по-школьному / по-школьному просторно"},{"price":"30","question":"Переделай согласование «настойчивая просьба» в примыкание.","answer":"Настойчиво просить"},{"price":"40","question":"Преобразуй словосочетание со связью согласование «утренний заморозок» в примыкание.","answer":"Заморозило утром / подморозило по-утреннему"},{"price":"50","question":"Измени вид связи с согласования на примыкание: «дружеская встреча».","answer":"Встретиться по-дружески"},{"price":"60","question":"Было согласование «справедливое решение». Сделай из него примыкание, подобрав однокоренное зависимое слово-наречие.","answer":"Поступить справедливо"}],"Примыкание на управление":[{"price":"10","question":"Переведи примыкание «говорить тихо» в управление (используя существительное с предлогом или без).","answer":"Говорить шепотом"},{"price":"20","question":"Измени вид связи с примыкания на управление: «поступить по-товарищески».","answer":"Поступить как товарищ / поступить по совести"},{"price":"30","question":"Было примыкание «читать лежа» (деепричастие). Преврати его в управление с существительным схожего смысла.","answer":"Поступать с отвагой"},{"price":"40","question":"Замени примыкание «очень быстро» (наречие + наречие) на управление.","answer":"Бежать с быстротой"},{"price":"50","question":"Переделай примыкание «поступить несправедливо» в управление.","answer":"Поступить с несправедливостью / поступить без справедливости"},{"price":"60","question":"Замени примыкание «гордо заявить» на управление с тем же смыслом.","answer":"Заявить с гордостью"}],"Управление на согласование":[{"price":"10","question":"Замени управление «воздух гор» на согласование.","answer":"Горный воздух"},{"price":"20","question":"Переведи управление «костюм из шёлка» в согласование.","answer":"Шёлковый костюм"},{"price":"30","question":"Измени вид связи с управления на согласование: «лампа на столе».","answer":"Настольная лампа"},{"price":"40","question":"Было управление «лучи солнца». Сделай из него согласование.","answer":"Солнечные лучи"},{"price":"50","question":"Переделай управление «памятник из мрамора» в согласование.","answer":"Мраморный памятник"},{"price":"60","question":"Преобразуй управление «века истории» в словосочетание со связью согласование.","answer":"Исторические века / историческая эпоха"}]};
+        const CAT_KEYS = ["Согласование","Примыкание","Управление","Согласование на примыкание","Примыкание на управление","Управление на согласование"];
+        const MAX_QUESTIONS = 6;
+
+        let currentBtnId = null;
+        let timerInterval = null;
+        let timeLeft = initialTime;
+        let presenterWin = null;
+        let presenterUrl = null;
+
+        function sendToPresenter(msg) {
+            if (presenterWin && !presenterWin.closed) {
+                try { presenterWin.postMessage(msg, '*'); } catch (e) { console.warn(e); }
+            }
+        }
+
+        function verifyPin() {
+            const input = document.getElementById('pin-input');
+            const error = document.getElementById('pin-error');
+            if (input && input.value === GAME_PIN) {
+                document.getElementById('pin-overlay').style.display = 'none';
+            } else if (error) {
+                error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function buildPresenterHtml() {
+            return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>${gameTitle} - Презентация</title>
+    ${enableKatex ? `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>` : ''}
+    <style>
+        :root { --dark-bg: #121212; --grid-line: rgba(255, 204, 0, 0.07); --grid-size: 32px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; flex-direction: column; align-items: stretch; padding: 1.5vh 2vw; position: relative; }
+        ${bgStyle === 'grid' ? `.bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--dark-bg);
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size); background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%); }
+        .bg-grid::after { content: ""; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%), radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none; }` : ''}
+        ${enableAnimations ? `.bg-particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .pixel { position: absolute; display: block; background: rgba(255, 210, 90, 0.9); border-radius: 1px; box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate; transform: translate3d(0, 0, 0); will-change: transform; }
+        @keyframes pixel-drift { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); } }` : ''}
+        h1, .board, .modal, .timer-banner { position: relative; z-index: 2; }
+        h1 { text-align: center; font-size: clamp(14px, 1.8vw, 28px); margin-bottom: 1vh; letter-spacing: 1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
+        .board { display: grid; width: 100%; flex-grow: 1; min-height: 0; gap: clamp(4px, 0.6vw, 10px);
+            grid-template-columns: repeat(${CAT_KEYS.length}, minmax(0, 1fr));
+            grid-template-rows: repeat(${MAX_QUESTIONS + 1}, minmax(0, 1fr)); }
+        .cell { background-color: #1e1e1e; border: 2px solid #333333; border-radius: 10px; padding: 4px; text-align: center; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; font-size: clamp(12px, 1.6vw, 22px); overflow: hidden; word-break: break-word; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease, visibility 0.5s, background-color 0.2s; min-width: 0; min-height: 0; }
+        .category-cell { background-color: #181818; color: #ffffff; font-size: clamp(11px, 1.3vw, 18px); border-color: #444444; }
+        .question-btn { background-color: #2a2a2a; color: #ffcc00; font-size: clamp(14px, 2vw, 30px); }
+        .question-btn.used { opacity: 0; visibility: hidden; transform: scale(0.6) rotate(-8deg); pointer-events: none; }
+        .timer-banner { position: fixed; top: -80px; left: 50%; transform: translateX(-50%); background: #222222; border: 2px solid #ffcc00; border-top: none;
+            border-radius: 0 0 16px 16px; padding: 10px 30px; font-size: clamp(16px, 2.5vw, 36px); font-weight: bold; color: #ffcc00;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,204,0,0.2); z-index: 101; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; }
+        .timer-banner.active { top: 0; }
+        .timer-banner.warning { color: #ff3333; border-color: #ff3333; box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(255,51,51,0.4); animation: pulse-warning 1s infinite alternate; }
+        @keyframes pulse-warning { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.05); } }
+        .modal { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; flex-direction: column;
+            padding: 40px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #222222; padding: 40px; border-radius: 20px; width: 90vw; max-width: 1100px; max-height: 85vh; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(255,204,0,0.1); border: 1px solid #444444; transform: scale(0.85) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal.active .modal-content { transform: scale(1) translateY(0); }
+        .modal-text { font-size: clamp(16px, 2.8vw, 40px); margin-bottom: 25px; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; max-height: 60vh; width: 100%; text-align: center; }
+        #modal-answer { opacity: 0; transform: translateY(10px); color: #00ff66; display: none; }
+        #modal-answer.visible { opacity: 1; transform: translateY(0); display: block; transition: opacity 0.4s ease, transform 0.4s ease; }
+    </style>
+</head>
+<body>
+    ${bgStyle === 'grid' ? '<div class="bg-grid"></div>' : ''}
+    ${enableAnimations ? '<div class="bg-particles" id="particles"></div>' : ''}
+    <div id="timer-banner" class="timer-banner">⏱️ <span id="timer-text">00:00</span></div>
+    <h1>${gameTitle}</h1>
+    <div id="board" class="board"></div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modal-question" class="modal-text"></div>
+            <div id="modal-answer" class="modal-text"></div>
+        </div>
+    </div>
+    <script>
+        const BOARD_DATA = ${JSON.stringify(BOARD_DATA)};
+        const CAT_KEYS = ${JSON.stringify(CAT_KEYS)};
+        const MAX_QUESTIONS = ${MAX_QUESTIONS};
+        const ENABLE_KATEX = ${enableKatex};
+        const ENABLE_ANIMATIONS = ${enableAnimations};
+        let clientTimerInterval = null;
+
+        function renderMathIn(el) {
+            if (ENABLE_KATEX && window.renderMathInElement) {
+                renderMathInElement(el, {
+                    delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        if (ENABLE_ANIMATIONS) {
+            const container = document.getElementById('particles');
+            if (container) {
+                for (let i = 0; i < 25; i++) {
+                    const pixel = document.createElement('div');
+                    pixel.className = 'pixel';
+                    const size = Math.floor(Math.random() * 3) + 2;
+                    pixel.style.width = size + 'px';
+                    pixel.style.height = size + 'px';
+                    pixel.style.left = Math.random() * 100 + '%';
+                    pixel.style.top = Math.random() * 100 + '%';
+                    pixel.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
+                    pixel.style.setProperty('--dy', -(Math.random() * 40 + 10) + 'px');
+                    pixel.style.animationDuration = (Math.random() * 4 + 3) + 's';
+                    pixel.style.animationDelay = (Math.random() * 5) + 's';
+                    container.appendChild(pixel);
+                }
+            }
+        }
+
+        // Рисуем поле
+        (function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            CAT_KEYS.forEach((cat) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell category-cell';
+                cell.textContent = cat;
+                board.appendChild(cell);
+            });
+            for (let i = 0; i < MAX_QUESTIONS; i++) {
+                CAT_KEYS.forEach((cat, catIdx) => {
+                    const qList = BOARD_DATA[cat];
+                    const cell = document.createElement('div');
+                    if (i < qList.length) {
+                        const q = qList[i];
+                        cell.className = 'cell question-btn';
+                        cell.id = 'client-btn-' + catIdx + '-' + i;
+                        cell.textContent = q.price;
+                    } else {
+                        cell.className = 'cell';
+                    }
+                    board.appendChild(cell);
+                });
+            }
+        })();
+
+        // Слушаем сообщения от админки
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || !data.type) return;
+            if (data.type === 'OPEN_QUESTION') {
+                if (data.btnId) {
+                    const cell = document.getElementById('client-' + data.btnId);
+                    if (cell) {
+                        // Гарантируем, что transition сработает
+                        requestAnimationFrame(() => {
+                            cell.classList.add('used');
+                        });
+                    }
+                }
+                const qElem = document.getElementById('modal-question');
+                const aElem = document.getElementById('modal-answer');
+                aElem.classList.remove('visible');
+                aElem.innerText = "";
+                qElem.innerText = data.question;
+                renderMathIn(qElem);
+                document.getElementById('modal').classList.add('active');
+                startClientTimer(data.timerSeconds);
+            } else if (data.type === 'SHOW_ANSWER') {
+                const aElem = document.getElementById('modal-answer');
+                aElem.innerText = "Ответ: " + data.answer;
+                aElem.classList.add('visible');
+                renderMathIn(aElem);
+            } else if (data.type === 'CLOSE_MODAL') {
+                document.getElementById('modal').classList.remove('active');
+                stopClientTimer();
+            }
+        });
+
+        function startClientTimer(secs) {
+            stopClientTimer();
+            let left = secs;
+            const banner = document.getElementById('timer-banner');
+            const text = document.getElementById('timer-text');
+            banner.classList.remove('warning');
+            banner.classList.add('active');
+            text.innerText = formatTime(left);
+            clientTimerInterval = setInterval(() => {
+                left--;
+                text.innerText = formatTime(left);
+                if (left <= 10 && left > 0) banner.classList.add('warning');
+                if (left <= 0) { stopClientTimer(); text.innerText = "00:00"; }
+            }, 1000);
+        }
+        function stopClientTimer() {
+            if (clientTimerInterval) { clearInterval(clientTimerInterval); clientTimerInterval = null; }
+            document.getElementById('timer-banner').classList.remove('active', 'warning');
+        }
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return (m < 10 ? '0' + m : m) + ':' + (sec < 10 ? '0' + sec : sec);
+        }
+    <\/script>
+</body>
+</html>`;
+        }
+
+        function openPresenterWindow() {
+            const html = buildPresenterHtml();
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            if (presenterWin && !presenterWin.closed) {
+                if (presenterUrl) URL.revokeObjectURL(presenterUrl);
+                presenterUrl = url;
+                presenterWin.location.href = url;
+                presenterWin.focus();
+            } else {
+                presenterWin = window.open(url, 'PresenterWindow', 'width=1024,height=768');
+                if (!presenterWin) {
+                    alert('Не удалось открыть окно проектора. Разрешите всплывающие окна для этой страницы.');
+                    return;
+                }
+                presenterUrl = url;
+            }
+
+            const gate = document.getElementById('gate-overlay');
+            if (gate) gate.style.display = 'none';
+        }
+
+        
+        function initParticles() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            for (let i = 0; i < 25; i++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                const size = Math.floor(Math.random() * 3) + 2;
+                pixel.style.width = size + 'px';
+                pixel.style.height = size + 'px';
+                pixel.style.left = Math.random() * 100 + '%';
+                pixel.style.top = Math.random() * 100 + '%';
+                pixel.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
+                pixel.style.setProperty('--dy', -(Math.random() * 40 + 10) + 'px');
+                pixel.style.animationDuration = (Math.random() * 4 + 3) + 's';
+                pixel.style.animationDelay = (Math.random() * 5) + 's';
+                container.appendChild(pixel);
+            }
+        }
+        initParticles();
+        
+
+        function renderMathIn(element) {
+            
+            if (window.renderMathInElement) {
+                renderMathInElement(element, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\\\(', right: '\\\\)', display: false},
+                        {left: '\\\\[', right: '\\\\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            }
+            
+        }
+
+        function formatTimeDisplay(secs) {
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            const mm = m < 10 ? '0' + m : m;
+            const ss = s < 10 ? '0' + s : s;
+            return mm + ':' + ss;
+        }
+
+        function startTimer() {
+            stopTimer();
+            timeLeft = initialTime;
+            const timerBanner = document.getElementById('timer-banner');
+            const timerText = document.getElementById('timer-text');
+            timerBanner.classList.remove('warning');
+            timerBanner.classList.add('active');
+            timerText.innerText = formatTimeDisplay(timeLeft);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = formatTimeDisplay(timeLeft);
+                if (timeLeft <= 10 && timeLeft > 0) timerBanner.classList.add('warning');
+                if (timeLeft <= 0) { stopTimer(); timerText.innerText = "00:00"; }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            const timerBanner = document.getElementById('timer-banner');
+            if (timerBanner) timerBanner.classList.remove('active', 'warning');
+        }
+
+        function openModal(question, answer, btnId) {
+            currentBtnId = btnId;
+            const questionElem = document.getElementById('modal-question');
+            const answerTextElem = document.getElementById('answer-text');
+            questionElem.innerText = question;
+            answerTextElem.innerText = answer;
+            renderMathIn(questionElem);
+            renderMathIn(answerTextElem);
+            document.getElementById('modal').classList.add('active');
+            startTimer();
+            sendToPresenter({
+                type: 'OPEN_QUESTION',
+                question: question,
+                timerSeconds: initialTime,
+                btnId: btnId
+            });
+        }
+
+        function broadcastAnswer() {
+            const answerText = document.getElementById('answer-text').innerText;
+            sendToPresenter({ type: 'SHOW_ANSWER', answer: answerText });
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            stopTimer();
+            if (currentBtnId) {
+                const btn = document.getElementById(currentBtnId);
+                if (btn) btn.classList.add('used');
+            }
+            sendToPresenter({ type: 'CLOSE_MODAL' });
+        }
+    </script>
+</body>
+</html>
