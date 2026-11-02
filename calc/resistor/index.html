@@ -1,0 +1,2135 @@
+<!doctype html>
+<html lang="ru" class="scroll-smooth">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Цветовой калькулятор резисторов — Lemon Style</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /* ============================================================
+     Lemon UI Kit — базовые токены
+     ============================================================ */
+            :root {
+                --lemon-yellow: #ffd700;
+                --deep-orange: #ff8c00;
+                --dark-bg: #050200;
+                --card-bg: rgba(20, 10, 5, 0.45);
+                --card-bg-hover: rgba(30, 15, 5, 0.55);
+                --grid-line: rgba(255, 255, 255, 0.028);
+                --grid-size: 48px;
+
+                --accent: var(--lemon-yellow);
+                --accent-2: var(--deep-orange);
+                --accent-soft: rgba(255, 215, 0, 0.12);
+                --accent-border: rgba(251, 191, 36, 0.3);
+
+                --text: #fff7ed;
+                --text-soft: rgba(255, 237, 213, 0.7);
+                --text-mute: rgba(255, 237, 213, 0.5);
+                --border-soft: rgba(255, 255, 255, 0.08);
+                --border-strong: rgba(255, 255, 255, 0.16);
+
+                --danger: #f87171;
+                --danger-bg: rgba(239, 68, 68, 0.14);
+                --danger-border: rgba(239, 68, 68, 0.4);
+
+                --ok: #34d399;
+
+                --resistor-body: #d9c9a3;
+                --resistor-edge: #b8a67d;
+                --lead: #8b8f96;
+
+                --radius-xl: 24px;
+                --radius-lg: 18px;
+                --radius-md: 12px;
+                --radius-sm: 8px;
+
+                --font:
+                    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+                    sans-serif;
+                --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+                --shadow-card: 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+                --shadow-glow: 0 0 24px rgba(255, 215, 0, 0.25);
+            }
+            [data-accent='orange'] {
+                --accent: #ff8c00;
+                --accent-2: #ffb347;
+                --accent-soft: rgba(255, 140, 0, 0.14);
+                --accent-border: rgba(255, 140, 0, 0.35);
+                --shadow-glow: 0 0 24px rgba(255, 140, 0, 0.3);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: var(--font);
+                background: var(--dark-bg);
+                color: var(--text);
+                min-height: 100vh;
+                overflow-x: hidden;
+                -webkit-font-smoothing: antialiased;
+                position: relative;
+            }
+
+            @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+                * {
+                    cursor: none !important;
+                }
+            }
+
+            /* ============================================================
+     ФОН: сетка / пиксели / виньетка / noise
+     ============================================================ */
+            .bg-grid {
+                position: fixed;
+                inset: 0;
+                z-index: 0;
+                pointer-events: none;
+                background-color: var(--dark-bg);
+                background-image:
+                    linear-gradient(var(--grid-line) 1px, transparent 1px),
+                    linear-gradient(
+                        90deg,
+                        var(--grid-line) 1px,
+                        transparent 1px
+                    );
+                background-size: var(--grid-size) var(--grid-size);
+                background-position: -1px -1px;
+                -webkit-mask-image: radial-gradient(
+                    circle at 50% 45%,
+                    #000 30%,
+                    transparent 92%
+                );
+                mask-image: radial-gradient(
+                    circle at 50% 45%,
+                    #000 30%,
+                    transparent 92%
+                );
+            }
+            .bg-grid::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background:
+                    radial-gradient(
+                        circle at 50% 35%,
+                        rgba(255, 170, 40, 0.07) 0%,
+                        transparent 55%
+                    ),
+                    radial-gradient(
+                        circle at 50% 50%,
+                        transparent 35%,
+                        rgba(0, 0, 0, 0.85) 100%
+                    );
+                pointer-events: none;
+            }
+            .bg-particles {
+                position: fixed;
+                inset: 0;
+                z-index: 1;
+                pointer-events: none;
+                overflow: hidden;
+            }
+            .pixel {
+                position: absolute;
+                display: block;
+                background: rgba(255, 210, 90, 0.9);
+                border-radius: 1px;
+                box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+                animation: pixel-drift ease-in-out infinite alternate;
+                transform: translate3d(0, 0, 0);
+                will-change: transform;
+            }
+            @keyframes pixel-drift {
+                0% {
+                    transform: translate3d(0, 0, 0);
+                }
+                100% {
+                    transform: translate3d(
+                        var(--dx, 18px),
+                        var(--dy, -26px),
+                        0
+                    );
+                }
+            }
+            .vignette {
+                position: fixed;
+                inset: 0;
+                z-index: 2;
+                pointer-events: none;
+                background: radial-gradient(
+                    circle,
+                    transparent 45%,
+                    rgba(0, 0, 0, 0.75) 100%
+                );
+            }
+            .noise::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                opacity: 0.025;
+                z-index: 3;
+                pointer-events: none;
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            }
+            .ripple-obj {
+                position: fixed;
+                background: rgba(250, 204, 21, 0.28);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple-anim 0.8s ease-out forwards;
+                pointer-events: none;
+                z-index: 20;
+            }
+            @keyframes ripple-anim {
+                to {
+                    transform: scale(8);
+                    opacity: 0;
+                }
+            }
+
+            /* Кастомный курсор */
+            #custom-cursor {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+                z-index: 9999;
+                display: none;
+                will-change: transform;
+                transform: translate3d(-100px, -100px, 0);
+            }
+            .cursor-inner {
+                width: 100%;
+                height: 100%;
+                background: var(--accent-soft);
+                border: 1px solid var(--accent);
+                border-radius: 50%;
+                transition:
+                    transform 0.2s ease-out,
+                    background 0.3s ease,
+                    border 0.3s ease;
+            }
+            .cursor-hover .cursor-inner {
+                transform: scale(2.5);
+                background: rgba(255, 215, 0, 0.1);
+                border-color: #fff;
+            }
+
+            .scroll-progress {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 0%;
+                height: 3px;
+                background: linear-gradient(
+                    90deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                z-index: 90;
+                transition: width 0.1s linear;
+            }
+
+            /* ============================================================
+     Стекло
+     ============================================================ */
+            .glass-nav {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                background: rgba(8, 4, 2, 0.55);
+                backdrop-filter: blur(24px) saturate(180%);
+                -webkit-backdrop-filter: blur(24px) saturate(180%);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                box-shadow:
+                    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                    0 8px 32px rgba(0, 0, 0, 0.35);
+            }
+            .glass-card {
+                background: var(--card-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid var(--accent-border);
+                transition:
+                    transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                    border-color 0.4s ease,
+                    background 0.4s ease,
+                    box-shadow 0.4s ease;
+                position: relative;
+            }
+            .glass-card-hover:hover {
+                transform: translateY(-4px);
+                border-color: var(--accent-border);
+                box-shadow: var(--shadow-card);
+                background: var(--card-bg-hover);
+            }
+            .glass-input {
+                background: rgba(15, 8, 3, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: #fff;
+                transition: all 0.3s ease;
+            }
+            .glass-input:focus {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+                background: rgba(25, 12, 5, 0.8);
+            }
+
+            .gradient-text {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent) 10%,
+                    var(--accent-2) 90%
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: var(--dark-bg);
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #2d1a05;
+                border-radius: 10px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--accent-2);
+            }
+
+            /* ============================================================
+     Layout
+     ============================================================ */
+            .content-wrapper {
+                position: relative;
+                z-index: 10;
+            }
+            .app {
+                max-width: 860px;
+                margin: 0 auto;
+                padding: 0 20px 64px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            /* Шапка страницы */
+            .page-header {
+                text-align: center;
+                padding: 56px 0 8px;
+            }
+            .page-header h1 {
+                font-size: clamp(1.75rem, 5vw, 3rem);
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                margin: 0 0 10px;
+                color: #fff;
+                line-height: 1.1;
+            }
+            .page-header p {
+                color: var(--text-soft);
+                font-size: 0.95rem;
+                font-weight: 300;
+                max-width: 560px;
+                margin: 0 auto;
+                line-height: 1.55;
+            }
+
+            /* Вкладки режимов */
+            .tabs {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+                padding: 6px;
+                background: rgba(0, 0, 0, 0.4);
+                border: 1px solid var(--border-soft);
+                border-radius: 18px;
+            }
+            .tab {
+                border: none;
+                background: transparent;
+                color: var(--text-soft);
+                font: inherit;
+                font-size: 0.82rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                padding: 12px 8px;
+                border-radius: 13px;
+                cursor: pointer;
+                transition:
+                    background 0.25s,
+                    color 0.25s,
+                    box-shadow 0.25s;
+            }
+            .tab[aria-selected='true'] {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                color: #0b0803;
+                box-shadow: 0 0 20px rgba(255, 200, 50, 0.3);
+            }
+            .tab:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 3px;
+            }
+
+            /* ============================================================
+     Резистор
+     ============================================================ */
+            .resistor-card {
+                background: var(--card-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid var(--border-soft);
+                border-radius: var(--radius-xl);
+                padding: 26px 22px 20px;
+                box-shadow: var(--shadow-card);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+            }
+            .resistor-wrap {
+                width: 100%;
+                max-width: 580px;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .resistor {
+                position: relative;
+                display: flex;
+                align-items: center;
+                width: 100%;
+                height: 118px;
+                padding: 0 18px;
+            }
+            .lead {
+                flex: 1 1 auto;
+                height: 6px;
+                background: linear-gradient(180deg, #9aa0a8, #5a5f66);
+                border-radius: 3px;
+                min-width: 24px;
+                box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+            }
+            .body {
+                position: relative;
+                flex: 0 0 auto;
+                width: min(74%, 380px);
+                height: 98px;
+                border-radius: 50px / 42px;
+                background:
+                    radial-gradient(
+                        ellipse at 30% 20%,
+                        rgba(255, 255, 255, 0.5),
+                        transparent 55%
+                    ),
+                    linear-gradient(
+                        180deg,
+                        color-mix(in srgb, var(--resistor-body) 100%, #fff 22%)
+                            0%,
+                        var(--resistor-body) 28%,
+                        color-mix(in srgb, var(--resistor-body) 88%, #000 12%)
+                            62%,
+                        color-mix(in srgb, var(--resistor-body) 78%, #000 22%)
+                            100%
+                    );
+                border: 1px solid var(--resistor-edge);
+                box-shadow:
+                    inset 0 12px 16px -8px rgba(255, 255, 255, 0.5),
+                    inset 0 -14px 20px -8px rgba(0, 0, 0, 0.45),
+                    0 18px 40px -12px rgba(0, 0, 0, 0.75),
+                    0 0 0 1px rgba(255, 255, 255, 0.05);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: clamp(6px, 2.2vw, 14px);
+                padding: 0 clamp(14px, 4vw, 28px);
+                overflow: hidden;
+            }
+            .body::after {
+                content: '';
+                position: absolute;
+                top: 8px;
+                left: 14%;
+                width: 72%;
+                height: 28%;
+                border-radius: 50%;
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.45),
+                    transparent
+                );
+                pointer-events: none;
+            }
+            .band {
+                position: relative;
+                flex: 0 0 auto;
+                width: clamp(17px, 4.4vw, 24px);
+                height: 100%;
+                border: none;
+                padding: 0;
+                border-radius: 5px;
+                cursor: pointer;
+                background-color: var(--band-color, #333);
+                box-shadow:
+                    inset 2px 0 3px rgba(255, 255, 255, 0.35),
+                    inset -2px 0 4px rgba(0, 0, 0, 0.45),
+                    0 2px 4px rgba(0, 0, 0, 0.3);
+                transition:
+                    transform 0.18s,
+                    box-shadow 0.18s,
+                    background-color 0.3s;
+            }
+            .band::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: linear-gradient(
+                    90deg,
+                    rgba(255, 255, 255, 0.32) 0%,
+                    rgba(255, 255, 255, 0.06) 30%,
+                    rgba(0, 0, 0, 0.1) 65%,
+                    rgba(0, 0, 0, 0.35) 100%
+                );
+                pointer-events: none;
+            }
+            .band:hover {
+                transform: scaleY(1.06);
+            }
+            .band:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 4px;
+            }
+            .band.selected {
+                transform: scaleY(1.06);
+                box-shadow:
+                    inset 2px 0 3px rgba(255, 255, 255, 0.35),
+                    inset -2px 0 4px rgba(0, 0, 0, 0.45),
+                    0 0 0 3px var(--accent),
+                    0 0 18px rgba(255, 215, 0, 0.45);
+            }
+            .band.invalid {
+                animation: bandPulse 1s ease-in-out infinite;
+            }
+            @keyframes bandPulse {
+                0%,
+                100% {
+                    box-shadow:
+                        inset 2px 0 3px rgba(255, 255, 255, 0.35),
+                        inset -2px 0 4px rgba(0, 0, 0, 0.45),
+                        0 0 0 3px var(--danger);
+                }
+                50% {
+                    box-shadow:
+                        inset 2px 0 3px rgba(255, 255, 255, 0.35),
+                        inset -2px 0 4px rgba(0, 0, 0, 0.45),
+                        0 0 0 7px rgba(239, 68, 68, 0.35);
+                }
+            }
+
+            .band-hint {
+                font-size: 0.78rem;
+                color: var(--text-mute);
+                text-align: center;
+                margin: 0;
+                line-height: 1.4;
+                font-family: var(--mono);
+                letter-spacing: 0.02em;
+            }
+
+            /* ============================================================
+     Палитра
+     ============================================================ */
+            .palette {
+                position: absolute;
+                z-index: 50;
+                background: rgba(18, 10, 4, 0.92);
+                backdrop-filter: blur(24px) saturate(180%);
+                -webkit-backdrop-filter: blur(24px) saturate(180%);
+                border: 1px solid var(--accent-border);
+                border-radius: var(--radius-lg);
+                box-shadow:
+                    0 24px 60px -20px rgba(0, 0, 0, 0.85),
+                    0 0 0 1px rgba(255, 215, 0, 0.05);
+                padding: 14px;
+                width: min(94vw, 340px);
+                display: none;
+                animation: pop 0.16s ease-out;
+            }
+            .palette.open {
+                display: block;
+            }
+            @keyframes pop {
+                from {
+                    opacity: 0;
+                    transform: translateY(6px) scale(0.97);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            .palette-title {
+                font-size: 0.72rem;
+                font-weight: 700;
+                color: var(--accent);
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                margin: 0 0 12px 2px;
+                font-family: var(--mono);
+            }
+            .swatches {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+                gap: 8px;
+            }
+            .swatch {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+                border: 2px solid transparent;
+                background: transparent;
+                border-radius: var(--radius-md);
+                padding: 8px 2px 7px;
+                cursor: pointer;
+                color: var(--text);
+                font: inherit;
+                transition:
+                    background 0.15s,
+                    border-color 0.15s;
+            }
+            .swatch:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            .swatch:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .swatch[aria-checked='true'] {
+                border-color: var(--accent);
+                background: var(--accent-soft);
+                box-shadow: 0 0 16px rgba(255, 215, 0, 0.15);
+            }
+            .swatch-dot {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                border: 1px solid rgba(0, 0, 0, 0.25);
+                box-shadow:
+                    inset 0 2px 5px rgba(255, 255, 255, 0.45),
+                    inset 0 -2px 5px rgba(0, 0, 0, 0.35),
+                    0 2px 6px rgba(0, 0, 0, 0.5);
+            }
+            .swatch-label {
+                font-size: 0.66rem;
+                line-height: 1.15;
+                text-align: center;
+                color: var(--text-soft);
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* ============================================================
+     Селекты
+     ============================================================ */
+            .selects {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 12px;
+                width: 100%;
+                max-width: 660px;
+            }
+            .select-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .select-group label {
+                font-size: 0.68rem;
+                font-weight: 600;
+                color: var(--accent-2);
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                padding-left: 2px;
+                font-family: var(--mono);
+            }
+            select {
+                width: 100%;
+                font: inherit;
+                font-size: 0.85rem;
+                color: #fff;
+                background: rgba(15, 8, 3, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: var(--radius-md);
+                padding: 11px 12px;
+                cursor: pointer;
+                transition:
+                    border-color 0.2s,
+                    background 0.2s,
+                    box-shadow 0.2s;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffd700' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                padding-right: 34px;
+            }
+            select:hover {
+                border-color: var(--accent);
+            }
+            select:focus-visible {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+            }
+            select.invalid {
+                border-color: var(--danger);
+                background-color: var(--danger-bg);
+            }
+            select option {
+                background: #150b04;
+                color: #fff;
+            }
+
+            /* ============================================================
+     Кнопки
+     ============================================================ */
+            .actions {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .btn {
+                font: inherit;
+                font-size: 0.85rem;
+                font-weight: 700;
+                padding: 12px 20px;
+                border-radius: var(--radius-md);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--text);
+                cursor: pointer;
+                transition:
+                    background 0.2s,
+                    border-color 0.2s,
+                    transform 0.1s,
+                    box-shadow 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .btn:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border-color: var(--accent);
+            }
+            .btn:active {
+                transform: scale(0.97);
+            }
+            .btn:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .btn.primary {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent),
+                    var(--accent-2)
+                );
+                border-color: transparent;
+                color: #0b0803;
+                box-shadow: var(--shadow-glow);
+            }
+            .btn.primary:hover {
+                filter: brightness(1.08);
+                box-shadow: 0 0 32px rgba(255, 200, 50, 0.5);
+            }
+
+            /* ============================================================
+     Результат
+     ============================================================ */
+            .result-card {
+                background: var(--card-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid var(--border-soft);
+                border-radius: var(--radius-xl);
+                padding: 26px 22px;
+                box-shadow: var(--shadow-card);
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                position: relative;
+                overflow: hidden;
+                transition:
+                    border-color 0.3s,
+                    box-shadow 0.3s;
+            }
+            .result-card::before {
+                content: '';
+                position: absolute;
+                top: -40%;
+                right: -20%;
+                width: 260px;
+                height: 260px;
+                border-radius: 50%;
+                background: radial-gradient(
+                    circle,
+                    rgba(255, 200, 50, 0.14),
+                    transparent 70%
+                );
+                pointer-events: none;
+            }
+            .result-card.error {
+                border-color: var(--danger-border);
+                box-shadow:
+                    0 0 0 1px var(--danger-border),
+                    var(--shadow-card);
+            }
+            .result-main {
+                display: flex;
+                align-items: baseline;
+                flex-wrap: wrap;
+                gap: 10px 14px;
+                animation: fadeUp 0.35s ease-out;
+            }
+            @keyframes fadeUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(8px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .result-value {
+                font-size: clamp(2.25rem, 9vw, 3.5rem);
+                font-weight: 900;
+                letter-spacing: -0.04em;
+                line-height: 1;
+                font-variant-numeric: tabular-nums;
+                background: linear-gradient(
+                    135deg,
+                    var(--accent) 10%,
+                    var(--accent-2) 90%
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .result-unit {
+                font-size: clamp(1.1rem, 4vw, 1.6rem);
+                font-weight: 800;
+                color: var(--accent);
+            }
+            .copy-btn {
+                margin-left: auto;
+                border: 1px dashed var(--border-strong);
+                background: transparent;
+                color: var(--text-mute);
+                font: inherit;
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                padding: 8px 14px;
+                border-radius: 999px;
+                cursor: pointer;
+                transition:
+                    color 0.2s,
+                    border-color 0.2s,
+                    background 0.2s;
+            }
+            .copy-btn:hover {
+                color: var(--accent);
+                border-color: var(--accent);
+                background: var(--accent-soft);
+            }
+            .copy-btn:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+            .copy-btn.copied {
+                color: var(--ok);
+                border-color: var(--ok);
+            }
+
+            .result-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 12px 20px;
+                border-top: 1px solid var(--border-soft);
+                padding-top: 16px;
+            }
+            .result-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                min-width: 0;
+            }
+            .result-item .k {
+                font-size: 0.66rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: var(--text-mute);
+                font-family: var(--mono);
+            }
+            .result-item .v {
+                font-size: 0.95rem;
+                font-weight: 600;
+                font-variant-numeric: tabular-nums;
+                word-break: break-word;
+                color: #fff;
+            }
+            .result-item .v.mono {
+                font-family: var(--mono);
+                font-size: 0.88rem;
+                color: var(--accent);
+            }
+            .error-msg {
+                color: var(--danger);
+                font-size: 0.875rem;
+                font-weight: 600;
+                display: none;
+                font-family: var(--mono);
+            }
+            .result-card.error .error-msg {
+                display: block;
+            }
+
+            /* Бейджи в шапке */
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                font-size: 0.68rem;
+                font-weight: 700;
+                font-family: var(--mono);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .badge-yellow {
+                background: var(--accent-soft);
+                color: var(--accent);
+                border: 1px solid var(--accent-border);
+            }
+            .badge-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--accent);
+                box-shadow: 0 0 8px var(--accent);
+                animation: pulse-dot 2s ease-in-out infinite;
+            }
+            @keyframes pulse-dot {
+                50% {
+                    opacity: 0.4;
+                }
+            }
+
+            .sr-only {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+
+            /* ============================================================
+     Мобильная адаптация
+     ============================================================ */
+            @media (max-width: 480px) {
+                .app {
+                    padding: 0 12px 48px;
+                    gap: 16px;
+                }
+                .page-header {
+                    padding: 40px 0 4px;
+                }
+                .resistor {
+                    height: 96px;
+                }
+                .body {
+                    height: 80px;
+                }
+                .resistor-card {
+                    padding: 18px 12px 14px;
+                }
+                .palette {
+                    width: min(96vw, 340px);
+                    padding: 12px;
+                }
+                .swatches {
+                    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+                    gap: 6px;
+                }
+                .swatch-dot {
+                    width: 28px;
+                    height: 28px;
+                }
+                .result-card {
+                    padding: 20px 16px;
+                }
+                .selects {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.001ms !important;
+                    transition-duration: 0.001ms !important;
+                }
+            }
+        </style>
+    </head>
+    <body class="noise">
+        <!-- Кастомный курсор -->
+        <div id="custom-cursor" aria-hidden="true">
+            <div class="cursor-inner"></div>
+        </div>
+
+        <!-- Фон -->
+        <div class="bg-grid" aria-hidden="true"></div>
+        <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+        <div class="vignette" aria-hidden="true"></div>
+
+        <!-- Прогресс скролла -->
+        <div class="scroll-progress" id="scroll-bar"></div>
+
+        <div class="content-wrapper">
+            <!-- Навигация -->
+            <nav class="glass-nav">
+                <div
+                    style="
+                        max-width: 1100px;
+                        margin: 0 auto;
+                        padding: 16px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 12px;
+                    "
+                >
+                    <div
+                        style="
+                            font-family: var(--mono);
+                            font-weight: 700;
+                            letter-spacing: -0.02em;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                        "
+                    >
+                        <span class="gradient-text">Resistor Calc</span>
+                    </div>
+                    <div
+                        style="
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            flex-wrap: wrap;
+                            justify-content: flex-end;
+                        "
+                    ></div>
+                </div>
+            </nav>
+
+            <div class="app">
+                <!-- Заголовок -->
+                <header class="page-header">
+                    <h1>
+                        Цветовой калькулятор
+                        <span class="gradient-text">резисторов</span>
+                    </h1>
+                    <p>
+                        Выбирайте цвета полос прямо на корпусе — сопротивление,
+                        допуск и ТКС пересчитываются мгновенно.
+                    </p>
+                </header>
+
+                <!-- Вкладки режимов -->
+                <div class="tabs" role="tablist" aria-label="Количество полос">
+                    <button
+                        class="tab"
+                        role="tab"
+                        id="tab-4"
+                        aria-selected="true"
+                        aria-controls="panel"
+                        data-bands="4"
+                    >
+                        4 полосы
+                    </button>
+                    <button
+                        class="tab"
+                        role="tab"
+                        id="tab-5"
+                        aria-selected="false"
+                        aria-controls="panel"
+                        data-bands="5"
+                    >
+                        5 полос
+                    </button>
+                    <button
+                        class="tab"
+                        role="tab"
+                        id="tab-6"
+                        aria-selected="false"
+                        aria-controls="panel"
+                        data-bands="6"
+                    >
+                        6 полос
+                    </button>
+                </div>
+
+                <!-- Резистор -->
+                <section
+                    class="resistor-card"
+                    id="panel"
+                    role="tabpanel"
+                    aria-live="polite"
+                >
+                    <div class="resistor-wrap" id="resistorWrap">
+                        <div
+                            class="resistor"
+                            id="resistor"
+                            aria-label="Резистор с цветными полосами"
+                        >
+                            <span class="lead" aria-hidden="true"></span>
+                            <div class="body" id="body"></div>
+                            <span class="lead" aria-hidden="true"></span>
+                        </div>
+                        <div
+                            class="palette"
+                            id="palette"
+                            role="dialog"
+                            aria-label="Выбор цвета полосы"
+                        ></div>
+                    </div>
+                    <p class="band-hint">
+                        // клик по полосе или выбор в списке ниже
+                    </p>
+                    <div class="selects" id="selects"></div>
+                    <div class="actions">
+                        <button
+                            class="btn primary"
+                            id="randomBtn"
+                            type="button"
+                        >
+                            🎲 Случайный резистор
+                        </button>
+                        <button class="btn" id="resetBtn" type="button">
+                            ↺ Сброс
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Результат -->
+                <section class="result-card" id="resultCard" aria-live="polite">
+                    <div class="result-main">
+                        <span class="result-value" id="resultValue">—</span>
+                        <span class="result-unit" id="resultUnit"></span>
+                        <button
+                            class="copy-btn"
+                            id="copyBtn"
+                            type="button"
+                            aria-label="Скопировать результат"
+                        >
+                            Копировать
+                        </button>
+                    </div>
+                    <div class="result-grid" id="resultGrid"></div>
+                    <div class="error-msg" id="errorMsg"></div>
+                </section>
+            </div>
+        </div>
+
+        <script>
+            'use strict';
+
+            /* ============================================================
+   1. СПРАВОЧНИК ЦВЕТОВ (IEC 60062)
+   ============================================================ */
+            const COLORS = {
+                black: {
+                    id: 'black',
+                    name: 'Чёрный',
+                    hex: '#141414',
+                    digit: 0,
+                    mult: 0,
+                    tol: null,
+                    tcr: 250,
+                },
+                brown: {
+                    id: 'brown',
+                    name: 'Коричневый',
+                    hex: '#7c4a1e',
+                    digit: 1,
+                    mult: 1,
+                    tol: 1,
+                    tcr: 100,
+                },
+                red: {
+                    id: 'red',
+                    name: 'Красный',
+                    hex: '#c8281e',
+                    digit: 2,
+                    mult: 2,
+                    tol: 2,
+                    tcr: 50,
+                },
+                orange: {
+                    id: 'orange',
+                    name: 'Оранжевый',
+                    hex: '#e8721c',
+                    digit: 3,
+                    mult: 3,
+                    tol: null,
+                    tcr: 15,
+                },
+                yellow: {
+                    id: 'yellow',
+                    name: 'Жёлтый',
+                    hex: '#e8c81e',
+                    digit: 4,
+                    mult: 4,
+                    tol: null,
+                    tcr: 25,
+                },
+                green: {
+                    id: 'green',
+                    name: 'Зелёный',
+                    hex: '#2c8a3e',
+                    digit: 5,
+                    mult: 5,
+                    tol: 0.5,
+                    tcr: 20,
+                },
+                blue: {
+                    id: 'blue',
+                    name: 'Синий',
+                    hex: '#1e56b0',
+                    digit: 6,
+                    mult: 6,
+                    tol: 0.25,
+                    tcr: 10,
+                },
+                violet: {
+                    id: 'violet',
+                    name: 'Фиолетовый',
+                    hex: '#7a2c9e',
+                    digit: 7,
+                    mult: 7,
+                    tol: 0.1,
+                    tcr: 5,
+                },
+                grey: {
+                    id: 'grey',
+                    name: 'Серый',
+                    hex: '#8a8a8a',
+                    digit: 8,
+                    mult: 8,
+                    tol: 0.05,
+                    tcr: null,
+                },
+                white: {
+                    id: 'white',
+                    name: 'Белый',
+                    hex: '#f2f2f2',
+                    digit: 9,
+                    mult: 9,
+                    tol: null,
+                    tcr: null,
+                },
+                gold: {
+                    id: 'gold',
+                    name: 'Золотой',
+                    hex: '#c9a227',
+                    digit: null,
+                    mult: -1,
+                    tol: 5,
+                    tcr: null,
+                },
+                silver: {
+                    id: 'silver',
+                    name: 'Серебряный',
+                    hex: '#c0c0c0',
+                    digit: null,
+                    mult: -2,
+                    tol: 10,
+                    tcr: null,
+                },
+            };
+
+            const ALLOWED = {
+                4: [
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                        'gold',
+                        'silver',
+                    ],
+                    [
+                        'brown',
+                        'red',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'gold',
+                        'silver',
+                    ],
+                ],
+                5: [
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                        'gold',
+                        'silver',
+                    ],
+                    [
+                        'brown',
+                        'red',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'gold',
+                        'silver',
+                    ],
+                ],
+                6: [
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                    ],
+                    [
+                        'black',
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'white',
+                        'gold',
+                        'silver',
+                    ],
+                    [
+                        'brown',
+                        'red',
+                        'green',
+                        'blue',
+                        'violet',
+                        'grey',
+                        'gold',
+                        'silver',
+                    ],
+                    [
+                        'brown',
+                        'red',
+                        'orange',
+                        'yellow',
+                        'green',
+                        'blue',
+                        'violet',
+                    ],
+                ],
+            };
+
+            const POSITION_LABELS = {
+                4: ['1-я цифра', '2-я цифра', 'Множитель', 'Допуск'],
+                5: [
+                    '1-я цифра',
+                    '2-я цифра',
+                    '3-я цифра',
+                    'Множитель',
+                    'Допуск',
+                ],
+                6: [
+                    '1-я цифра',
+                    '2-я цифра',
+                    '3-я цифра',
+                    'Множитель',
+                    'Допуск',
+                    'ТКС',
+                ],
+            };
+
+            const DEFAULTS = {
+                4: ['brown', 'black', 'red', 'gold'],
+                5: ['brown', 'black', 'black', 'brown', 'brown'],
+                6: ['brown', 'black', 'black', 'brown', 'brown', 'brown'],
+            };
+
+            /* ============================================================
+   2. СОСТОЯНИЕ
+   ============================================================ */
+            const state = {
+                bands: 4,
+                colors: [...DEFAULTS[4]],
+                activeBand: null,
+                accent: 'yellow',
+            };
+
+            /* ============================================================
+   3. РАСЧЁТ
+   ============================================================ */
+            function calculate(colors, bandCount) {
+                const allowed = ALLOWED[bandCount];
+                if (colors.length !== bandCount) {
+                    return { valid: false, error: 'Неверное число полос' };
+                }
+                for (let i = 0; i < bandCount; i++) {
+                    const c = COLORS[colors[i]];
+                    if (!c || !allowed[i].includes(colors[i])) {
+                        return {
+                            valid: false,
+                            error: `Недопустимый цвет в позиции ${i + 1} (${POSITION_LABELS[bandCount][i]})`,
+                        };
+                    }
+                }
+
+                const digitCount = bandCount === 4 ? 2 : 3;
+                const multIdx = digitCount;
+                const tolIdx = multIdx + 1;
+                const tcrIdx = tolIdx + 1;
+
+                let digits = 0;
+                for (let i = 0; i < digitCount; i++) {
+                    const d = COLORS[colors[i]].digit;
+                    if (d === null)
+                        return {
+                            valid: false,
+                            error: `Цвет в позиции ${i + 1} не является цифрой`,
+                        };
+                    digits = digits * 10 + d;
+                }
+
+                const multColor = COLORS[colors[multIdx]];
+                if (multColor.mult === undefined || multColor.mult === null) {
+                    return {
+                        valid: false,
+                        error: 'Недопустимый цвет множителя',
+                    };
+                }
+                const multiplier = Math.pow(10, multColor.mult);
+                const ohms = digits * multiplier;
+
+                const tolColor = COLORS[colors[tolIdx]];
+                const tolerance = tolColor.tol;
+                if (tolerance === null || tolerance === undefined) {
+                    return { valid: false, error: 'Недопустимый цвет допуска' };
+                }
+
+                let tcr = null;
+                if (bandCount === 6) {
+                    tcr = COLORS[colors[tcrIdx]].tcr;
+                    if (tcr === null || tcr === undefined) {
+                        return { valid: false, error: 'Недопустимый цвет ТКС' };
+                    }
+                }
+
+                return {
+                    valid: true,
+                    ohms,
+                    tolerance,
+                    tcr,
+                    digits,
+                    multiplier,
+                };
+            }
+
+            function formatResistance(ohms) {
+                if (!isFinite(ohms) || ohms < 0)
+                    return { value: '—', unit: '' };
+                if (ohms === 0) return { value: '0', unit: 'Ом' };
+
+                const units = [
+                    { limit: 1e9, divisor: 1e9, unit: 'ГОм' },
+                    { limit: 1e6, divisor: 1e6, unit: 'МОм' },
+                    { limit: 1e3, divisor: 1e3, unit: 'кОм' },
+                    { limit: 1, divisor: 1, unit: 'Ом' },
+                ];
+                for (const u of units) {
+                    if (ohms >= u.limit) {
+                        const raw = ohms / u.divisor;
+                        const rounded = Math.round(raw * 1000) / 1000;
+                        let str = String(rounded);
+                        if (str.includes('.')) str = str.replace(/\.?0+$/, '');
+                        str = str.replace('.', ',');
+                        return { value: str, unit: u.unit };
+                    }
+                }
+                return { value: String(ohms), unit: 'Ом' };
+            }
+
+            function formatExactOhms(ohms) {
+                if (!isFinite(ohms)) return '—';
+                if (Number.isInteger(ohms))
+                    return ohms.toLocaleString('ru-RU') + ' Ом';
+                return (
+                    ohms
+                        .toFixed(4)
+                        .replace(/\.?0+$/, '')
+                        .replace('.', ',') + ' Ом'
+                );
+            }
+
+            function applyTolerance(ohms, tolerancePercent) {
+                const delta = ohms * (tolerancePercent / 100);
+                return { min: ohms - delta, max: ohms + delta };
+            }
+
+            /* ============================================================
+   4. РЕНДЕР
+   ============================================================ */
+            const $ = (s) => document.querySelector(s);
+            const bodyEl = $('#body');
+            const paletteEl = $('#palette');
+            const selectsEl = $('#selects');
+            const resultCard = $('#resultCard');
+            const resultValue = $('#resultValue');
+            const resultUnit = $('#resultUnit');
+            const resultGrid = $('#resultGrid');
+            const errorMsg = $('#errorMsg');
+
+            function renderBands() {
+                bodyEl.innerHTML = '';
+                const n = state.bands;
+                for (let i = 0; i < n; i++) {
+                    const colorId = state.colors[i];
+                    const color = COLORS[colorId];
+                    const band = document.createElement('button');
+                    band.type = 'button';
+                    band.className = 'band';
+                    band.dataset.index = i;
+                    band.style.setProperty(
+                        '--band-color',
+                        color ? color.hex : '#333',
+                    );
+                    band.setAttribute(
+                        'aria-label',
+                        `${POSITION_LABELS[n][i]}: ${color ? color.name : 'не выбрано'}. Нажмите для выбора цвета.`,
+                    );
+                    if (state.activeBand === i) band.classList.add('selected');
+                    band.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openPalette(i, band);
+                    });
+                    band.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openPalette(i, band);
+                        }
+                    });
+                    bodyEl.appendChild(band);
+                }
+            }
+
+            function openPalette(index, anchorEl) {
+                if (
+                    state.activeBand === index &&
+                    paletteEl.classList.contains('open')
+                ) {
+                    closePalette();
+                    return;
+                }
+                state.activeBand = index;
+                renderBands();
+
+                const n = state.bands;
+                const allowedIds = ALLOWED[n][index];
+                const label = POSITION_LABELS[n][index];
+                const current = state.colors[index];
+
+                paletteEl.innerHTML = '';
+                const title = document.createElement('p');
+                title.className = 'palette-title';
+                title.textContent = label;
+                paletteEl.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'swatches';
+                grid.setAttribute('role', 'radiogroup');
+                grid.setAttribute('aria-label', label);
+
+                for (const id of allowedIds) {
+                    const c = COLORS[id];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'swatch';
+                    btn.setAttribute('role', 'radio');
+                    btn.setAttribute(
+                        'aria-checked',
+                        id === current ? 'true' : 'false',
+                    );
+                    btn.title = `${c.name}${buildColorHint(c, index, n)}`;
+
+                    const dot = document.createElement('span');
+                    dot.className = 'swatch-dot';
+                    dot.style.background = c.hex;
+                    dot.setAttribute('aria-hidden', 'true');
+
+                    const lbl = document.createElement('span');
+                    lbl.className = 'swatch-label';
+                    lbl.textContent = c.name;
+
+                    btn.appendChild(dot);
+                    btn.appendChild(lbl);
+
+                    btn.addEventListener('click', () => {
+                        state.colors[index] = id;
+                        closePalette();
+                        syncSelects();
+                        renderBands();
+                        updateResult();
+                    });
+
+                    grid.appendChild(btn);
+                }
+                paletteEl.appendChild(grid);
+
+                paletteEl.classList.add('open');
+                positionPalette(anchorEl);
+
+                const target =
+                    paletteEl.querySelector('[aria-checked="true"]') ||
+                    paletteEl.querySelector('.swatch');
+                if (target) target.focus({ preventScroll: true });
+            }
+
+            function buildColorHint(color, index, bandCount) {
+                const digitCount = bandCount === 4 ? 2 : 3;
+                if (index < digitCount) return ` — цифра ${color.digit}`;
+                if (index === digitCount) {
+                    if (color.mult === -1) return ' — множитель ×0.1';
+                    if (color.mult === -2) return ' — множитель ×0.01';
+                    return ` — множитель ×10^${color.mult}`;
+                }
+                if (index === digitCount + 1) return ` — допуск ±${color.tol}%`;
+                if (index === digitCount + 2)
+                    return ` — ТКС ${color.tcr} ppm/°C`;
+                return '';
+            }
+
+            function positionPalette(anchorEl) {
+                paletteEl.style.visibility = 'hidden';
+                paletteEl.style.left = '0px';
+                paletteEl.style.top = '0px';
+
+                // Форсируем reflow, чтобы getBoundingClientRect вернул реальный размер
+                const rect = anchorEl.getBoundingClientRect();
+                const p = paletteEl.getBoundingClientRect();
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+
+                let left = rect.left + rect.width / 2 - p.width / 2;
+                left = Math.max(8, Math.min(left, vw - p.width - 8));
+
+                let top = rect.bottom + 10;
+                if (top + p.height > vh - 8) {
+                    top = Math.max(8, rect.top - p.height - 10); // над полосой, если не влезает
+                }
+
+                paletteEl.style.left = left + 'px';
+                paletteEl.style.top = top + 'px';
+                paletteEl.style.visibility = 'visible';
+            }
+
+            function closePalette() {
+                state.activeBand = null;
+                paletteEl.classList.remove('open');
+                paletteEl.innerHTML = '';
+                renderBands();
+            }
+
+            function syncSelects() {
+                selectsEl.innerHTML = '';
+                const n = state.bands;
+                for (let i = 0; i < n; i++) {
+                    const group = document.createElement('div');
+                    group.className = 'select-group';
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `sel-${i}`);
+                    label.textContent = POSITION_LABELS[n][i];
+
+                    const sel = document.createElement('select');
+                    sel.id = `sel-${i}`;
+                    sel.dataset.index = i;
+                    sel.setAttribute(
+                        'aria-label',
+                        `Цвет для позиции ${i + 1}: ${POSITION_LABELS[n][i]}`,
+                    );
+
+                    for (const id of ALLOWED[n][i]) {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = COLORS[id].name;
+                        if (state.colors[i] === id) opt.selected = true;
+                        sel.appendChild(opt);
+                    }
+
+                    sel.addEventListener('change', () => {
+                        state.colors[i] = sel.value;
+                        renderBands();
+                        updateResult();
+                    });
+
+                    group.appendChild(label);
+                    group.appendChild(sel);
+                    selectsEl.appendChild(group);
+                }
+            }
+
+            function updateResult() {
+                const calc = calculate(state.colors, state.bands);
+                resultGrid.innerHTML = '';
+                resultCard.classList.toggle('error', !calc.valid);
+
+                if (!calc.valid) {
+                    resultValue.textContent = '—';
+                    resultUnit.textContent = '';
+                    errorMsg.textContent =
+                        calc.error || 'Некорректная комбинация цветов';
+                    document
+                        .querySelectorAll('#selects select')
+                        .forEach((s) => s.classList.remove('invalid'));
+                    return;
+                }
+
+                errorMsg.textContent = '';
+                const formatted = formatResistance(calc.ohms);
+                resultValue.textContent = formatted.value;
+                resultUnit.textContent = formatted.unit;
+
+                const { min, max } = applyTolerance(calc.ohms, calc.tolerance);
+                const minF = formatResistance(min);
+                const maxF = formatResistance(max);
+
+                const items = [
+                    {
+                        k: 'Точное значение',
+                        v: formatExactOhms(calc.ohms),
+                        mono: true,
+                    },
+                    { k: 'Допуск', v: `±${calc.tolerance}%` },
+                    { k: 'Минимум', v: `${minF.value} ${minF.unit}` },
+                    { k: 'Максимум', v: `${maxF.value} ${maxF.unit}` },
+                ];
+                if (calc.tcr !== null)
+                    items.push({ k: 'ТКС', v: `${calc.tcr} ppm/°C` });
+
+                for (const item of items) {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    const k = document.createElement('span');
+                    k.className = 'k';
+                    k.textContent = item.k;
+                    const v = document.createElement('span');
+                    v.className = 'v' + (item.mono ? ' mono' : '');
+                    v.textContent = item.v;
+                    div.appendChild(k);
+                    div.appendChild(v);
+                    resultGrid.appendChild(div);
+                }
+
+                resultCard.dataset.copy =
+                    `${formatted.value} ${formatted.unit} ±${calc.tolerance}%` +
+                    (calc.tcr !== null ? `, ТКС ${calc.tcr} ppm/°C` : '');
+            }
+
+            /* ============================================================
+   5. ДЕЙСТВИЯ
+   ============================================================ */
+            function randomResistor() {
+                const n = state.bands;
+                const colors = [];
+                for (let i = 0; i < n; i++) {
+                    const allowed = ALLOWED[n][i];
+                    colors.push(
+                        allowed[Math.floor(Math.random() * allowed.length)],
+                    );
+                }
+                state.colors = colors;
+                closePalette();
+                syncSelects();
+                renderBands();
+                updateResult();
+            }
+
+            function resetResistor() {
+                state.colors = [...DEFAULTS[state.bands]];
+                closePalette();
+                syncSelects();
+                renderBands();
+                updateResult();
+            }
+
+            function switchBands(n) {
+                if (state.bands === n) return;
+                state.bands = n;
+                state.colors = [...DEFAULTS[n]];
+                state.activeBand = null;
+                document.querySelectorAll('.tab').forEach((tab) => {
+                    tab.setAttribute(
+                        'aria-selected',
+                        String(Number(tab.dataset.bands) === n),
+                    );
+                });
+                closePalette();
+                syncSelects();
+                renderBands();
+                updateResult();
+            }
+
+            /* ============================================================
+   7. КОПИРОВАНИЕ
+   ============================================================ */
+            async function copyResult() {
+                const text = resultCard.dataset.copy;
+                if (!text) return;
+                const btn = $('#copyBtn');
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+                    btn.textContent = 'Скопировано ✓';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'Копировать';
+                        btn.classList.remove('copied');
+                    }, 1600);
+                } catch (e) {
+                    btn.textContent = 'Ошибка';
+                    setTimeout(() => {
+                        btn.textContent = 'Копировать';
+                    }, 1600);
+                }
+            }
+
+            /* ============================================================
+   8. ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+            function init() {
+                document.querySelectorAll('.tab').forEach((tab) => {
+                    tab.addEventListener('click', () =>
+                        switchBands(Number(tab.dataset.bands)),
+                    );
+                });
+
+                $('#randomBtn').addEventListener('click', randomResistor);
+                $('#resetBtn').addEventListener('click', resetResistor);
+                $('#copyBtn').addEventListener('click', copyResult);
+
+                document.addEventListener('click', (e) => {
+                    if (!paletteEl.classList.contains('open')) return;
+                    if (paletteEl.contains(e.target)) return;
+                    if (e.target.closest && e.target.closest('.band')) return;
+                    closePalette();
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (
+                        e.key === 'Escape' &&
+                        paletteEl.classList.contains('open')
+                    )
+                        closePalette();
+                });
+
+                window.addEventListener('resize', () => {
+                    if (
+                        paletteEl.classList.contains('open') &&
+                        state.activeBand !== null
+                    ) {
+                        const band = bodyEl.querySelector(
+                            `.band[data-index="${state.activeBand}"]`,
+                        );
+                        if (band) positionPalette(band);
+                    }
+                });
+
+                syncSelects();
+                renderBands();
+                updateResult();
+            }
+
+            init();
+
+            /* ============================================================
+   9. Lemon UI Kit — фон, курсор, ripple, скролл-бар
+   ============================================================ */
+            (function initLemonFx() {
+                const reduceMotion = window.matchMedia(
+                    '(prefers-reduced-motion: reduce)',
+                ).matches;
+                const isDesktop = window.matchMedia(
+                    '(min-width: 1024px) and (hover: hover) and (pointer: fine)',
+                ).matches;
+
+                /* --- Пиксели --- */
+                const container = document.getElementById('bg-particles');
+                if (container) {
+                    const isMobile =
+                        window.matchMedia('(max-width: 767px)').matches;
+                    const count = isMobile ? 24 : 46;
+                    const frag = document.createDocumentFragment();
+                    for (let i = 0; i < count; i++) {
+                        const p = document.createElement('span');
+                        p.className = 'pixel';
+                        const size = Math.random() < 0.72 ? 2 : 3;
+                        const dx = (Math.random() * 40 - 20).toFixed(1);
+                        const dy = (-20 - Math.random() * 30).toFixed(1);
+                        const duration = (10 + Math.random() * 14).toFixed(1);
+                        const delay = (-Math.random() * 20).toFixed(1);
+                        const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+                        p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                        p.style.top = (Math.random() * 100).toFixed(2) + '%';
+                        p.style.width = size + 'px';
+                        p.style.height = size + 'px';
+                        p.style.opacity = opacity;
+                        p.style.setProperty('--dx', dx + 'px');
+                        p.style.setProperty('--dy', dy + 'px');
+                        p.style.animationDuration = duration + 's';
+                        p.style.animationDelay = delay + 's';
+                        if (reduceMotion) p.style.animation = 'none';
+                        frag.appendChild(p);
+                    }
+                    container.appendChild(frag);
+                }
+
+                /* --- Ripple --- */
+                if (!reduceMotion) {
+                    document.addEventListener('pointerdown', (e) => {
+                        if (e.pointerType === 'touch') return;
+                        const size = 100;
+                        const ripple = document.createElement('div');
+                        ripple.className = 'ripple-obj';
+                        ripple.style.width = ripple.style.height = size + 'px';
+                        ripple.style.left = e.clientX - size / 2 + 'px';
+                        ripple.style.top = e.clientY - size / 2 + 'px';
+                        document.body.appendChild(ripple);
+                        setTimeout(() => ripple.remove(), 800);
+                    });
+                }
+
+                /* --- Кастомный курсор --- */
+                const cursor = document.getElementById('custom-cursor');
+                if (cursor && isDesktop) {
+                    let mx = -100,
+                        my = -100,
+                        cx = -100,
+                        cy = -100,
+                        shown = false;
+                    document.addEventListener(
+                        'mousemove',
+                        (e) => {
+                            mx = e.clientX;
+                            my = e.clientY;
+                            if (!shown) {
+                                cursor.style.display = 'block';
+                                shown = true;
+                            }
+                        },
+                        { passive: true },
+                    );
+                    if (!reduceMotion) {
+                        (function loop() {
+                            cx += (mx - cx) * 0.25;
+                            cy += (my - cy) * 0.25;
+                            cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+                            requestAnimationFrame(loop);
+                        })();
+                    }
+                    const HOVER_SEL =
+                        'a, button, input, select, textarea, .band, .swatch, .glass-card-hover';
+                    document.addEventListener(
+                        'mouseover',
+                        (e) => {
+                            if (e.target.closest && e.target.closest(HOVER_SEL))
+                                document.body.classList.add('cursor-hover');
+                        },
+                        { passive: true },
+                    );
+                    document.addEventListener(
+                        'mouseout',
+                        (e) => {
+                            if (e.target.closest && e.target.closest(HOVER_SEL))
+                                document.body.classList.remove('cursor-hover');
+                        },
+                        { passive: true },
+                    );
+                }
+
+                /* --- Прогресс скролла --- */
+                const scrollBar = document.getElementById('scroll-bar');
+                if (scrollBar) {
+                    const update = () => {
+                        const h =
+                            document.documentElement.scrollHeight -
+                            document.documentElement.clientHeight;
+                        scrollBar.style.width =
+                            (h > 0 ? (window.scrollY / h) * 100 : 0) + '%';
+                    };
+                    window.addEventListener('scroll', update, {
+                        passive: true,
+                    });
+                    update();
+                }
+            })();
+        </script>
+    </body>
+</html>
