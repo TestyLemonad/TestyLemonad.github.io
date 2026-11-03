@@ -3,13 +3,18 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Цветовой калькулятор резисторов — Lemon Style</title>
+        <title>Цветовой калькулятор резисторов</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
             rel="stylesheet"
         />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
         <style>
             /* ============================================================
      Lemon UI Kit — базовые токены
@@ -82,6 +87,10 @@
                 overflow-x: hidden;
                 -webkit-font-smoothing: antialiased;
                 position: relative;
+            }
+
+            .mono {
+                font-family: 'JetBrains Mono', monospace;
             }
 
             @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
@@ -1032,39 +1041,42 @@
 
         <div class="content-wrapper">
             <!-- Навигация -->
-            <nav class="glass-nav">
+            <nav class="glass-nav w-full px-4 sm:px-6 py-4">
                 <div
-                    style="
-                        max-width: 1100px;
-                        margin: 0 auto;
-                        padding: 16px 20px;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        gap: 12px;
-                    "
+                    class="max-w-7xl mx-auto flex justify-between items-center"
                 >
-                    <div
-                        style="
-                            font-family: var(--mono);
-                            font-weight: 700;
-                            letter-spacing: -0.02em;
-                            display: flex;
-                            align-items: center;
-                            gap: 10px;
-                        "
+                    <a
+                        href="https://testylemonad.ru/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="logo-link hidden sm:block text-xl font-bold mono gradient-text tracking-tighter no-underline hover:brightness-110 transition"
+                        aria-label="TestyLemonad — открыть в новой вкладке"
                     >
-                        <span class="gradient-text">Resistor Calc</span>
-                    </div>
+                        testylemonad.ru
+                    </a>
                     <div
-                        style="
-                            display: flex;
-                            align-items: center;
-                            gap: 10px;
-                            flex-wrap: wrap;
-                            justify-content: flex-end;
-                        "
-                    ></div>
+                        class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0"
+                    >
+                        <button
+                            type="button"
+                            data-scroll-top
+                            class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors"
+                        >
+                            Главная
+                        </button>
+                        <a
+                            href="https://testylemonad.ru/"
+                            class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors"
+                            >Проекты</a
+                        >
+                        <a
+                            href="https://github.com/testylemonad"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5"
+                            >GitHub</a
+                        >
+                    </div>
                 </div>
             </nav>
 
