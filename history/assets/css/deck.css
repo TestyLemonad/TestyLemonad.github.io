@@ -1,0 +1,647 @@
+/* ==========================================================================
+   Симон Боливар — презентация к уроку истории, 8 класс
+   Автор: Трунов Михей, 8Э
+   ========================================================================== */
+
+:root {
+  --ink: #0e141d;
+  --ink-2: #1a2331;
+  --paper: #f4ecdb;
+  --paper-warm: #ece2cc;
+  --gold: #b98a35;
+  --gold-light: #dfbb77;
+  --red: #9c2f27;
+  --blue: #24436f;
+  --text: #1f242c;
+  --muted: #6f6757;
+  --serif: Georgia, "Times New Roman", "PT Serif", serif;
+  --sans: "Segoe UI", Tahoma, Verdana, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0a0e14;
+  font-family: var(--sans);
+  color: var(--text);
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- сцена 16:9 ---------- */
+
+.deck {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  transform-origin: center center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  padding: 58px 84px 70px;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 90% at 12% 0%, rgba(255, 255, 255, .55), transparent 60%),
+    radial-gradient(90% 80% at 100% 100%, rgba(160, 130, 70, .14), transparent 65%),
+    var(--paper);
+  color: var(--text);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px);
+  transition: opacity .45s ease, transform .6s cubic-bezier(.2, .7, .2, 1), visibility .45s;
+}
+
+.slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(90, 70, 30, .035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgba(90, 70, 30, .03) 0 1px, transparent 1px 5px);
+  opacity: .55;
+  mix-blend-mode: multiply;
+}
+
+.slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  z-index: 2;
+}
+
+.slide > * { position: relative; z-index: 1; }
+
+/* ---------- тёмные слайды ---------- */
+
+.slide--dark {
+  color: #f2e8d5;
+  background:
+    radial-gradient(80% 70% at 15% 10%, rgba(70, 95, 135, .35), transparent 65%),
+    radial-gradient(60% 60% at 90% 90%, rgba(160, 60, 45, .25), transparent 70%),
+    linear-gradient(150deg, #131b26 0%, #0c1118 60%, #101822 100%);
+}
+
+.slide--dark::before {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .02) 0 1px, transparent 1px 4px);
+  mix-blend-mode: screen;
+  opacity: .5;
+}
+
+/* ---------- шапка ---------- */
+
+.kicker {
+  margin: 0 0 14px;
+  font-size: 13px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kicker::before {
+  content: "";
+  width: 30px;
+  height: 1px;
+  background: var(--gold);
+  opacity: .8;
+}
+
+.slide--dark .kicker { color: var(--gold-light); }
+
+h2.title {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 46px;
+  line-height: 1.12;
+  letter-spacing: -.01em;
+  max-width: 900px;
+}
+
+h2.title em {
+  font-style: normal;
+  color: var(--blue);
+}
+
+.slide--dark h2.title em { color: var(--gold-light); }
+
+.lead {
+  margin: 10px 0 0;
+  max-width: 760px;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.slide--dark .lead { color: rgba(240, 231, 214, .72); }
+
+/* ---------- тело ---------- */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 46px;
+  align-items: center;
+  margin-top: 26px;
+}
+
+.body--text-media { grid-template-columns: 1.06fr .94fr; }
+.body--media-text { grid-template-columns: .94fr 1.06fr; }
+.body--wide { grid-template-columns: 1fr; align-content: center; }
+
+/* ---------- списки ---------- */
+
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 17px;
+}
+
+.points li {
+  position: relative;
+  padding-left: 30px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .62em;
+  width: 14px;
+  height: 2px;
+  background: var(--gold);
+}
+
+.points li b { font-weight: 700; }
+.points li span.year { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+.slide--dark .points li span.year { color: var(--gold-light); }
+.points--tight { gap: 12px; }
+.points--tight li { font-size: 18px; }
+
+.note {
+  margin: 22px 0 0;
+  padding: 16px 20px;
+  border-left: 2px solid var(--red);
+  background: rgba(156, 47, 39, .05);
+  font-size: 17px;
+  line-height: 1.45;
+  color: #3b3830;
+}
+
+.note b { color: var(--red); }
+
+/* ---------- цифры ---------- */
+
+.stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(120, 100, 60, .28);
+}
+
+.stat .num {
+  font-family: var(--serif);
+  font-size: 46px;
+  line-height: 1;
+  color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat .num small { font-size: 24px; }
+
+.stat .cap {
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  max-width: 170px;
+  line-height: 1.4;
+}
+
+/* ---------- картинки ---------- */
+
+.figure {
+  margin: 0;
+  justify-self: center;
+  width: 100%;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #d9cfb8;
+}
+
+.figure--framed {
+  padding: 10px;
+  background: #fbf6e8;
+  border: 1px solid rgba(120, 95, 40, .38);
+  box-shadow: 0 14px 32px rgba(40, 30, 10, .18), inset 0 0 0 1px rgba(255, 255, 255, .7);
+}
+
+.figure--framed img {
+  border: 1px solid rgba(80, 60, 25, .25);
+  filter: saturate(1.02) contrast(1.02);
+}
+
+.figure figcaption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+
+.figure--portrait { max-height: 470px; }
+.figure--portrait img { height: 430px; }
+.figure--landscape img { height: 330px; }
+.figure--tall img { height: 400px; }
+
+/* ---------- цитата ---------- */
+
+.quote {
+  margin: 0;
+  max-width: 980px;
+  position: relative;
+  padding-left: 74px;
+}
+
+.quote::before {
+  content: "«";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  font-family: var(--serif);
+  font-size: 96px;
+  line-height: .7;
+  color: var(--gold);
+  opacity: .5;
+}
+
+.quote p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 34px;
+  line-height: 1.35;
+  letter-spacing: -.005em;
+}
+
+.quote footer {
+  margin-top: 22px;
+  font-size: 14px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+
+/* ---------- хронология ---------- */
+
+.timeline {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin-top: 8px;
+  padding-top: 34px;
+  position: relative;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(120, 95, 45, .55) 8%, rgba(120, 95, 45, .55) 92%, transparent);
+}
+
+.tl-item {
+  position: relative;
+  padding-right: 22px;
+}
+
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -32px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--gold);
+}
+
+.tl-year {
+  font-family: var(--serif);
+  font-size: 26px;
+  color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-text {
+  margin-top: 6px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: #46413a;
+}
+
+/* ---------- титульный слайд ---------- */
+
+.slide--title {
+  padding: 0;
+  display: block;
+}
+
+.title-photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 47%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.title-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+  filter: saturate(.92) contrast(1.03);
+}
+
+.title-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #0e141d 0%, rgba(14, 20, 29, .86) 18%, rgba(14, 20, 29, .18) 58%, rgba(14, 20, 29, .1) 100%),
+    linear-gradient(0deg, rgba(10, 14, 20, .75) 0%, transparent 45%);
+}
+
+.title-inner {
+  position: relative;
+  z-index: 2;
+  width: 62%;
+  height: 100%;
+  padding: 88px 0 0 84px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title-inner .kicker { color: var(--gold-light); }
+
+h1 {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 92px;
+  line-height: .96;
+  letter-spacing: -.02em;
+  color: #f6edda;
+}
+
+.title-tag {
+  margin: 22px 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.4;
+  color: rgba(240, 230, 210, .82);
+  max-width: 480px;
+}
+
+.tricolor {
+  display: flex;
+  width: 150px;
+  height: 5px;
+  margin-top: 30px;
+}
+
+.tricolor span { flex: 1; }
+.tricolor .y { background: #d9a83c; }
+.tricolor .b { background: #2c4f86; }
+.tricolor .r { background: #a8342c; }
+
+.title-meta {
+  margin-top: auto;
+  padding-bottom: 66px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(235, 225, 205, .78);
+}
+
+.title-meta b {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: #f4ead6;
+}
+
+/* ---------- память / предметы ---------- */
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 8px;
+}
+
+.stack {
+  display: grid;
+  gap: 30px;
+  align-content: center;
+}
+
+.stack .note { margin-top: 0; }
+
+.mem {
+  padding: 24px 22px;
+  border: 1px solid rgba(120, 95, 45, .32);
+  background: rgba(255, 250, 238, .55);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mem .mem-title {
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.mem .mem-text {
+  font-size: 15px;
+  line-height: 1.45;
+  color: #4b463d;
+}
+
+.memory-grid--big .mem {
+  padding: 30px 26px;
+  gap: 11px;
+}
+
+.memory-grid--big .mem-title { font-size: 29px; }
+.memory-grid--big .mem-text { font-size: 16.5px; line-height: 1.5; }
+
+.stamp-wrap {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+}
+
+.stamp-wrap img {
+  width: 150px;
+  box-shadow: 0 8px 20px rgba(40, 30, 10, .22);
+}
+
+.stamp-wrap img.small-portrait {
+  width: 100px;
+  height: 134px;
+  object-fit: cover;
+  object-position: 50% 12%;
+  border: 1px solid rgba(120, 95, 45, .35);
+}
+
+/* ---------- вывод ---------- */
+
+.answer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.answer div {
+  border-top: 1px solid rgba(200, 175, 120, .45);
+  padding-top: 16px;
+}
+
+.answer .n {
+  font-family: var(--serif);
+  font-size: 30px;
+  color: var(--gold-light);
+}
+
+.answer p {
+  margin: 8px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: rgba(240, 231, 214, .8);
+}
+
+/* ---------- подвал ---------- */
+
+.foot {
+  position: absolute;
+  left: 84px;
+  right: 84px;
+  bottom: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(90, 80, 60, .75);
+  z-index: 3;
+}
+
+.slide--dark .foot { color: rgba(220, 205, 175, .45); }
+
+.foot .dots {
+  display: flex;
+  gap: 6px;
+}
+
+.foot .dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .3;
+}
+
+.foot .dots i.on { opacity: .95; }
+
+/* ---------- служебное ---------- */
+
+.progress {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #c9a24c, #9c2f27);
+  width: 0;
+  z-index: 50;
+  transition: width .35s ease;
+}
+
+.nav {
+  position: fixed;
+  right: 22px;
+  bottom: 18px;
+  display: flex;
+  gap: 8px;
+  z-index: 60;
+  opacity: .25;
+  transition: opacity .25s;
+}
+
+.nav:hover { opacity: .9; }
+
+.nav button {
+  width: 34px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, .35);
+  background: rgba(0, 0, 0, .35);
+  color: #f0e6d0;
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 2px;
+  line-height: 1;
+}
+
+.nav button:hover { background: rgba(0, 0, 0, .6); }
+
+.hint {
+  position: absolute;
+  right: 84px;
+  bottom: 26px;
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(220, 205, 175, .45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide { transition: none; }
+}
