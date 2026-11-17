@@ -1,355 +1,451 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Михей vs Миша: Противостояние</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap");
 
-        body {
-            font-family: 'Comfortaa', crossorigin;
-            background: #0f172a;
-            color: white;
-            margin: 0;
-            overflow: hidden;
-        }
+      body {
+        font-family: "Comfortaa", crossorigin;
+        background: #0f172a;
+        color: white;
+        margin: 0;
+        overflow: hidden;
+      }
 
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background-size: cover;
-            background-position: center;
-            transition: background-image 0.5s ease-in-out;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-        }
+      #game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background-size: cover;
+        background-position: center;
+        transition: background-image 0.5s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+      }
 
-        .character-layer {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            pointer-events: none;
-            overflow: hidden;
-        }
+      .character-layer {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        pointer-events: none;
+        overflow: hidden;
+      }
 
-        .character {
-            height: 80vh;
-            max-width: 90vw;
-            object-fit: contain;
-            transition: all 0.5s ease;
-            position: absolute;
-            bottom: 0;
-            opacity: 0;
-            transform: translateY(20px);
-        }
+      .character {
+        height: 80vh;
+        max-width: 90vw;
+        object-fit: contain;
+        transition: all 0.5s ease;
+        position: absolute;
+        bottom: 0;
+        opacity: 0;
+        transform: translateY(20px);
+      }
 
-        .character.mikhey.active {
-            opacity: 1;
-            transform: translateX(-15%) translateY(0);
-        }
+      .character.mikhey.active {
+        opacity: 1;
+        transform: translateX(-15%) translateY(0);
+      }
 
-        .character.misha.active {
-            opacity: 1;
-            transform: translateX(15%) translateY(0);
-        }
+      .character.misha.active {
+        opacity: 1;
+        transform: translateX(15%) translateY(0);
+      }
 
-        #dialog-box {
-            position: relative;
-            width: 95%;
-            max-width: 800px;
-            background: rgba(15, 23, 42, 0.95);
-            border: 2px solid #334155;
-            border-radius: 1rem;
-            padding: 1.2rem;
-            margin-bottom: 1.5rem;
-            cursor: pointer;
-            z-index: 10;
-        }
+      #dialog-box {
+        position: relative;
+        width: 95%;
+        max-width: 800px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid #334155;
+        border-radius: 1rem;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        cursor: pointer;
+        z-index: 10;
+      }
 
-        #name-tag {
-            position: absolute;
-            top: -15px;
-            left: 15px;
-            background: #3b82f6;
-            padding: 4px 16px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
+      #name-tag {
+        position: absolute;
+        top: -15px;
+        left: 15px;
+        background: #3b82f6;
+        padding: 4px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.9rem;
+      }
 
-        #choices, #restart-container {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            z-index: 20;
-            width: 80%;
-            max-width: 400px;
-        }
+      #choices,
+      #restart-container {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        z-index: 20;
+        width: 80%;
+        max-width: 400px;
+      }
 
-        .choice-btn, .restart-btn {
-            background: rgba(30, 41, 59, 0.98);
-            border: 1px solid #3b82f6;
-            padding: 0.8rem 1.2rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
+      .choice-btn,
+      .restart-btn {
+        background: rgba(30, 41, 59, 0.98);
+        border: 1px solid #3b82f6;
+        padding: 0.8rem 1.2rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+      }
 
-        .restart-btn {
-            background: #3b82f6;
-            color: white;
-            font-weight: bold;
-        }
+      .restart-btn {
+        background: #3b82f6;
+        color: white;
+        font-weight: bold;
+      }
 
-        .choice-btn:hover, .restart-btn:hover {
-            transform: scale(1.02);
-            filter: brightness(1.2);
-        }
+      .choice-btn:hover,
+      .restart-btn:hover {
+        transform: scale(1.02);
+        filter: brightness(1.2);
+      }
 
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: #0f172a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: #0f172a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+      }
 
-        .hidden { display: none !important; }
+      .hidden {
+        display: none !important;
+      }
 
-        #loader-text {
-            color: #3b82f6;
-            margin-top: 1rem;
-        }
+      #loader-text {
+        color: #3b82f6;
+        margin-top: 1rem;
+      }
     </style>
-</head>
-<body>
-
-<div id="start-screen" class="overlay">
-    <div class="text-center p-6">
+  </head>
+  <body>
+    <div id="start-screen" class="overlay">
+      <div class="text-center p-6">
         <h1 class="text-4xl font-bold mb-8">Михей против Миши</h1>
         <div id="loading-area">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p id="loader-text">Загрузка ресурсов...</p>
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"
+          ></div>
+          <p id="loader-text">Загрузка ресурсов...</p>
         </div>
-        <button id="start-btn" onclick="startGame()" class="hidden px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-full text-xl font-bold transition">
-            Начать историю
+        <button
+          id="start-btn"
+          onclick="startGame()"
+          class="hidden px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-full text-xl font-bold transition"
+        >
+          Начать историю
         </button>
-    </div>
-</div>
-
-<div id="game-container" class="hidden">
-    <div class="character-layer" id="characters">
-        <img id="char-mikhey" class="character mikhey" src="https://testy-coder.github.io/TestyLemonad.png" alt="Михей">
-        <img id="char-misha" class="character misha" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Max&mouth=serious&eyebrows=angry&eyes=eyeRoll&clothes=hoodie&clothingColor=262e3d" alt="Миша">
+      </div>
     </div>
 
-    <div id="choices" class="hidden"></div>
-    
-    <div id="restart-container" class="hidden">
+    <div id="game-container" class="hidden">
+      <div class="character-layer" id="characters">
+        <img
+          id="char-mikhey"
+          class="character mikhey"
+          src="https://testy-coder.github.io/TestyLemonad.png"
+          alt="Михей"
+        />
+        <img
+          id="char-misha"
+          class="character misha"
+          src="https://api.dicebear.com/7.x/avataaars/svg?seed=Max&mouth=serious&eyebrows=angry&eyes=eyeRoll&clothes=hoodie&clothingColor=262e3d"
+          alt="Миша"
+        />
+      </div>
+
+      <div id="choices" class="hidden"></div>
+
+      <div id="restart-container" class="hidden">
         <div onclick="resetGame()" class="restart-btn">Начать заново</div>
-    </div>
+      </div>
 
-    <div id="dialog-box" onclick="nextLine()">
+      <div id="dialog-box" onclick="nextLine()">
         <div id="name-tag"></div>
-        <div id="text-content" class="text-base md:text-lg leading-relaxed"></div>
-        <div id="click-hint" class="text-xs text-blue-400 mt-3 animate-pulse text-right">Нажмите, чтобы продолжить...</div>
+        <div
+          id="text-content"
+          class="text-base md:text-lg leading-relaxed"
+        ></div>
+        <div
+          id="click-hint"
+          class="text-xs text-blue-400 mt-3 animate-pulse text-right"
+        >
+          Нажмите, чтобы продолжить...
+        </div>
+      </div>
     </div>
-</div>
 
-<script>
-    const gameData = {
+    <script>
+      const gameData = {
         scenes: {
-            start: {
-                background: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1200",
-                dialogs: [
-                    { speaker: "???", text: "Этот мир... он был таким спокойным до появления Миши." },
-                    { speaker: "Михей", text: "Я должен найти его. Он забрал последний исходный код нашего проекта.", active: "mikhey" }
-                ],
-                next: "office"
-            },
-            office: {
-                background: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200",
-                dialogs: [
-                    { speaker: "Миша", text: "А, Михей! Не ожидал тебя увидеть в моем новом офисе.", active: "misha" },
-                    { speaker: "Михей", text: "Верни код, Миша. Это не твоя работа.", active: "mikhey" },
-                    { speaker: "Миша", text: "Работа принадлежит тому, кто смог её защитить. Что ты сделаешь?", active: "misha" }
-                ],
-                choices: [
-                    { text: "Попробовать договориться", nextScene: "diplomacy" },
-                    { text: "Вызвать на баттл кодеров", nextScene: "battle" }
-                ]
-            },
-            diplomacy: {
-                background: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200",
-                dialogs: [
-                    { speaker: "Михей", text: "Миша, мы же были напарниками. Давай разделим доли 50 на 50.", active: "mikhey" },
-                    { speaker: "Миша", text: "Хм... Твое предложение звучит разумно, но скучно.", active: "misha" },
-                    { speaker: "Миша", text: "Ладно, я верну часть, если ты исправишь мои баги в проде.", active: "misha" }
-                ],
-                next: "ending_good"
-            },
-            battle: {
-                background: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1200",
-                dialogs: [
-                    { speaker: "Михей", text: "Доставай свой ноутбук. Сейчас я покажу тебе, что такое чистый код!", active: "mikhey" },
-                    { speaker: "Миша", text: "Твои `for` циклы не сравнятся с моими рекурсиями!", active: "misha" },
-                    { speaker: "Система", text: "Начинается компиляция... Ошибок: 0. Михей побеждает за счет оптимизации!" }
-                ],
-                next: "ending_cool"
-            },
-            ending_good: {
-                isEnd: true,
-                background: "https://images.unsplash.com/photo-1454165833767-027ff33027ef?q=80&w=1200",
-                dialogs: [
-                    { speaker: "Михей", text: "В итоге мы договорились. Проект запущен, мир восстановлен." },
-                    { speaker: "Автор", text: "Хороший конец: Дипломатия победила." }
-                ]
-            },
-            ending_cool: {
-                isEnd: true,
-                background: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200",
-                dialogs: [
-                    { speaker: "Миша", text: "Невероятно... Ты действительно лучший аштимиальщик в этом городе.", active: "misha" },
-                    { speaker: "Михей", text: "Знай свое место, Миша. Код не терпит дилетантов.", active: "mikhey" },
-                    { speaker: "Автор", text: "Крутой конец: Михей отстоял свою честь в кодинг-баттле." }
-                ]
-            }
-        }
-    };
+          start: {
+            background:
+              "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "???",
+                text: "Этот мир... он был таким спокойным до появления Миши.",
+              },
+              {
+                speaker: "Михей",
+                text: "Я должен найти его. Он забрал последний исходный код нашего проекта.",
+                active: "mikhey",
+              },
+            ],
+            next: "office",
+          },
+          office: {
+            background:
+              "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "Миша",
+                text: "А, Михей! Не ожидал тебя увидеть в моем новом офисе.",
+                active: "misha",
+              },
+              {
+                speaker: "Михей",
+                text: "Верни код, Миша. Это не твоя работа.",
+                active: "mikhey",
+              },
+              {
+                speaker: "Миша",
+                text: "Работа принадлежит тому, кто смог её защитить. Что ты сделаешь?",
+                active: "misha",
+              },
+            ],
+            choices: [
+              { text: "Попробовать договориться", nextScene: "diplomacy" },
+              { text: "Вызвать на баттл кодеров", nextScene: "battle" },
+            ],
+          },
+          diplomacy: {
+            background:
+              "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "Михей",
+                text: "Миша, мы же были напарниками. Давай разделим доли 50 на 50.",
+                active: "mikhey",
+              },
+              {
+                speaker: "Миша",
+                text: "Хм... Твое предложение звучит разумно, но скучно.",
+                active: "misha",
+              },
+              {
+                speaker: "Миша",
+                text: "Ладно, я верну часть, если ты исправишь мои баги в проде.",
+                active: "misha",
+              },
+            ],
+            next: "ending_good",
+          },
+          battle: {
+            background:
+              "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "Михей",
+                text: "Доставай свой ноутбук. Сейчас я покажу тебе, что такое чистый код!",
+                active: "mikhey",
+              },
+              {
+                speaker: "Миша",
+                text: "Твои `for` циклы не сравнятся с моими рекурсиями!",
+                active: "misha",
+              },
+              {
+                speaker: "Система",
+                text: "Начинается компиляция... Ошибок: 0. Михей побеждает за счет оптимизации!",
+              },
+            ],
+            next: "ending_cool",
+          },
+          ending_good: {
+            isEnd: true,
+            background:
+              "https://images.unsplash.com/photo-1454165833767-027ff33027ef?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "Михей",
+                text: "В итоге мы договорились. Проект запущен, мир восстановлен.",
+              },
+              { speaker: "Автор", text: "Хороший конец: Дипломатия победила." },
+            ],
+          },
+          ending_cool: {
+            isEnd: true,
+            background:
+              "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200",
+            dialogs: [
+              {
+                speaker: "Миша",
+                text: "Невероятно... Ты действительно лучший аштимиальщик в этом городе.",
+                active: "misha",
+              },
+              {
+                speaker: "Михей",
+                text: "Знай свое место, Миша. Код не терпит дилетантов.",
+                active: "mikhey",
+              },
+              {
+                speaker: "Автор",
+                text: "Крутой конец: Михей отстоял свою честь в кодинг-баттле.",
+              },
+            ],
+          },
+        },
+      };
 
-    let currentScene = 'start';
-    let currentDialogIndex = 0;
+      let currentScene = "start";
+      let currentDialogIndex = 0;
 
-    const assetsToLoad = [
-        "https://testy-coder.github.io/TestyLemonad.png",
+      const assetsToLoad = [
+        "https://testylemonad.ru/TestyLemonad.png",
         "https://api.dicebear.com/7.x/avataaars/svg?seed=Max&mouth=serious&eyebrows=angry&eyes=eyeRoll&clothes=hoodie&clothingColor=262e3d",
-        ...Object.values(gameData.scenes).map(s => s.background)
-    ];
+        ...Object.values(gameData.scenes).map((s) => s.background),
+      ];
 
-    function preloadAssets() {
+      function preloadAssets() {
         let loadedCount = 0;
-        assetsToLoad.forEach(src => {
-            const img = new Image();
-            img.src = src;
-            img.onload = () => {
-                loadedCount++;
-                if (loadedCount === assetsToLoad.length) onAssetsLoaded();
-            };
-            img.onerror = () => {
-                loadedCount++;
-                if (loadedCount === assetsToLoad.length) onAssetsLoaded();
-            }
+        assetsToLoad.forEach((src) => {
+          const img = new Image();
+          img.src = src;
+          img.onload = () => {
+            loadedCount++;
+            if (loadedCount === assetsToLoad.length) onAssetsLoaded();
+          };
+          img.onerror = () => {
+            loadedCount++;
+            if (loadedCount === assetsToLoad.length) onAssetsLoaded();
+          };
         });
-    }
+      }
 
-    function onAssetsLoaded() {
-        document.getElementById('loading-area').classList.add('hidden');
-        document.getElementById('start-btn').classList.remove('hidden');
-    }
+      function onAssetsLoaded() {
+        document.getElementById("loading-area").classList.add("hidden");
+        document.getElementById("start-btn").classList.remove("hidden");
+      }
 
-    function startGame() {
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('game-container').classList.remove('hidden');
+      function startGame() {
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("game-container").classList.remove("hidden");
         renderScene();
-    }
+      }
 
-    function resetGame() {
-        currentScene = 'start';
+      function resetGame() {
+        currentScene = "start";
         currentDialogIndex = 0;
-        document.getElementById('restart-container').classList.add('hidden');
-        document.getElementById('click-hint').classList.remove('hidden');
+        document.getElementById("restart-container").classList.add("hidden");
+        document.getElementById("click-hint").classList.remove("hidden");
         renderScene();
-    }
+      }
 
-    function renderScene() {
+      function renderScene() {
         const scene = gameData.scenes[currentScene];
-        document.getElementById('game-container').style.backgroundImage = `url('${scene.background}')`;
+        document.getElementById("game-container").style.backgroundImage =
+          `url('${scene.background}')`;
         currentDialogIndex = 0;
         showDialog();
-    }
+      }
 
-    function showDialog() {
+      function showDialog() {
         const scene = gameData.scenes[currentScene];
         const dialog = scene.dialogs[currentDialogIndex];
-        
-        document.getElementById('choices').classList.add('hidden');
-        document.getElementById('name-tag').innerText = dialog.speaker;
-        document.getElementById('text-content').innerText = dialog.text;
-        
+
+        document.getElementById("choices").classList.add("hidden");
+        document.getElementById("name-tag").innerText = dialog.speaker;
+        document.getElementById("text-content").innerText = dialog.text;
+
         updateCharacters(dialog.active);
-    }
+      }
 
-    function updateCharacters(activeKey) {
-        const chars = document.querySelectorAll('.character');
-        chars.forEach(c => c.classList.remove('active'));
-        
+      function updateCharacters(activeKey) {
+        const chars = document.querySelectorAll(".character");
+        chars.forEach((c) => c.classList.remove("active"));
+
         if (activeKey) {
-            const activeImg = document.getElementById(`char-${activeKey}`);
-            if (activeImg) activeImg.classList.add('active');
+          const activeImg = document.getElementById(`char-${activeKey}`);
+          if (activeImg) activeImg.classList.add("active");
         }
-    }
+      }
 
-    function nextLine() {
+      function nextLine() {
         const scene = gameData.scenes[currentScene];
-        
+
         // Блокировка клика если есть выбор или экран рестарта
-        if (!document.getElementById('choices').classList.contains('hidden')) return;
-        if (!document.getElementById('restart-container').classList.contains('hidden')) return;
+        if (!document.getElementById("choices").classList.contains("hidden"))
+          return;
+        if (
+          !document
+            .getElementById("restart-container")
+            .classList.contains("hidden")
+        )
+          return;
 
         if (currentDialogIndex < scene.dialogs.length - 1) {
-            currentDialogIndex++;
-            showDialog();
+          currentDialogIndex++;
+          showDialog();
         } else {
-            if (scene.choices) {
-                showChoices(scene.choices);
-            } else if (scene.next) {
-                currentScene = scene.next;
-                renderScene();
-            } else if (scene.isEnd) {
-                showRestart();
-            }
+          if (scene.choices) {
+            showChoices(scene.choices);
+          } else if (scene.next) {
+            currentScene = scene.next;
+            renderScene();
+          } else if (scene.isEnd) {
+            showRestart();
+          }
         }
-    }
+      }
 
-    function showChoices(choices) {
-        const choiceContainer = document.getElementById('choices');
-        choiceContainer.innerHTML = '';
-        choiceContainer.classList.remove('hidden');
-        
-        choices.forEach(choice => {
-            const btn = document.createElement('div');
-            btn.className = 'choice-btn';
-            btn.innerText = choice.text;
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                currentScene = choice.nextScene;
-                renderScene();
-            };
-            choiceContainer.appendChild(btn);
+      function showChoices(choices) {
+        const choiceContainer = document.getElementById("choices");
+        choiceContainer.innerHTML = "";
+        choiceContainer.classList.remove("hidden");
+
+        choices.forEach((choice) => {
+          const btn = document.createElement("div");
+          btn.className = "choice-btn";
+          btn.innerText = choice.text;
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            currentScene = choice.nextScene;
+            renderScene();
+          };
+          choiceContainer.appendChild(btn);
         });
-    }
+      }
 
-    function showRestart() {
-        document.getElementById('restart-container').classList.remove('hidden');
-        document.getElementById('click-hint').classList.add('hidden');
-    }
+      function showRestart() {
+        document.getElementById("restart-container").classList.remove("hidden");
+        document.getElementById("click-hint").classList.add("hidden");
+      }
 
-    window.onload = preloadAssets;
-</script>
-
-</body>
+      window.onload = preloadAssets;
+    </script>
+  </body>
 </html>
