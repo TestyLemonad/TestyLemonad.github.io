@@ -1,46 +1,201 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Минутка спокойствия</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&family=Playfair+Display:ital,wght@0,400;1,700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,700&display=swap');
-
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        :root {
+            --lemon-yellow: #ffd700;
+            --deep-orange: #ff8c00;
+            --dark-bg: #050200;
+            --card-bg: rgba(20, 10, 5, 0.45);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
         }
 
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: #fff7ed;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Прячем системный курсор только когда кастомный реально активен */
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            body.has-custom-cursor * { cursor: none !important; }
+        }
+
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+        .bg-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+        }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
+        }
+
+        /* ============ Ripple ============ */
+        .ripple-obj {
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(8); opacity: 0; }
+        }
+
+        /* ============ Кастомный курсор ============ */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 204, 21, 0.3);
+            border: 1px solid var(--lemon-yellow);
+            border-radius: 50%;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+        }
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
+            background: rgba(250, 204, 21, 0.1);
+            border-color: #fff;
+        }
+
+        /* ============ Виньетка и noise ============ */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
+        }
+
+        .noise::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            z-index: 3;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* ============ Liquid Glass ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.55);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.35);
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(251, 191, 36, 0.08);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.4s ease,
+                        background 0.4s ease,
+                        box-shadow 0.4s ease;
+            position: relative;
         }
+
+        .content-wrapper { position: relative; z-index: 10; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
+            z-index: 90;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--deep-orange); }
 
         .quote-text {
             font-family: 'Playfair Display', serif;
         }
 
         .btn-glow:hover {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
             transform: translateY(-2px);
         }
 
@@ -57,48 +212,93 @@
             width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 215, 0, 0.3);
             border-radius: 10px;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="noise">
 
-    <div class="glass-card max-w-2xl w-full p-8 md:p-12 text-white relative">
-        <div id="content-area" class="text-center fade-in">
-            <span class="text-xs uppercase tracking-widest opacity-70 mb-4 block">Мудрость дня</span>
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true"><div class="cursor-inner"></div></div>
 
-            <div class="relative py-6">
-                <svg class="absolute top-0 left-0 w-8 h-8 opacity-20 fill-current" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017C11.4647 12 11.017 11.5523 11.017 11V6C11.017 4.89543 11.9124 4 13.017 4H19.017C21.2261 4 23.017 5.79086 23.017 8V15C23.017 17.2091 21.2261 19 19.017 19H17.017C15.3601 19 14.017 19.8954 14.017 21ZM3.017 21L3.017 18C3.017 16.8954 3.91243 16 5.017 16H8.017C8.56928 16 9.017 15.5523 9.017 15V9C9.017 8.44772 8.56928 8 8.017 8H4.017C3.46472 8 3.017 8.44772 3.017 9V11C3.017 11.5523 2.56928 12 2.017 12H1.017C0.464718 12 0.017 11.5523 0.017 11V6C0.017 4.89543 0.912429 4 2.017 4H8.017C10.2261 4 12.017 5.79086 12.017 8V15C12.017 17.2091 10.2261 19 8.017 19H6.017C4.36014 19 3.017 19.8954 3.017 21Z"/></svg>
-                <h1 id="quote" class="quote-text text-2xl md:text-4xl font-light italic leading-snug mb-4 px-6 pt-4">
-                    Загрузка спокойствия...
-                </h1>
+    <!-- ФОН: сетка + пиксели + виньетка -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- Индикатор скролла -->
+    <div class="scroll-progress" id="scroll-bar"></div>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="glass-nav w-full px-4 sm:px-6 py-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <a
+                    href="https://testylemonad.ru/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="logo-link hidden sm:block text-xl font-bold mono gradient-text tracking-tighter no-underline hover:brightness-110 transition"
+                    aria-label="TestyLemonad — открыть в новой вкладке"
+                >
+                    testylemonad.ru
+                </a>
+                <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
+                    <a href="https://testylemonad.ru/" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</a>
+                    <a href="https://testylemonad.ru/#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+                    <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+                </div>
             </div>
+        </nav>
 
-            <p id="author" class="text-lg font-medium opacity-80 mb-10">— Автор</p>
+        <main class="flex-grow flex flex-col items-center justify-center px-4 py-12">
+            <div class="glass-card max-w-2xl w-full p-8 md:p-12 text-white relative">
+                <div id="content-area" class="text-center fade-in">
+                    <span class="text-xs uppercase tracking-widest opacity-70 mb-4 block text-yellow-400">Мудрость дня</span>
 
-            <div class="flex flex-wrap justify-center gap-4">
-                <button onclick="generateQuote()" class="btn-glow bg-white text-gray-900 px-8 py-3 rounded-full font-semibold transition-all duration-300">
-                    Новая мысль
-                </button>
-                <button onclick="saveQuote()" class="btn-glow border border-white border-opacity-40 hover:bg-white hover:bg-opacity-10 px-8 py-3 rounded-full font-semibold transition-all duration-300">
-                    В избранное
-                </button>
+                    <div class="relative py-6">
+                        <svg class="absolute top-0 left-0 w-8 h-8 opacity-20 text-yellow-400 fill-current" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017C11.4647 12 11.017 11.5523 11.017 11V6C11.017 4.89543 11.9124 4 13.017 4H19.017C21.2261 4 23.017 5.79086 23.017 8V15C23.017 17.2091 21.2261 19 19.017 19H17.017C15.3601 19 14.017 19.8954 14.017 21ZM3.017 21L3.017 18C3.017 16.8954 3.91243 16 5.017 16H8.017C8.56928 16 9.017 15.5523 9.017 15V9C9.017 8.44772 8.56928 8 8.017 8H4.017C3.46472 8 3.017 8.44772 3.017 9V11C3.017 11.5523 2.56928 12 2.017 12H1.017C0.464718 12 0.017 11.5523 0.017 11V6C0.017 4.89543 0.912429 4 2.017 4H8.017C10.2261 4 12.017 5.79086 12.017 8V15C12.017 17.2091 10.2261 19 8.017 19H6.017C4.36014 19 3.017 19.8954 3.017 21Z"/></svg>
+                        <h1 id="quote" class="quote-text text-2xl md:text-4xl font-light italic leading-snug mb-4 px-6 pt-4 text-white">
+                            Загрузка спокойствия...
+                        </h1>
+                    </div>
+
+                    <p id="author" class="text-lg font-medium opacity-80 mb-10">— Автор</p>
+
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button onclick="generateQuote()" class="btn-glow bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-full font-semibold transition-all duration-300">
+                            Новая мысль
+                        </button>
+                        <button onclick="saveQuote()" class="btn-glow border border-white/20 hover:bg-white/10 px-8 py-3 rounded-full font-semibold transition-all duration-300">
+                            В избранное
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Избранное -->
+                <div class="mt-12 pt-8 border-t border-white/10">
+                    <h2 class="text-sm font-semibold uppercase tracking-widest opacity-50 mb-4 text-yellow-400">Избранное</h2>
+                    <div id="favorites-list" class="max-h-32 overflow-y-auto custom-scrollbar flex flex-col gap-2">
+                        <p class="text-xs opacity-40 italic">Здесь будут ваши любимые цитаты...</p>
+                    </div>
+                </div>
             </div>
+        </main>
+
+        <!-- Уведомление -->
+        <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black px-6 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
+            Сохранено!
         </div>
 
-        <!-- Избранное -->
-        <div class="mt-12 pt-8 border-t border-white border-opacity-10">
-            <h2 class="text-sm font-semibold uppercase tracking-widest opacity-50 mb-4">Избранное</h2>
-            <div id="favorites-list" class="max-h-32 overflow-y-auto custom-scrollbar flex flex-col gap-2">
-                <p class="text-xs opacity-40 italic">Здесь будут ваши любимые цитаты...</p>
+        <!-- Футер -->
+        <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
+            <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
+                <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+                <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
+                    &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
+                </p>
             </div>
-        </div>
-    </div>
-
-    <!-- Уведомление -->
-    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white text-gray-900 px-6 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
-        Сохранено!
+        </footer>
     </div>
 
     <script>
@@ -145,7 +345,7 @@
 
             // Создаем элемент списка
             const fav = document.createElement('div');
-            fav.className = 'text-xs bg-white bg-opacity-10 p-2 rounded border border-white border-opacity-5 animate-pulse';
+            fav.className = 'text-xs bg-white/10 p-2 rounded border border-white/10 animate-pulse';
             fav.innerHTML = `<span class="italic">"${currentQuote.text.substring(0, 40)}..."</span> — ${currentQuote.author}`;
 
             favoritesList.prepend(fav);
@@ -163,6 +363,107 @@
 
         // Инициализация
         window.onload = generateQuote;
+    </script>
+
+    <script type="module">
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+                if (reduceMotion) p.style.animation = 'none';
+                frag.appendChild(p);
+            }
+            container.appendChild(frag);
+        })();
+
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
+
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
+            const placeCursor = (x, y) => {
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+            };
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    document.body.classList.add('has-custom-cursor');
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+                if (reduceMotion) placeCursor(mx, my);
+            }, { passive: true });
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    placeCursor(cx, cy);
+                    requestAnimationFrame(loop);
+                })();
+            }
+            document.addEventListener('mouseleave', () => {
+                cursor.style.display = 'none';
+                document.body.classList.remove('has-custom-cursor');
+                shown = false;
+            });
+            const HOVER_SEL = 'a, button, input, select, textarea, .glass-card';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.add('cursor-hover');
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.remove('cursor-hover');
+            }, { passive: true });
+        }
+
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScroll, { passive: true });
     </script>
 </body>
 </html>

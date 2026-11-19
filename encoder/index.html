@@ -118,6 +118,27 @@
         }
       }
 
+      /* ============ Кастомный курсор ============ */
+      #custom-cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 20px;
+        height: 20px;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        will-change: transform;
+        transform: translate3d(-100px, -100px, 0);
+      }
+
+      /* Прячем системный курсор только когда кастомный реально активен */
+      @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+        body.has-custom-cursor * {
+          cursor: none !important;
+        }
+      }
+
       /* ============ Виньетка и noise ============ */
       .vignette {
         position: fixed;
@@ -226,9 +247,69 @@
           display: none;
         }
       }
+
+      /* ===== Общие классы Lemon Style (шаблон) ===== */
+      .gradient-text {
+        background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .glass-nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(8, 4, 2, 0.55);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.35);
+      }
+
+      .glass-card-hover:hover {
+        transform: translateY(-4px);
+        border-color: rgba(251, 191, 36, 0.3);
+        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+        background: rgba(30, 15, 5, 0.55);
+      }
+
+      .content-wrapper { position: relative; z-index: 10; }
+
+      .noise::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        opacity: 0.025;
+        z-index: 3;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      .cursor-inner {
+        width: 100%;
+        height: 100%;
+        background: rgba(250, 204, 21, 0.3);
+        border: 1px solid var(--lemon-yellow);
+        border-radius: 50%;
+        transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+      }
+      .cursor-hover .cursor-inner {
+        transform: scale(2.5);
+        background: rgba(250, 204, 21, 0.1);
+        border-color: #fff;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
     </style>
   </head>
-  <body class="p-4 sm:p-6 lg:p-10">
+  <body class="noise">
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true"><div class="cursor-inner"></div></div>
+
     <!-- ФОН -->
     <div class="bg-grid" aria-hidden="true"></div>
     <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
@@ -237,7 +318,32 @@
     <!-- Индикатор скролла -->
     <div class="scroll-progress" id="scroll-bar"></div>
 
-    <div class="max-w-4xl mx-auto relative z-10">
+    <!-- Навигация -->
+    <nav class="glass-nav w-full px-4 sm:px-6 py-4">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a
+          href="https://testylemonad.ru/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="logo-link hidden sm:block text-xl font-bold mono gradient-text tracking-tighter no-underline hover:brightness-110 transition"
+          aria-label="TestyLemonad — открыть в новой вкладке"
+        >
+          testylemonad.ru
+        </a>
+        <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
+          <a href="https://testylemonad.ru/" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</a>
+          <a href="https://testylemonad.ru/#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+          <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+      <div class="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex-grow">
+
+
+
+
       <!-- Шапка -->
       <div
         class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4"
@@ -546,6 +652,17 @@
       >
         Designed & Developed by TestyLemonad
       </p>
+      </div>
+
+      <!-- Футер -->
+      <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
+          <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+          <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
+            &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
+          </p>
+        </div>
+      </footer>
     </div>
 
     <script>
@@ -615,6 +732,67 @@
         scrollBar.style.width = pct + "%";
       }
       window.addEventListener("scroll", updateScroll, { passive: true });
+
+      // ===== Кастомный курсор =====
+      const cursorEl = document.getElementById("custom-cursor");
+      const isDesktop = window.matchMedia(
+        "(min-width: 1024px) and (hover: hover) and (pointer: fine)",
+      ).matches;
+      if (cursorEl && isDesktop) {
+        let mx = -100,
+          my = -100,
+          cx = -100,
+          cy = -100,
+          shown = false;
+        const placeCursor = (x, y) => {
+          cursorEl.style.transform =
+            `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+        };
+        document.addEventListener(
+          "mousemove",
+          (e) => {
+            mx = e.clientX;
+            my = e.clientY;
+            if (!shown) {
+              document.body.classList.add("has-custom-cursor");
+              cursorEl.style.display = "block";
+              shown = true;
+            }
+            if (reduceMotion) placeCursor(mx, my);
+          },
+          { passive: true },
+        );
+        if (!reduceMotion) {
+          (function loop() {
+            cx += (mx - cx) * 0.25;
+            cy += (my - cy) * 0.25;
+            placeCursor(cx, cy);
+            requestAnimationFrame(loop);
+          })();
+        }
+        document.addEventListener("mouseleave", () => {
+          cursorEl.style.display = "none";
+          document.body.classList.remove("has-custom-cursor");
+          shown = false;
+        });
+        const HOVER_SEL = "a, button, input, select, textarea, .glass-card";
+        document.addEventListener(
+          "mouseover",
+          (e) => {
+            if (e.target.closest && e.target.closest(HOVER_SEL))
+              document.body.classList.add("cursor-hover");
+          },
+          { passive: true },
+        );
+        document.addEventListener(
+          "mouseout",
+          (e) => {
+            if (e.target.closest && e.target.closest(HOVER_SEL))
+              document.body.classList.remove("cursor-hover");
+          },
+          { passive: true },
+        );
+      }
 
       const ALGORITHMS = {
         base64: { name: "Base64", hasParam: false },
@@ -887,7 +1065,7 @@
                 .map((c) => RU_EN[c] || EN_RU[c] || c)
                 .join("");
             case "rot13":
-              return caesar(text, 13);
+              return rot13(text);
             case "hex":
               if (isEnc) {
                 const bytes = new TextEncoder().encode(text);
@@ -895,9 +1073,7 @@
                   .map((b) => b.toString(16).padStart(2, "0"))
                   .join(" ");
               } else {
-                const hexes = text.trim().split(/\s+/).filter(Boolean);
-                const bytes = new Uint8Array(hexes.map((h) => parseInt(h, 16)));
-                return new TextDecoder().decode(bytes);
+                return decodeByteString(text, 16, 2, /^[0-9a-f]+$/i);
               }
             case "octal":
               if (isEnc) {
@@ -906,9 +1082,7 @@
                   .map((b) => b.toString(8).padStart(3, "0"))
                   .join(" ");
               } else {
-                const octs = text.trim().split(/\s+/).filter(Boolean);
-                const bytes = new Uint8Array(octs.map((o) => parseInt(o, 8)));
-                return new TextDecoder().decode(bytes);
+                return decodeByteString(text, 8, 3, /^[0-7]+$/);
               }
             case "binary":
               if (isEnc) {
@@ -917,12 +1091,11 @@
                   .map((b) => b.toString(2).padStart(8, "0"))
                   .join(" ");
               } else {
-                const bins = text.trim().split(/\s+/).filter(Boolean);
-                const bytes = new Uint8Array(bins.map((b) => parseInt(b, 2)));
-                return new TextDecoder().decode(bytes);
+                return decodeByteString(text, 2, 8, /^[01]+$/);
               }
             case "reverse":
-              return text.split("").reverse().join("");
+              // Array.from, а не split(""), иначе рвутся суррогатные пары (эмодзи)
+              return Array.from(text).reverse().join("");
             case "sha256":
               return await sha256(text);
             default:
@@ -938,6 +1111,27 @@
         const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+      }
+
+      // Декодирует последовательность байтов в текст. Понимает и "41 42",
+      // и слитную запись "4142": при слитной записи режем на куски по width.
+      function decodeByteString(text, radix, width, pattern) {
+        const cleaned = text.replace(/0x/gi, "");
+        const compact = cleaned.replace(/[\s,;]+/g, "");
+        const tokens = cleaned.trim().split(/[\s,;]+/).filter(Boolean);
+        const useChunks = compact.length > 0 && compact.length % width === 0;
+        const parts = useChunks
+          ? compact.match(new RegExp(".{1," + width + "}", "g"))
+          : tokens;
+
+        if (!parts || parts.length === 0) return "";
+
+        const bytes = new Uint8Array(parts.length);
+        parts.forEach((p, i) => {
+          if (!pattern.test(p)) throw new Error("Некорректный байт: " + p);
+          bytes[i] = parseInt(p, radix);
+        });
+        return new TextDecoder().decode(bytes);
       }
 
       function caesar(str, shift) {
@@ -964,6 +1158,16 @@
             return c;
           })
           .join("");
+      }
+
+      // Классический ROT13 — только латиница (26 букв). Для кириллицы (33 буквы)
+      // сдвиг 13 не обратим: 13 + 13 = 26 ≠ 0 mod 33, поэтому русские буквы
+      // оставляем как есть, иначе расшифровка не возвращает исходный текст.
+      function rot13(str) {
+        return str.replace(/[a-zA-Z]/g, (c) => {
+          const base = c <= "Z" ? 65 : 97;
+          return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+        });
       }
 
       function atbash(str) {

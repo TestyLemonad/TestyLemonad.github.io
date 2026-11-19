@@ -1,68 +1,299 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тест Акселерометра</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --lemon-yellow: #ffd700;
+            --deep-orange: #ff8c00;
+            --dark-bg: #050200;
+            --card-bg: rgba(20, 10, 5, 0.45);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: #fff7ed;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Прячем системный курсор только когда кастомный реально активен */
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            body.has-custom-cursor * { cursor: none !important; }
+        }
+
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+        .bg-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+        }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
+        }
+
+        /* ============ Ripple ============ */
+        .ripple-obj {
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(8); opacity: 0; }
+        }
+
+        /* ============ Кастомный курсор ============ */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 204, 21, 0.3);
+            border: 1px solid var(--lemon-yellow);
+            border-radius: 50%;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+        }
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
+            background: rgba(250, 204, 21, 0.1);
+            border-color: #fff;
+        }
+
+        /* ============ Виньетка и noise ============ */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
+        }
+
+        .noise::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            z-index: 3;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* ============ Liquid Glass ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.55);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(251, 191, 36, 0.08);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.4s ease,
+                        background 0.4s ease,
+                        box-shadow 0.4s ease;
+            position: relative;
+        }
+
+        .content-wrapper { position: relative; z-index: 10; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
+            z-index: 90;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--deep-orange); }
+
         .ball {
             transition: transform 0.1s linear;
         }
         .data-card {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.045);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.16);
+            box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.45);
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+<body class="noise">
 
-    <div class="max-w-md w-full space-y-6 text-center">
-        <h1 class="text-3xl font-bold tracking-tight">Датчики Движения</h1>
-        
-        <!-- Визуализация -->
-        <div class="relative w-64 h-64 bg-slate-800 rounded-3xl mx-auto overflow-hidden border-4 border-slate-700 shadow-2xl flex items-center justify-center">
-            <div id="ball" class="ball w-12 h-12 bg-blue-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)]"></div>
-            <!-- Сетка -->
-            <div class="absolute inset-0 border border-white/5 pointer-events-none"></div>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="w-px h-full bg-white/10"></div>
-                <div class="h-px w-full bg-white/10"></div>
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true"><div class="cursor-inner"></div></div>
+
+    <!-- ФОН: сетка + пиксели + виньетка -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- Индикатор скролла -->
+    <div class="scroll-progress" id="scroll-bar"></div>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="glass-nav w-full px-4 sm:px-6 py-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <a
+                    href="https://testylemonad.ru/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="logo-link hidden sm:block text-xl font-bold mono gradient-text tracking-tighter no-underline hover:brightness-110 transition"
+                    aria-label="TestyLemonad — открыть в новой вкладке"
+                >
+                    testylemonad.ru
+                </a>
+                <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
+                    <a href="https://testylemonad.ru/" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</a>
+                    <a href="https://testylemonad.ru/#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+                    <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+                </div>
             </div>
-        </div>
+        </nav>
 
-        <!-- Кнопка активации (нужна для iOS и современных Android) -->
-        <div id="permission-zone">
-            <button id="start-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-full font-bold transition-all active:scale-95">
-                Запустить датчики
-            </button>
-        </div>
+        <main class="max-w-md w-full mx-auto space-y-6 text-center flex-grow flex flex-col justify-center px-4 py-10">
+            <h1 class="text-3xl font-bold tracking-tight">Датчики <span class="gradient-text">Движения</span></h1>
 
-        <!-- Данные -->
-        <div class="grid grid-cols-1 gap-4 text-left">
-            <div class="data-card p-4 rounded-2xl">
-                <h2 class="text-xs uppercase text-slate-400 font-bold mb-2 tracking-widest">Акселерометр (m/s²)</h2>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>X: <span id="acc-x" class="font-mono text-blue-400">0.00</span></div>
-                    <div>Y: <span id="acc-y" class="font-mono text-blue-400">0.00</span></div>
-                    <div>Z: <span id="acc-z" class="font-mono text-blue-400">0.00</span></div>
+            <!-- Визуализация -->
+            <div class="relative w-64 h-64 bg-white/5 rounded-3xl mx-auto overflow-hidden border-4 border-orange-500/25 shadow-2xl flex items-center justify-center">
+                <div id="ball" class="ball w-12 h-12 bg-yellow-400 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)]"></div>
+                <!-- Сетка -->
+                <div class="absolute inset-0 border border-white/5 pointer-events-none"></div>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="w-px h-full bg-white/10"></div>
+                    <div class="h-px w-full bg-white/10"></div>
                 </div>
             </div>
 
-            <div class="data-card p-4 rounded-2xl">
-                <h2 class="text-xs uppercase text-slate-400 font-bold mb-2 tracking-widest">Гироскоп (deg)</h2>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>α: <span id="gyro-a" class="font-mono text-emerald-400">0.00</span></div>
-                    <div>β: <span id="gyro-b" class="font-mono text-emerald-400">0.00</span></div>
-                    <div>γ: <span id="gyro-g" class="font-mono text-emerald-400">0.00</span></div>
+            <!-- Кнопка активации (нужна для iOS и современных Android) -->
+            <div id="permission-zone">
+                <button id="start-btn" class="btn-glow bg-yellow-400 hover:bg-yellow-300 text-black px-8 py-3 rounded-full font-bold transition-all active:scale-95">Запустить датчики</button>
+            </div>
+
+            <!-- Данные -->
+            <div class="grid grid-cols-1 gap-4 text-left">
+                <div class="data-card p-4 rounded-2xl">
+                    <h2 class="text-xs uppercase text-orange-400 font-bold mb-2 tracking-widest">Акселерометр (m/s²)</h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="text-white/80">X: <span id="acc-x" class="font-mono text-yellow-400">0.00</span></div>
+                        <div class="text-white/80">Y: <span id="acc-y" class="font-mono text-yellow-400">0.00</span></div>
+                        <div class="text-white/80">Z: <span id="acc-z" class="font-mono text-yellow-400">0.00</span></div>
+                    </div>
+                </div>
+
+                <div class="data-card p-4 rounded-2xl">
+                    <h2 class="text-xs uppercase text-orange-400 font-bold mb-2 tracking-widest">Гироскоп (deg)</h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="text-white/80">α: <span id="gyro-a" class="font-mono text-emerald-400">0.00</span></div>
+                        <div class="text-white/80">β: <span id="gyro-b" class="font-mono text-emerald-400">0.00</span></div>
+                        <div class="text-white/80">γ: <span id="gyro-g" class="font-mono text-emerald-400">0.00</span></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="status-msg" class="text-sm text-slate-500 italic">
-            Ожидание взаимодействия...
-        </div>
+            <div id="status-msg" class="text-sm text-orange-100/40 italic">
+                Ожидание взаимодействия...
+            </div>
+        </main>
+
+        <!-- Футер -->
+        <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
+            <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
+                <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+                <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
+                    &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
+                </p>
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -99,15 +330,34 @@
             elements.gyroG.innerText = event.gamma?.toFixed(2) || '0.00';
         }
 
+        // Разрешение запрашиваем только там, где API реально существует (iOS 13+).
+        // Без проверки на существование обращение к DeviceMotionEvent бросает
+        // ReferenceError: DeviceMotionEvent is not defined.
+        async function requestSensorPermission() {
+            const Motion = window.DeviceMotionEvent;
+            if (Motion && typeof Motion.requestPermission === 'function') {
+                const state = await Motion.requestPermission();
+                if (state !== 'granted') return false;
+            }
+            const Orientation = window.DeviceOrientationEvent;
+            if (Orientation && typeof Orientation.requestPermission === 'function') {
+                const state = await Orientation.requestPermission();
+                if (state !== 'granted') return false;
+            }
+            return true;
+        }
+
         async function initSensors() {
             try {
-                // Проверка на iOS (требует явного разрешения)
-                if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission !== 'granted') {
-                        statusMsg.innerText = "Доступ отклонен пользователем.";
-                        return;
-                    }
+                if (!('DeviceMotionEvent' in window) && !('DeviceOrientationEvent' in window)) {
+                    statusMsg.innerText = "Этот браузер не поддерживает датчики движения.";
+                    return;
+                }
+
+                const allowed = await requestSensorPermission();
+                if (!allowed) {
+                    statusMsg.innerText = "Доступ отклонен пользователем.";
+                    return;
                 }
 
                 window.addEventListener('devicemotion', updateUI);
@@ -115,6 +365,7 @@
                 
                 statusMsg.innerText = "Датчики активны";
                 startBtn.classList.add('hidden');
+                startBtn.style.display = 'none';
                 
                 // Проверка: если через 500мс данные всё еще нули, возможно датчика нет
                 setTimeout(() => {
@@ -133,6 +384,107 @@
 
         // Для десктопов без датчиков (тестовая заглушка мышкой, если нужно проверить верстку)
         // Но по умолчанию мы ждем реальные события DeviceMotion
+    </script>
+
+    <script type="module">
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+                if (reduceMotion) p.style.animation = 'none';
+                frag.appendChild(p);
+            }
+            container.appendChild(frag);
+        })();
+
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
+
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
+            const placeCursor = (x, y) => {
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+            };
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    document.body.classList.add('has-custom-cursor');
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+                if (reduceMotion) placeCursor(mx, my);
+            }, { passive: true });
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    placeCursor(cx, cy);
+                    requestAnimationFrame(loop);
+                })();
+            }
+            document.addEventListener('mouseleave', () => {
+                cursor.style.display = 'none';
+                document.body.classList.remove('has-custom-cursor');
+                shown = false;
+            });
+            const HOVER_SEL = 'a, button, input, select, textarea, .glass-card';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.add('cursor-hover');
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.remove('cursor-hover');
+            }, { passive: true });
+        }
+
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScroll, { passive: true });
     </script>
 </body>
 </html>

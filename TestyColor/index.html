@@ -1,17 +1,208 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TestyColor — Палитра</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --lemon-yellow: #ffd700;
+            --deep-orange: #ff8c00;
+            --dark-bg: #050200;
+            --card-bg: rgba(20, 10, 5, 0.45);
+            --grid-line: rgba(255, 255, 255, 0.028);
+            --grid-size: 48px;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background: var(--dark-bg);
+            color: #fff7ed;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
         }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Прячем системный курсор только когда кастомный реально активен */
+        @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+            body.has-custom-cursor * { cursor: none !important; }
+        }
+
+        /* ============ ФОН: сетка ============ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-color: var(--dark-bg);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: -1px -1px;
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 92%);
+        }
+        .bg-grid::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255, 170, 40, 0.06) 0%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+            pointer-events: none;
+        }
+
+        /* ============ ФОН: плавающие пиксели ============ */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .pixel {
+            position: absolute;
+            display: block;
+            background: rgba(255, 210, 90, 0.9);
+            border-radius: 1px;
+            box-shadow: 0 0 6px rgba(255, 190, 60, 0.35);
+            animation: pixel-drift ease-in-out infinite alternate;
+            transform: translate3d(0, 0, 0);
+            will-change: transform;
+        }
+        @keyframes pixel-drift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(var(--dx, 18px), var(--dy, -26px), 0); }
+        }
+
+        /* ============ Ripple ============ */
+        .ripple-obj {
+            position: fixed;
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(8); opacity: 0; }
+        }
+
+        /* ============ Кастомный курсор ============ */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            will-change: transform;
+            transform: translate3d(-100px, -100px, 0);
+        }
+        .cursor-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 204, 21, 0.3);
+            border: 1px solid var(--lemon-yellow);
+            border-radius: 50%;
+            transition: transform 0.2s ease-out, background 0.3s ease, border 0.3s ease;
+        }
+        .cursor-hover .cursor-inner {
+            transform: scale(2.5);
+            background: rgba(250, 204, 21, 0.1);
+            border-color: #fff;
+        }
+
+        /* ============ Виньетка и noise ============ */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.75) 100%);
+        }
+
+        .noise::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.025;
+            z-index: 3;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* ============ Liquid Glass ============ */
+        .glass-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(8, 4, 2, 0.55);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(251, 191, 36, 0.08);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                        border-color 0.4s ease,
+                        background 0.4s ease,
+                        box-shadow 0.4s ease;
+            position: relative;
+        }
+
+        .glass-input {
+            background: rgba(15, 8, 3, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--lemon-yellow);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+            background: rgba(25, 12, 5, 0.8);
+        }
+
+        .content-wrapper { position: relative; z-index: 10; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--lemon-yellow) 10%, var(--deep-orange) 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--lemon-yellow), var(--deep-orange));
+            z-index: 90;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #2d1a05; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--deep-orange); }
+
         .color-canvas {
             cursor: crosshair;
             touch-action: none;
@@ -20,7 +211,11 @@
             background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
         }
         .custom-shadow {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.45);
         }
         .history-item:hover .delete-btn {
             display: flex;
@@ -36,21 +231,54 @@
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="noise">
 
-    <div class="max-w-5xl mx-auto">
+    <!-- Кастомный курсор -->
+    <div id="custom-cursor" aria-hidden="true"><div class="cursor-inner"></div></div>
+
+    <!-- ФОН: сетка + пиксели + виньетка -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-particles" id="bg-particles" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- Индикатор скролла -->
+    <div class="scroll-progress" id="scroll-bar"></div>
+
+    <div class="content-wrapper min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="glass-nav w-full px-4 sm:px-6 py-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <a
+                    href="https://testylemonad.ru/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="logo-link hidden sm:block text-xl font-bold mono gradient-text tracking-tighter no-underline hover:brightness-110 transition"
+                    aria-label="TestyLemonad — открыть в новой вкладке"
+                >
+                    testylemonad.ru
+                </a>
+                <div class="flex items-center space-x-4 sm:space-x-8 text-white/80 mx-auto sm:mx-0">
+                    <a href="https://testylemonad.ru/" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Главная</a>
+                    <a href="https://testylemonad.ru/#projects" class="text-[10px] sm:text-sm font-medium hover:text-yellow-400 transition-colors">Проекты</a>
+                    <a href="https://github.com/testylemonad" target="_blank" rel="noopener noreferrer" class="text-[10px] sm:text-sm font-medium bg-white/5 px-4 py-1.5 rounded-full hover:bg-white/10 transition border border-white/5">GitHub</a>
+                </div>
+            </div>
+        </nav>
+
+    <div class="max-w-5xl mx-auto w-full flex-grow px-4 sm:px-6 py-8 sm:py-12">
+
         <header class="mb-8 text-center md:text-left flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900"><span class="colorize_fun"><span style="background-color:#000000;color:#000000;">▄</span><span style="background-color:#000000;color:#fc7f00;">▄</span><span style="background-color:#fc7f00;color:#ffa218;">▄</span><span style="background-color:#ffa218;color:#ffc352;">▄</span><span style="background-color:#ffc352;color:#ffff00;">▄</span><span style="background-color:#ffff00;color:#ffffff;">▄</span><span style="background-color:#000000;color:#ffff00;">▄ </span><b><span style="background-color:#000000;color:#ffffff;"> TestyColor &mdash; Палитра </span></b><span style="background-color:#000000;color:#ffff00;"> ▄</span><span style="background-color:#ffff00;color:#ffffff;">▄</span><span style="background-color:#ffc352;color:#ffff00;">▄</span><span style="background-color:#ffa218;color:#ffc352;">▄</span><span style="background-color:#fc7f00;color:#ffa218;">▄</span><span style="background-color:#000000;color:#fc7f00;">▄</span><span style="background-color:#000000;color:#000000;">▄</span></span></h1>
-                <p class="text-slate-500">Профессиональный инструмент для работы с цветом</p>
+                <h1 class="text-3xl font-bold tracking-tight text-white"><span class="colorize_fun"><span style="background-color:#000000;color:#000000;">▄</span><span style="background-color:#000000;color:#fc7f00;">▄</span><span style="background-color:#fc7f00;color:#ffa218;">▄</span><span style="background-color:#ffa218;color:#ffc352;">▄</span><span style="background-color:#ffc352;color:#ffff00;">▄</span><span style="background-color:#ffff00;color:#ffffff;">▄</span><span style="background-color:#000000;color:#ffff00;">▄ </span><b><span style="background-color:#000000;color:#ffffff;"> TestyColor &mdash; Палитра </span></b><span style="background-color:#000000;color:#ffff00;"> ▄</span><span style="background-color:#ffff00;color:#ffffff;">▄</span><span style="background-color:#ffc352;color:#ffff00;">▄</span><span style="background-color:#ffa218;color:#ffc352;">▄</span><span style="background-color:#fc7f00;color:#ffa218;">▄</span><span style="background-color:#000000;color:#fc7f00;">▄</span><span style="background-color:#000000;color:#000000;">▄</span></span></h1>
+                <p class="text-orange-100/70">Профессиональный инструмент для работы с цветом</p>
             </div>
-            <div id="main-preview" class="h-16 w-32 rounded-xl shadow-inner border-4 border-white custom-shadow transition-colors duration-200"></div>
+            <div id="main-preview" class="h-16 w-32 rounded-xl shadow-inner border-4 border-white/20 custom-shadow transition-colors duration-200"></div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             <div class="lg:col-span-5 space-y-6">
-                <div class="bg-white p-5 rounded-2xl custom-shadow">
+                <div class="glass-card p-5 rounded-3xl">
                     <!-- Saturation/Brightness Canvas -->
                     <div class="relative w-full aspect-square rounded-lg overflow-hidden color-canvas mb-4" id="canvas-container">
                         <canvas id="color-canvas" class="w-full h-full"></canvas>
@@ -60,12 +288,12 @@
                     <!-- Hue Slider -->
                     <div class="space-y-4">
                         <div>
-                            <label class="text-xs font-semibold uppercase text-slate-400 mb-1 block">Оттенок</label>
+                            <label class="text-xs font-semibold uppercase text-orange-400 mb-1 block">Оттенок</label>
                             <input type="range" id="hue-slider" min="0" max="360" value="0" class="w-full h-3 rounded-lg appearance-none slider-hue cursor-pointer">
                         </div>
                         <!-- Alpha Slider -->
                         <div>
-                            <label class="text-xs font-semibold uppercase text-slate-400 mb-1 block">Прозрачность</label>
+                            <label class="text-xs font-semibold uppercase text-orange-400 mb-1 block">Прозрачность</label>
                             <div class="relative h-3 w-full rounded-lg bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-slate-200">
                                 <input type="range" id="alpha-slider" min="0" max="100" value="100" class="absolute inset-0 w-full h-3 rounded-lg appearance-none bg-transparent cursor-pointer" style="background: linear-gradient(to right, transparent, currentColor);">
                             </div>
@@ -73,17 +301,17 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl custom-shadow">
-                    <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div class="glass-card p-5 rounded-3xl">
+                    <h3 class="text-sm font-bold mb-4 flex items-center gap-2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         Контрастность (WCAG)
                     </h3>
                     <div class="grid grid-cols-2 gap-4">
-                        <div id="contrast-box-black" class="p-4 rounded-xl text-center border">
+                        <div id="contrast-box-black" class="p-4 rounded-xl text-center border border-white/10">
                             <span class="text-lg font-bold block">Black</span>
                             <span id="ratio-black" class="text-xs font-medium">1:1</span>
                         </div>
-                        <div id="contrast-box-white" class="p-4 rounded-xl text-center border bg-slate-900 text-white">
+                        <div id="contrast-box-white" class="p-4 rounded-xl text-center border border-white/10 bg-slate-900 text-white">
                             <span class="text-lg font-bold block">White</span>
                             <span id="ratio-white" class="text-xs font-medium">1:1</span>
                         </div>
@@ -93,79 +321,79 @@
 
             <div class="lg:col-span-7 space-y-6">
                 <!-- Formats -->
-                <div class="bg-white p-6 rounded-2xl custom-shadow space-y-5">
+                <div class="glass-card p-6 rounded-3xl space-y-5">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- HEX -->
                         <div class="relative">
-                            <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">HEX</label>
+                            <label class="text-xs font-bold text-orange-400 uppercase mb-1 block">HEX</label>
                             <div class="flex">
-                                <input type="text" id="input-hex" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" value="#FF0000">
-                                <button onclick="copyToClipboard('input-hex')" class="px-3 py-2 bg-slate-100 border border-l-0 border-slate-200 rounded-r-lg hover:bg-slate-200 transition-colors copy-btn">
+                                <input type="text" id="input-hex" class="w-full px-3 py-2 glass-input border border-white/10 rounded-l-xl focus:outline-none font-mono" value="#FF0000">
+                                <button onclick="copyToClipboard('input-hex')" class="px-3 py-2 bg-white/10 border border-l-0 border-white/10 rounded-r-xl hover:bg-white/20 transition-colors copy-btn text-white">
                                     <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    <svg class="w-4 h-4 check-icon text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <svg class="w-4 h-4 check-icon text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 </button>
                             </div>
                         </div>
                         <!-- RGB -->
                         <div class="relative">
-                            <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">RGB</label>
+                            <label class="text-xs font-bold text-orange-400 uppercase mb-1 block">RGB</label>
                             <div class="flex">
-                                <input type="text" id="input-rgb" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" value="rgb(255, 0, 0)">
-                                <button onclick="copyToClipboard('input-rgb')" class="px-3 py-2 bg-slate-100 border border-l-0 border-slate-200 rounded-r-lg hover:bg-slate-200 transition-colors copy-btn">
+                                <input type="text" id="input-rgb" class="w-full px-3 py-2 glass-input border border-white/10 rounded-l-xl focus:outline-none font-mono" value="rgb(255, 0, 0)">
+                                <button onclick="copyToClipboard('input-rgb')" class="px-3 py-2 bg-white/10 border border-l-0 border-white/10 rounded-r-xl hover:bg-white/20 transition-colors copy-btn text-white">
                                     <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    <svg class="w-4 h-4 check-icon text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <svg class="w-4 h-4 check-icon text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 </button>
                             </div>
                         </div>
                         <!-- HSL -->
                         <div class="relative">
-                            <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">HSL</label>
+                            <label class="text-xs font-bold text-orange-400 uppercase mb-1 block">HSL</label>
                             <div class="flex">
-                                <input type="text" id="input-hsl" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" value="hsl(0, 100%, 50%)">
-                                <button onclick="copyToClipboard('input-hsl')" class="px-3 py-2 bg-slate-100 border border-l-0 border-slate-200 rounded-r-lg hover:bg-slate-200 transition-colors copy-btn">
+                                <input type="text" id="input-hsl" class="w-full px-3 py-2 glass-input border border-white/10 rounded-l-xl focus:outline-none font-mono" value="hsl(0, 100%, 50%)">
+                                <button onclick="copyToClipboard('input-hsl')" class="px-3 py-2 bg-white/10 border border-l-0 border-white/10 rounded-r-xl hover:bg-white/20 transition-colors copy-btn text-white">
                                     <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    <svg class="w-4 h-4 check-icon text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <svg class="w-4 h-4 check-icon text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 </button>
                             </div>
                         </div>
                         <!-- CMYK -->
                         <div class="relative">
-                            <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">CMYK</label>
+                            <label class="text-xs font-bold text-orange-400 uppercase mb-1 block">CMYK</label>
                             <div class="flex">
-                                <input type="text" id="input-cmyk" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" value="0, 100, 100, 0">
-                                <button onclick="copyToClipboard('input-cmyk')" class="px-3 py-2 bg-slate-100 border border-l-0 border-slate-200 rounded-r-lg hover:bg-slate-200 transition-colors copy-btn">
+                                <input type="text" id="input-cmyk" class="w-full px-3 py-2 glass-input border border-white/10 rounded-l-xl focus:outline-none font-mono" value="0, 100, 100, 0">
+                                <button onclick="copyToClipboard('input-cmyk')" class="px-3 py-2 bg-white/10 border border-l-0 border-white/10 rounded-r-xl hover:bg-white/20 transition-colors copy-btn text-white">
                                     <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    <svg class="w-4 h-4 check-icon text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <svg class="w-4 h-4 check-icon text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <button id="add-to-history" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all transform active:scale-95">Сохранить в палитру</button>
+                    <button id="add-to-history" class="btn-glow w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black rounded-xl font-semibold hover:shadow-lg transition-all transform active:scale-95">Сохранить в палитру</button>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl custom-shadow">
-                    <h3 class="text-sm font-bold mb-4 uppercase text-slate-400 tracking-wider">Цветовые схемы</h3>
+                <div class="glass-card p-6 rounded-3xl">
+                    <h3 class="text-sm font-bold mb-4 uppercase text-orange-400 tracking-wider">Цветовые схемы</h3>
                     <div class="space-y-6">
                         <section>
-                            <p class="text-xs font-medium text-slate-500 mb-2">Комплементарный</p>
-                            <div id="scheme-complementary" class="flex h-12 rounded-lg overflow-hidden border border-slate-100"></div>
+                            <p class="text-xs font-medium text-orange-100/60 mb-2">Комплементарный</p>
+                            <div id="scheme-complementary" class="flex h-12 rounded-lg overflow-hidden border border-white/10"></div>
                         </section>
                         <section>
-                            <p class="text-xs font-medium text-slate-500 mb-2">Аналоговый</p>
-                            <div id="scheme-analogous" class="flex h-12 rounded-lg overflow-hidden border border-slate-100"></div>
+                            <p class="text-xs font-medium text-orange-100/60 mb-2">Аналоговый</p>
+                            <div id="scheme-analogous" class="flex h-12 rounded-lg overflow-hidden border border-white/10"></div>
                         </section>
                         <section>
-                            <p class="text-xs font-medium text-slate-500 mb-2">Триада</p>
-                            <div id="scheme-triad" class="flex h-12 rounded-lg overflow-hidden border border-slate-100"></div>
+                            <p class="text-xs font-medium text-orange-100/60 mb-2">Триада</p>
+                            <div id="scheme-triad" class="flex h-12 rounded-lg overflow-hidden border border-white/10"></div>
                         </section>
                     </div>
                 </div>
 
                 <!-- History -->
-                <div class="bg-white p-6 rounded-2xl custom-shadow">
+                <div class="glass-card p-6 rounded-3xl">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider">Палитра</h3>
-                        <button id="clear-history" class="text-xs text-red-500 hover:underline">Очистить</button>
+                        <h3 class="text-sm font-bold uppercase text-orange-400 tracking-wider">Палитра</h3>
+                        <button id="clear-history" class="text-xs text-red-400 hover:underline">Очистить</button>
                     </div>
                     <div id="history-list" class="flex flex-wrap gap-3">
                         <!-- History items will be injected here -->
@@ -175,6 +403,7 @@
             </div>
         </div>
     </div>
+
 
     <script>
         let state = {
@@ -434,7 +663,7 @@
             historyList.innerHTML = '';
             state.history.forEach(hex => {
                 const item = document.createElement('div');
-                item.className = 'history-item relative group w-10 h-10 rounded-lg cursor-pointer shadow-sm border border-slate-200 transition-transform hover:scale-110';
+                item.className = 'history-item relative group w-10 h-10 rounded-lg cursor-pointer shadow-sm border border-white/20 transition-transform hover:scale-110';
                 item.style.backgroundColor = hex;
                 item.onclick = () => setColorFromHex(hex);
                 
@@ -482,6 +711,118 @@
         };
 
         window.onresize = drawCanvas;
+    </script>
+
+    <!-- Футер -->
+    <footer class="w-full px-6 py-8 sm:py-12 border-t border-white/5 text-center mt-auto bg-black/80 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto flex flex-col items-center gap-4">
+            <div class="w-12 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent mb-2" aria-hidden="true"></div>
+            <p class="mono text-[10px] sm:text-xs text-orange-100/60 tracking-widest uppercase px-4">
+                &copy; 2026 testylemonad. сделано с помощью кода и лимонада.
+            </p>
+        </div>
+    </footer>
+    </div>
+
+    <script type="module">
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isDesktop = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)').matches;
+
+        // ===== ФОН: генерация пикселей =====
+        (function buildParticles() {
+            const container = document.getElementById('bg-particles');
+            if (!container) return;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            const count = isMobile ? 24 : 46;
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('span');
+                p.className = 'pixel';
+                const size = Math.random() < 0.72 ? 2 : 3;
+                const dx = (Math.random() * 40 - 20).toFixed(1);
+                const dy = (-20 - Math.random() * 30).toFixed(1);
+                const duration = (10 + Math.random() * 14).toFixed(1);
+                const delay = (-Math.random() * 20).toFixed(1);
+                const opacity = (0.25 + Math.random() * 0.6).toFixed(2);
+                p.style.left = (Math.random() * 100).toFixed(2) + '%';
+                p.style.top  = (Math.random() * 100).toFixed(2) + '%';
+                p.style.width  = size + 'px';
+                p.style.height = size + 'px';
+                p.style.opacity = opacity;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                p.style.animationDuration = duration + 's';
+                p.style.animationDelay = delay + 's';
+                if (reduceMotion) p.style.animation = 'none';
+                frag.appendChild(p);
+            }
+            container.appendChild(frag);
+        })();
+
+        // ===== Ripple =====
+        if (!reduceMotion) {
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                const size = 100;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple-obj';
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - size / 2) + 'px';
+                ripple.style.top  = (e.clientY - size / 2) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 800);
+            });
+        }
+
+        // ===== Кастомный курсор =====
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor && isDesktop) {
+            let mx = -100, my = -100;
+            let cx = -100, cy = -100;
+            let shown = false;
+            const placeCursor = (x, y) => {
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+            };
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+                if (!shown) {
+                    document.body.classList.add('has-custom-cursor');
+                    cursor.style.display = 'block';
+                    shown = true;
+                }
+                if (reduceMotion) placeCursor(mx, my);
+            }, { passive: true });
+            if (!reduceMotion) {
+                (function loop() {
+                    cx += (mx - cx) * 0.25;
+                    cy += (my - cy) * 0.25;
+                    placeCursor(cx, cy);
+                    requestAnimationFrame(loop);
+                })();
+            }
+            document.addEventListener('mouseleave', () => {
+                cursor.style.display = 'none';
+                document.body.classList.remove('has-custom-cursor');
+                shown = false;
+            });
+            const HOVER_SEL = 'a, button, input, select, textarea, .glass-card';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.add('cursor-hover');
+            }, { passive: true });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest && e.target.closest(HOVER_SEL)) document.body.classList.remove('cursor-hover');
+            }, { passive: true });
+        }
+
+        // ===== Прогресс скролла =====
+        const scrollBar = document.getElementById('scroll-bar');
+        function updateScroll() {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+            scrollBar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScroll, { passive: true });
     </script>
 </body>
 </html>
